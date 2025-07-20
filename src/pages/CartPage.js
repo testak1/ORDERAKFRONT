@@ -1,4 +1,4 @@
-// src/pages/CartPage.js
+// src/pages/CartPage.js (Styled Example)
 import React, { useState } from "react";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
@@ -59,7 +59,7 @@ function CartPage() {
         _type: "reference",
       },
       items: cartItems.map((item) => ({
-        _key: item.productId, // Unique key for array items
+        _key: item.productId,
         product: {
           _ref: item.productId,
           _type: "reference",
@@ -80,7 +80,7 @@ function CartPage() {
       setOrderSuccess(true);
       clearCart();
       alert("Order placed successfully!");
-      navigate("/orders"); // Redirect to order history or confirmation
+      navigate("/admin"); // Redirect to admin panel for order visibility
     } catch (error) {
       console.error("Order placement error:", error);
       setOrderError("Failed to place order. Please try again.");
@@ -90,111 +90,174 @@ function CartPage() {
   };
 
   if (cartItems.length === 0 && !orderSuccess) {
-    return <div>Your cart is empty.</div>;
+    return (
+      <div className="text-center py-8 text-gray-600">
+        <h1 className="text-2xl font-semibold mb-4">Your Cart</h1>
+        <p>Your cart is empty.</p>
+        <button
+          onClick={() => navigate("/")}
+          className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
+        >
+          Continue Shopping
+        </button>
+      </div>
+    );
   }
 
   return (
-    <div>
-      <h1>Your Shopping Cart</h1>
-      {cartItems.map((item) => (
-        <div
-          key={item.productId}
-          style={{
-            border: "1px solid #eee",
-            padding: "10px",
-            marginBottom: "10px",
-          }}
-        >
-          <h3>{item.title}</h3>
-          <p>SKU: {item.sku}</p>
-          <p>Price: ${item.priceAtPurchase.toFixed(2)}</p>
-          <p>
-            Quantity:
-            <input
-              type="number"
-              min="1"
-              value={item.quantity}
-              onChange={(e) =>
-                updateQuantity(item.productId, parseInt(e.target.value))
-              }
-              style={{ width: "60px", marginLeft: "5px" }}
-            />
-          </p>
-          <button onClick={() => removeFromCart(item.productId)}>Remove</button>
-        </div>
-      ))}
-      <h2>Total: ${getTotalPrice().toFixed(2)}</h2>
+    <div className="p-4 bg-white rounded-lg shadow-md">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">
+        Your Shopping Cart
+      </h1>
 
-      <h3>Shipping Address</h3>
-      <form>
-        <div>
-          <label>Full Name:</label>
-          <input
-            type="text"
-            name="fullName"
-            value={shippingAddress.fullName}
-            onChange={handleShippingChange}
-            required
-          />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Cart Items Section */}
+        <div className="md:col-span-2 space-y-4">
+          {cartItems.map((item) => (
+            <div
+              key={item.productId}
+              className="flex items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm bg-white"
+            >
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {item.title}
+                </h3>
+                <p className="text-sm text-gray-500">SKU: {item.sku}</p>
+                <p className="text-md font-medium text-green-700 mt-1">
+                  Price: ${item.priceAtPurchase.toFixed(2)}
+                </p>
+              </div>
+              <div className="flex items-center space-x-3">
+                <label className="text-sm text-gray-600">Quantity:</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={item.quantity}
+                  onChange={(e) =>
+                    updateQuantity(item.productId, parseInt(e.target.value))
+                  }
+                  className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:ring-blue-500 focus:border-blue-500"
+                />
+                <button
+                  onClick={() => removeFromCart(item.productId)}
+                  className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1.5 px-3 rounded-md text-sm transition-colors duration-200"
+                >
+                  Remove
+                </button>
+              </div>
+            </div>
+          ))}
+          <div className="flex justify-end pt-4 border-t border-gray-200">
+            <h2 className="text-2xl font-bold text-gray-800">
+              Total: ${getTotalPrice().toFixed(2)}
+            </h2>
+          </div>
         </div>
-        <div>
-          <label>Address Line 1:</label>
-          <input
-            type="text"
-            name="addressLine1"
-            value={shippingAddress.addressLine1}
-            onChange={handleShippingChange}
-            required
-          />
-        </div>
-        <div>
-          <label>Address Line 2:</label>
-          <input
-            type="text"
-            name="addressLine2"
-            value={shippingAddress.addressLine2}
-            onChange={handleShippingChange}
-          />
-        </div>
-        <div>
-          <label>City:</label>
-          <input
-            type="text"
-            name="city"
-            value={shippingAddress.city}
-            onChange={handleShippingChange}
-            required
-          />
-        </div>
-        <div>
-          <label>Postal Code:</label>
-          <input
-            type="text"
-            name="postalCode"
-            value={shippingAddress.postalCode}
-            onChange={handleShippingChange}
-            required
-          />
-        </div>
-        <div>
-          <label>Country:</label>
-          <input
-            type="text"
-            name="country"
-            value={shippingAddress.country}
-            onChange={handleShippingChange}
-            required
-          />
-        </div>
-      </form>
 
-      {orderError && <p style={{ color: "red" }}>{orderError}</p>}
-      {orderSuccess && (
-        <p style={{ color: "green" }}>Order placed successfully!</p>
-      )}
-      <button onClick={handlePlaceOrder} disabled={orderLoading}>
-        {orderLoading ? "Placing Order..." : "Buy Now"}
-      </button>
+        {/* Shipping Address Section */}
+        <div className="md:col-span-1 p-6 border border-gray-200 rounded-lg shadow-sm bg-gray-50 h-fit">
+          <h3 className="text-xl font-semibold text-gray-800 mb-4">
+            Shipping Address
+          </h3>
+          <form className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Full Name:
+              </label>
+              <input
+                type="text"
+                name="fullName"
+                value={shippingAddress.fullName}
+                onChange={handleShippingChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Address Line 1:
+              </label>
+              <input
+                type="text"
+                name="addressLine1"
+                value={shippingAddress.addressLine1}
+                onChange={handleShippingChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Address Line 2 (Optional):
+              </label>
+              <input
+                type="text"
+                name="addressLine2"
+                value={shippingAddress.addressLine2}
+                onChange={handleShippingChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  City:
+                </label>
+                <input
+                  type="text"
+                  name="city"
+                  value={shippingAddress.city}
+                  onChange={handleShippingChange}
+                  required
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Postal Code:
+                </label>
+                <input
+                  type="text"
+                  name="postalCode"
+                  value={shippingAddress.postalCode}
+                  onChange={handleShippingChange}
+                  required
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Country:
+              </label>
+              <input
+                type="text"
+                name="country"
+                value={shippingAddress.country}
+                onChange={handleShippingChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </div>
+          </form>
+
+          {orderError && (
+            <p className="text-red-500 text-sm mt-4">{orderError}</p>
+          )}
+          {orderSuccess && (
+            <p className="text-green-600 text-sm mt-4">
+              Order placed successfully!
+            </p>
+          )}
+          <button
+            onClick={handlePlaceOrder}
+            disabled={orderLoading}
+            className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-4 rounded-md transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+          >
+            {orderLoading ? "Placing Order..." : "Buy Now"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
