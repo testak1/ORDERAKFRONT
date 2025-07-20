@@ -1,13 +1,16 @@
 // src/pages/ProductList.js
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom"; // NEW IMPORT
 import { client } from "../sanityClient";
 import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext"; // NEW IMPORT
 
 function ProductList() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { user } = useAuth();
+  const { addToCart } = useCart(); // NEW
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
@@ -115,34 +118,38 @@ function ProductList() {
             key={product._id}
             className="border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden bg-white"
           >
-            {product.imageUrl && (
-              <img
-                src={product.imageUrl}
-                alt={product.title}
-                className="w-full h-48 object-cover object-center"
-              />
-            )}
-            <div className="p-4">
-              <h3 className="text-xl font-semibold text-gray-900 mb-2 truncate">
-                {product.title}
-              </h3>
-              <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                {product.description}
-              </p>
-              <div className="flex justify-between items-center text-xs text-gray-500 mb-4">
-                <span>SKU: {product.sku}</span>
-                <span>Brand: {product.brand}</span>
-              </div>
-              <p className="text-2xl font-bold text-green-700 mb-4">
-                ${applyDiscount(product.price).toFixed(2)}
-              </p>
-              <button
-                onClick={() => alert(`Add ${product.title} to basket`)}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
-              >
-                Add to Basket
-              </button>
-              {/* Implement Quick View Modal Here, perhaps in a separate component */}
+            {/* Wrap image and title in Link */}
+            <Link to={`/products/${product._id}`} className="block">
+                {product.imageUrl && (
+                <img
+                    src={product.imageUrl}
+                    alt={product.title}
+                    className="w-full h-48 object-cover object-center"
+                />
+                )}
+                <div className="p-4">
+                <h3 className="text-xl font-semibold text-gray-900 mb-2 truncate">
+                    {product.title}
+                </h3>
+                <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                    {product.description}
+                </p>
+                </div>
+            </Link>
+            <div className="p-4 pt-0"> {/* Adjusted padding for better flow */}
+                <div className="flex justify-between items-center text-xs text-gray-500 mb-4">
+                    <span>SKU: {product.sku}</span>
+                    <span>Brand: {product.brand}</span>
+                </div>
+                <p className="text-2xl font-bold text-green-700 mb-4">
+                    SEK {applyDiscount(product.price).toFixed(2)} {/* CURRENCY CHANGE */}
+                </p>
+                <button
+                    onClick={() => addToCart(product._id)} // Changed to use addToCart
+                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
+                >
+                    Add to Basket
+                </button>
             </div>
           </div>
         ))}
