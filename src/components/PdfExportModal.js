@@ -54,6 +54,7 @@ function PdfExportModal({ order, onClose }) {
         </div>
 
         {/* Content to be exported to PDF */}
+        {/* Ensure this content is visually within the modal and not hidden by other means */}
         <div ref={pdfContentRef} className="p-6 bg-white">
           <h3 className="text-2xl font-bold mb-4">Order #{order._id}</h3>
           <div className="grid grid-cols-2 gap-4 text-gray-700 mb-6">
@@ -100,9 +101,6 @@ function PdfExportModal({ order, onClose }) {
           <address className="not-italic text-sm text-gray-700">
             <p>{order.shippingAddress?.fullName}</p>
             <p>{order.shippingAddress?.addressLine1}</p>
-            {order.shippingAddress?.addressLine2 && (
-              <p>{order.shippingAddress.addressLine2}</p>
-            )}
             <p>
               {order.shippingAddress?.city}, {order.shippingAddress?.postalCode}
             </p>
@@ -112,13 +110,8 @@ function PdfExportModal({ order, onClose }) {
 
         {/* Modal Footer with PDF Export Button */}
         <div className="p-4 border-t border-gray-200 flex justify-end">
-          <Pdf
-            targetRef={pdfContentRef}
-            filename={`order-${order._id}.pdf`}
-            x={0.5}
-            y={0.5}
-            scale={0.8}
-          >
+          {/* Removed x, y, scale properties from Pdf component */}
+          <Pdf targetRef={pdfContentRef} filename={`order-${order._id}.pdf`}>
             {({ toPdf }) => (
               <button
                 onClick={toPdf}
