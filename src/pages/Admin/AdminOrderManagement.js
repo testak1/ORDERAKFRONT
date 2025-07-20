@@ -1,7 +1,7 @@
 // src/pages/Admin/AdminOrderManagement.js
 import React, { useState, useEffect } from "react";
 import { client } from "../../sanityClient";
-import OrderCard from "./OrderCard"; // Import the OrderCard component
+import OrderCard from "./OrderCard";
 
 function AdminOrderManagement() {
   const [orders, setOrders] = useState([]);
@@ -72,7 +72,9 @@ function AdminOrderManagement() {
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Order Management</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        Order Management
+      </h2>
       {orders.length === 0 ? (
         <p className="text-gray-500 text-center py-8">No orders found.</p>
       ) : (

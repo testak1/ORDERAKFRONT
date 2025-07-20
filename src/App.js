@@ -5,10 +5,9 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import Login from "./components/Login";
 import ProductList from "./pages/ProductList";
-import ProductDetailPage from "./pages/ProductDetailPage";
 import CartPage from "./pages/CartPage";
-import ProfilePage from "./pages/ProfilePage"; // NEW IMPORT
 import AdminDashboard from "./pages/Admin/AdminDashboard";
+import UserProfile from "./pages/UserProfile"; // Import UserProfile
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -18,19 +17,12 @@ function App() {
         <CartProvider>
           <NavBar />
           <div className="container mx-auto p-4 md:p-6 lg:p-8 min-h-screen bg-gray-50">
+            {" "}
+            {/* Main content wrapper */}
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<ProductList />} />
-              <Route path="/products/:productId" element={<ProductDetailPage />} />
               <Route path="/cart" element={<CartPage />} />
-              <Route
-                path="/profile" // NEW ROUTE
-                element={
-                  <ProtectedRoute roles={["user", "admin"]}> {/* Both roles can access profile */}
-                    <ProfilePage />
-                  </ProtectedRoute>
-                }
-              />
               <Route
                 path="/admin/*"
                 element={
@@ -39,6 +31,17 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route // Add route for UserProfile
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    {" "}
+                    {/* Protected for any logged-in user */}
+                    <UserProfile />
+                  </ProtectedRoute>
+                }
+              />
+              {/* Add more routes for order history, user profile etc. */}
             </Routes>
           </div>
         </CartProvider>
@@ -73,16 +76,23 @@ function NavBar() {
               Admin
             </Link>
           )}
+          {user &&
+            user.role === "user" && ( // Link to profile for regular users
+              <Link
+                to="/profile"
+                className="text-lg font-semibold hover:text-blue-200 transition duration-200"
+              >
+                Profile
+              </Link>
+            )}
         </div>
         <div>
           {user ? (
             <div className="flex items-center space-x-4">
-              <Link // NEW Profile Link
-                to="/profile"
-                className="text-sm hover:text-blue-200 transition duration-200"
-              >
-                Welcome, <span className="font-medium">{user.username}</span>
-              </Link>
+              <span className="text-sm">
+                Welcome, <span className="font-medium">{user.username}</span> (
+                <span className="capitalize">{user.role}</span>)
+              </span>
               <button
                 onClick={logout}
                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-md text-sm transition duration-200"

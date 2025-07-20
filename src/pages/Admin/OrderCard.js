@@ -1,15 +1,17 @@
 // src/pages/Admin/OrderCard.js
-import React, { useRef } from "react"; // Import useRef here!
+import React, { useRef } from "react";
+import { client } from "../../sanityClient";
 import Pdf from "react-to-pdf";
-import { client } from "../../sanityClient"; // Need client for status update
 
-function OrderCard({ order, onUpdateOrderStatus }) {
-  const currentPdfRef = useRef(); // Correctly called at the top level of OrderCard component
+// Add isAdminView prop, default to true for existing admin usage
+function OrderCard({ order, onUpdateOrderStatus, isAdminView = true }) {
+  const currentPdfRef = useRef();
 
   const handleUpdate = async (e) => {
-    await onUpdateOrderStatus(order._id, e.target.value);
-    // You might want to re-fetch orders in AdminOrderManagement after update
-    // or let its state update directly via onUpdateOrderStatus if it does that.
+    // Only allow status update if isAdminView is true
+    if (isAdminView) {
+      await onUpdateOrderStatus(order._id, e.target.value);
+    }
   };
 
   return (
@@ -81,24 +83,26 @@ function OrderCard({ order, onUpdateOrderStatus }) {
       </div>
 
       <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Update Status:
-          </label>
-          <select
-            value={order.orderStatus}
-            onChange={handleUpdate}
-            className="mt-1 block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white"
-          >
-            <option value="pending">Pending</option>
-            <option value="processing">Processing</option>
-            <option value="shipped">Shipped</option>
-            <option value="completed">Completed</option>
-            <option value="cancelled">Cancelled</option>
-          </select>
-        </div>
+        {isAdminView && ( // Conditionally render for admin view
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Update Status:
+            </label>
+            <select
+              value={order.orderStatus}
+              onChange={handleUpdate}
+              className="mt-1 block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white"
+            >
+              <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
+              <option value="shipped">Shipped</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+            </select>
+          </div>
+        )}
 
-        {/* PDF Export Section: Rendered OFF-SCREEN instead of display:none */}
+        {/* PDF Export Section: Rendered OFF-SCREEN */}
         <div
           ref={currentPdfRef}
           className="absolute -left-[9999px] -top-[9999px] p-6 bg-white border border-gray-200 rounded-lg shadow-md"
@@ -148,7 +152,9 @@ function OrderCard({ order, onUpdateOrderStatus }) {
           {({ toPdf }) => (
             <button
               onClick={toPdf}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200"
+              className={`bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200 ${
+                !isAdminView ? "ml-auto" : ""
+              }`}
             >
               Export to PDF
             </button>
