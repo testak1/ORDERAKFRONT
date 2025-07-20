@@ -1,16 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { client } from "../../sanityClient"; // Import Sanity client
-import bcrypt from "bcryptjs"; // For hashing passwords (remember security considerations!)
+import { client } from "../../sanityClient";
+import bcrypt from "bcryptjs";
 
 function AdminUserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // State for adding a new user
   const [newUsername, setNewUsername] = useState("");
   const [newUserPassword, setNewUserPassword] = useState("");
-  const [newUserRole, setNewUserRole] = useState("user"); // Default to 'user'
+  const [newUserRole, setNewUserRole] = useState("user");
   const [newUserDiscount, setNewUserDiscount] = useState(0);
 
   useEffect(() => {
@@ -38,10 +37,6 @@ function AdminUserManagement() {
       return;
     }
 
-    // Hashing password on frontend: IMPORTANT SECURITY NOTE!
-    // In a real production application, password hashing and user creation
-    // should ideally happen on a secure backend server, not directly from the frontend.
-    // This is for demonstration purposes in a purely Sanity-driven setup.
     const hashedPassword = bcrypt.hashSync(newUserPassword, 10);
 
     const userDoc = {
@@ -59,10 +54,9 @@ function AdminUserManagement() {
       setNewUserPassword("");
       setNewUserRole("user");
       setNewUserDiscount(0);
-      fetchUsers(); // Re-fetch users
+      fetchUsers();
     } catch (error) {
       console.error("Failed to add user:", error);
-      // Check for unique constraint error from Sanity
       if (
         error.details &&
         error.details.some((d) => d.type === "uniqueConstraintViolation")
@@ -81,7 +75,7 @@ function AdminUserManagement() {
         .set({ discountPercentage: parseFloat(newDiscount) })
         .commit();
       alert("User discount updated!");
-      fetchUsers(); // Re-fetch users
+      fetchUsers();
     } catch (error) {
       console.error("Failed to update user discount:", error);
       alert("Failed to update user discount.");
@@ -97,7 +91,7 @@ function AdminUserManagement() {
       try {
         await client.delete(userId);
         alert("User deleted successfully!");
-        fetchUsers(); // Re-fetch users
+        fetchUsers();
       } catch (error) {
         console.error("Failed to delete user:", error);
         alert("Failed to delete user.");
@@ -105,100 +99,124 @@ function AdminUserManagement() {
     }
   };
 
-  if (loading) return <div>Loading users...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading) return <div className="text-center py-8">Loading users...</div>;
+  if (error)
+    return <div className="text-center text-red-500 py-8">Error: {error}</div>;
 
   return (
-    <div>
-      <h2>User Management</h2>
+    <div className="p-4 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">User Management</h2>
 
       {/* Add New User */}
-      <h3>Add New User</h3>
-      <form onSubmit={handleAddUser}>
-        <div>
-          <label>
-            Username:{" "}
+      <div className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
+        <h3 className="text-xl font-semibold text-gray-700 mb-4">
+          Add New User
+        </h3>
+        <form onSubmit={handleAddUser} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Username:
+            </label>
             <input
               type="text"
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
               required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
-          </label>
-        </div>
-        <div>
-          <label>
-            Password:{" "}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Password:
+            </label>
             <input
               type="password"
               value={newUserPassword}
               onChange={(e) => setNewUserPassword(e.target.value)}
               required
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
-          </label>
-        </div>
-        <div>
-          <label>
-            Role:
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Role:
+            </label>
             <select
               value={newUserRole}
               onChange={(e) => setNewUserRole(e.target.value)}
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white"
             >
               <option value="user">User (Dealer)</option>
               <option value="admin">Admin</option>
             </select>
-          </label>
-        </div>
-        <div>
-          <label>
-            Discount (%):{" "}
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Discount (%):
+            </label>
             <input
               type="number"
               value={newUserDiscount}
               onChange={(e) => setNewUserDiscount(parseFloat(e.target.value))}
               min="0"
               max="100"
+              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
             />
-          </label>
-        </div>
-        <button type="submit">Add User</button>
-      </form>
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
+          >
+            Add User
+          </button>
+        </form>
+      </div>
 
       {/* Manage Existing Users */}
-      <h3>Existing Users</h3>
-      {users.length === 0 && <p>No users found.</p>}
-      {users.map((user) => (
-        <div
-          key={user._id}
-          style={{
-            border: "1px solid #eee",
-            padding: "10px",
-            marginBottom: "10px",
-          }}
-        >
-          <h4>
-            {user.username} ({user.role})
-          </h4>
-          <p>Current Discount: {user.discountPercentage}%</p>
-          <div>
-            <label>
-              Update Discount (%):
-              <input
-                type="number"
-                value={user.discountPercentage} // This will show the current value
-                onChange={(e) =>
-                  handleUpdateUserDiscount(user._id, e.target.value)
-                }
-                min="0"
-                max="100"
-              />
-            </label>
-          </div>
-          <button onClick={() => handleDeleteUser(user._id)}>
-            Delete User
-          </button>
+      <div className="p-6 border border-gray-200 rounded-lg bg-gray-50">
+        <h3 className="text-xl font-semibold text-gray-700 mb-4">
+          Existing Users
+        </h3>
+        {users.length === 0 && <p className="text-gray-500">No users found.</p>}
+        <div className="space-y-4">
+          {users.map((user) => (
+            <div
+              key={user._id}
+              className="flex justify-between items-center bg-white p-4 rounded-md shadow-sm border border-gray-100"
+            >
+              <div>
+                <h4 className="text-lg font-medium text-gray-900">
+                  {user.username} (
+                  <span className="capitalize">{user.role}</span>)
+                </h4>
+                <div className="flex items-center mt-1">
+                  <span className="text-sm text-gray-600 mr-2">
+                    Current Discount: {user.discountPercentage}%
+                  </span>
+                  <label className="sr-only">Update Discount (%):</label>{" "}
+                  {/* Screen reader only label */}
+                  <input
+                    type="number"
+                    value={user.discountPercentage}
+                    onChange={(e) =>
+                      handleUpdateUserDiscount(user._id, e.target.value)
+                    }
+                    min="0"
+                    max="100"
+                    className="w-20 px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              <button
+                onClick={() => handleDeleteUser(user._id)}
+                className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200"
+              >
+                Delete User
+              </button>
+            </div>
+          ))}
         </div>
-      ))}
+      </div>
     </div>
   );
 }
