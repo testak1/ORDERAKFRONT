@@ -5,10 +5,11 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import Login from "./components/Login";
 import ProductList from "./pages/ProductList";
-import ProductDetail from "./pages/ProductDetail"; // Import ProductDetail
+import ProductDetail from "./pages/ProductDetail";
 import CartPage from "./pages/CartPage";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import UserProfile from "./pages/UserProfile";
+import Unauthorized from "./pages/Unauthorized"; // Import Unauthorized component
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -21,11 +22,7 @@ function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<ProductList />} />
-              <Route
-                path="/products/:productId"
-                element={<ProductDetail />}
-              />{" "}
-              {/* New Product Detail Route */}
+              <Route path="/products/:productId" element={<ProductDetail />} />
               <Route path="/cart" element={<CartPage />} />
               <Route
                 path="/admin/*"
@@ -43,6 +40,9 @@ function App() {
                   </ProtectedRoute>
                 }
               />
+              <Route path="/unauthorized" element={<Unauthorized />} />{" "}
+              {/* New Unauthorized Route */}
+              {/* Add more routes for order history, user profile etc. */}
             </Routes>
           </div>
         </CartProvider>
