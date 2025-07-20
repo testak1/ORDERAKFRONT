@@ -24,6 +24,13 @@ function PdfExportModal({ order, onClose }) {
     }
   };
 
+  const handleDownloadPdf = (toPdfFn) => {
+    // Add a small delay to allow DOM to stabilize before capture
+    setTimeout(() => {
+      toPdfFn();
+    }, 100); // 100 milliseconds delay
+  };
+
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-75 flex items-center justify-center p-4 z-50 overflow-auto">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl transform transition-all scale-100 opacity-100 relative">
@@ -54,7 +61,6 @@ function PdfExportModal({ order, onClose }) {
         </div>
 
         {/* Content to be exported to PDF */}
-        {/* Ensure this content is visually within the modal and not hidden by other means */}
         <div ref={pdfContentRef} className="p-6 bg-white">
           <h3 className="text-2xl font-bold mb-4">Order #{order._id}</h3>
           <div className="grid grid-cols-2 gap-4 text-gray-700 mb-6">
@@ -101,6 +107,7 @@ function PdfExportModal({ order, onClose }) {
           <address className="not-italic text-sm text-gray-700">
             <p>{order.shippingAddress?.fullName}</p>
             <p>{order.shippingAddress?.addressLine1}</p>
+            {/* Removed addressLine2 as per your update */}
             <p>
               {order.shippingAddress?.city}, {order.shippingAddress?.postalCode}
             </p>
@@ -110,11 +117,10 @@ function PdfExportModal({ order, onClose }) {
 
         {/* Modal Footer with PDF Export Button */}
         <div className="p-4 border-t border-gray-200 flex justify-end">
-          {/* Removed x, y, scale properties from Pdf component */}
           <Pdf targetRef={pdfContentRef} filename={`order-${order._id}.pdf`}>
             {({ toPdf }) => (
               <button
-                onClick={toPdf}
+                onClick={() => handleDownloadPdf(toPdf)} // Call the new handler
                 className="bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
               >
                 Download PDF
