@@ -1,9 +1,7 @@
 // src/pages/Admin/AdminOrderManagement.js
 import React, { useState, useEffect } from "react";
 import { client } from "../../sanityClient";
-// No longer need useRef or Pdf imports here as they are in OrderCard
-// import { useAuth } from "../../context/AuthContext"; // Only if you need user details directly in this component
-import OrderCard from "./OrderCard"; // Import the new OrderCard component
+import OrderCard from "./OrderCard"; // Import the OrderCard component
 
 function AdminOrderManagement() {
   const [orders, setOrders] = useState([]);
@@ -16,6 +14,7 @@ function AdminOrderManagement() {
 
   const fetchOrders = async () => {
     setLoading(true);
+    setError(""); // Clear previous errors
     try {
       const query = `*[_type == "order"]{
           _id,
@@ -27,20 +26,19 @@ function AdminOrderManagement() {
           createdAt
         } | order(createdAt desc)`;
       const fetchedOrders = await client.fetch(query);
+      console.log("Fetched Orders:", fetchedOrders); // DEBUG: Check what data is returned
       setOrders(fetchedOrders);
     } catch (err) {
       console.error("Failed to fetch orders:", err);
-      setError("Failed to load orders.");
+      setError("Failed to load orders. Please check console for details.");
     } finally {
       setLoading(false);
     }
   };
 
-  // This function is passed down to OrderCard to handle status updates
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     try {
       await client.patch(orderId).set({ orderStatus: newStatus }).commit();
-      // Update state in parent to reflect the change
       setOrders((prevOrders) =>
         prevOrders.map((order) =>
           order._id === orderId ? { ...order, orderStatus: newStatus } : order
@@ -53,27 +51,41 @@ function AdminOrderManagement() {
     }
   };
 
-  if (loading) return <div className="text-center py-8">Loading orders...</div>;
-  if (error)
-    return <div className="text-center text-red-500 py-8">Error: {error}</div>;
+  // --- Render based on loading/error/data states ---
+  if (loading) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-lg text-gray-600">Loading orders...</p>
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto mt-4"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8 text-red-500">
+        <p className="text-lg font-semibold mb-2">Error loading orders!</p>
+        <p className="text-sm">{error}</p>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">
-        Order Management
-      </h2>
-      {orders.length === 0 && <p className="text-gray-500">No orders found.</p>}
-      <div className="space-y-6">
-        {orders.map((order) => (
-          <OrderCard
-            key={order._id} // Important for React list rendering
-            order={order}
-            onUpdateOrderStatus={handleUpdateOrderStatus}
-            // If you need to re-fetch all orders from parent after update, pass fetchOrders too
-            // fetchOrders={fetchOrders}
-          />
-        ))}
-      </div>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Order Management</h2>
+      {orders.length === 0 ? (
+        <p className="text-gray-500 text-center py-8">No orders found.</p>
+      ) : (
+        <div className="space-y-6">
+          {orders.map((order) => (
+            <OrderCard
+              key={order._id}
+              order={order}
+              onUpdateOrderStatus={handleUpdateOrderStatus}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
