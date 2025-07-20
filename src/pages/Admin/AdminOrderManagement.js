@@ -2,11 +2,14 @@
 import React, { useState, useEffect } from "react";
 import { client } from "../../sanityClient";
 import OrderCard from "./OrderCard";
+import PdfExportModal from "../../components/PdfExportModal"; // Import the modal
 
 function AdminOrderManagement() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [selectedOrderForPdf, setSelectedOrderForPdf] = useState(null);
 
   useEffect(() => {
     fetchOrders();
@@ -14,7 +17,6 @@ function AdminOrderManagement() {
 
   const fetchOrders = async () => {
     setLoading(true);
-    setError(""); // Clear previous errors
     try {
       const query = `*[_type == "order"]{
           _id,
@@ -26,11 +28,10 @@ function AdminOrderManagement() {
           createdAt
         } | order(createdAt desc)`;
       const fetchedOrders = await client.fetch(query);
-      console.log("Fetched Orders:", fetchedOrders); // DEBUG: Check what data is returned
       setOrders(fetchedOrders);
     } catch (err) {
       console.error("Failed to fetch orders:", err);
-      setError("Failed to load orders. Please check console for details.");
+      setError("Failed to load orders.");
     } finally {
       setLoading(false);
     }
@@ -51,42 +52,44 @@ function AdminOrderManagement() {
     }
   };
 
-  // --- Render based on loading/error/data states ---
-  if (loading) {
-    return (
-      <div className="text-center py-8">
-        <p className="text-lg text-gray-600">Loading orders...</p>
-        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto mt-4"></div>
-      </div>
-    );
-  }
+  // Function to open the PDF modal
+  const handleExportPdf = (order) => {
+    setSelectedOrderForPdf(order);
+    setShowPdfModal(true);
+  };
 
-  if (error) {
-    return (
-      <div className="text-center py-8 text-red-500">
-        <p className="text-lg font-semibold mb-2">Error loading orders!</p>
-        <p className="text-sm">{error}</p>
-      </div>
-    );
-  }
+  const handleClosePdfModal = () => {
+    setShowPdfModal(false);
+    setSelectedOrderForPdf(null);
+  };
+
+  if (loading) return <div className="text-center py-8">Loading orders...</div>;
+  if (error)
+    return <div className="text-center text-red-500 py-8">Error: {error}</div>;
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">
         Order Management
       </h2>
-      {orders.length === 0 ? (
-        <p className="text-gray-500 text-center py-8">No orders found.</p>
-      ) : (
-        <div className="space-y-6">
-          {orders.map((order) => (
-            <OrderCard
-              key={order._id}
-              order={order}
-              onUpdateOrderStatus={handleUpdateOrderStatus}
-            />
-          ))}
-        </div>
+      {orders.length === 0 && <p className="text-gray-500">No orders found.</p>}
+      <div className="space-y-6">
+        {orders.map((order) => (
+          <OrderCard
+            key={order._id}
+            order={order}
+            isAdminView={true} // This is the admin view
+            onUpdateOrderStatus={handleUpdateOrderStatus}
+            onExportPdf={handleExportPdf} // Pass the new handler
+          />
+        ))}
+      </div>
+
+      {showPdfModal && (
+        <PdfExportModal
+          order={selectedOrderForPdf}
+          onClose={handleClosePdfModal}
+        />
       )}
     </div>
   );

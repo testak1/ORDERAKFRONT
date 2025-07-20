@@ -1,12 +1,13 @@
-// src/pages/UserProfile.js (Updated to include Password Change)
+// src/pages/UserProfile.js
 import React, { useState, useEffect } from "react";
 import { client } from "../sanityClient";
 import { useAuth } from "../context/AuthContext";
 import OrderCard from "./Admin/OrderCard";
-import bcrypt from "bcryptjs"; // Make sure to install bcryptjs: npm install bcryptjs
+import PdfExportModal from "../components/PdfExportModal"; // Import the modal
+import bcrypt from "bcryptjs";
 
 function UserProfile() {
-  const { user, loading: authLoading, login } = useAuth(); // Added login from AuthContext
+  const { user, loading: authLoading, login } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -16,6 +17,10 @@ function UserProfile() {
   const [newPassword, setNewPassword] = useState("");
   const [confirmNewPassword, setConfirmNewPassword] = useState("");
   const [passwordChangeMessage, setPasswordChangeMessage] = useState("");
+
+  // State for PDF modal
+  const [showPdfModal, setShowPdfModal] = useState(false);
+  const [selectedOrderForPdf, setSelectedOrderForPdf] = useState(null);
 
   useEffect(() => {
     const fetchUserOrders = async () => {
@@ -73,7 +78,6 @@ function UserProfile() {
     }
 
     try {
-      // 1. Fetch user again to verify current password (from Sanity directly)
       const fetchedUserForPassCheck = await client.fetch(
         `*[_type == "user" && _id == "${user._id}"][0]{password}`
       );
@@ -85,10 +89,8 @@ function UserProfile() {
         return;
       }
 
-      // 2. Hash new password
       const hashedNewPassword = bcrypt.hashSync(newPassword, 10);
 
-      // 3. Update password in Sanity
       await client
         .patch(user._id)
         .set({ password: hashedNewPassword })
@@ -99,17 +101,21 @@ function UserProfile() {
       setNewPassword("");
       setConfirmNewPassword("");
       alert("Password changed successfully!");
-      // Optionally, you might want to re-login the user to update their session,
-      // though typically the existing session is fine if only hash changed.
-      // If using JWTs, you'd invalidate and issue new tokens here.
-
-      // If you changed the password for the current user, it's good practice to update
-      // the user context to reflect potential changes, though not strictly needed for just password.
-      // If user had roles/discount updated via admin, then refetching user details for context would be needed.
     } catch (error) {
       console.error("Password change failed:", error);
       setPasswordChangeMessage("Failed to change password. Please try again.");
     }
+  };
+
+  // Function to open the PDF modal
+  const handleExportPdf = (order) => {
+    setSelectedOrderForPdf(order);
+    setShowPdfModal(true);
+  };
+
+  const handleClosePdfModal = () => {
+    setShowPdfModal(false);
+    setSelectedOrderForPdf(null);
   };
 
   if (authLoading) {
@@ -224,10 +230,18 @@ function UserProfile() {
               key={order._id}
               order={order}
               isAdminView={false} // Pass false to hide admin-specific controls
+              onExportPdf={handleExportPdf} // Pass the new handler
             />
           ))}
         </div>
       </div>
+
+      {showPdfModal && (
+        <PdfExportModal
+          order={selectedOrderForPdf}
+          onClose={handleClosePdfModal}
+        />
+      )}
     </div>
   );
 }

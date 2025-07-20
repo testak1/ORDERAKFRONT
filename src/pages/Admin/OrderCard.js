@@ -1,12 +1,14 @@
 // src/pages/Admin/OrderCard.js
-// Temporarily removed: import Pdf from 'react-to-pdf';
-// Temporarily removed: import { useRef } from 'react';
-import React from "react"; // Keep React import
+import React from "react";
 import { client } from "../../sanityClient";
 
-function OrderCard({ order, onUpdateOrderStatus, isAdminView = true }) {
-  // Temporarily removed: const currentPdfRef = useRef();
-
+// Add onExportPdf prop
+function OrderCard({
+  order,
+  onUpdateOrderStatus,
+  isAdminView = true,
+  onExportPdf,
+}) {
   const handleUpdate = async (e) => {
     if (isAdminView) {
       await onUpdateOrderStatus(order._id, e.target.value);
@@ -101,29 +103,14 @@ function OrderCard({ order, onUpdateOrderStatus, isAdminView = true }) {
           </div>
         )}
 
-        {/* Temporarily removed PDF Export Section */}
-        {/*
-        <div ref={currentPdfRef} className="absolute -left-[9999px] -top-[9999px] p-6 bg-white border border-gray-200 rounded-lg shadow-md">
-            // PDF content here
-        </div>
-        <Pdf targetRef={currentPdfRef} filename={`order-${order._id}.pdf`}>
-          {({ toPdf }) => (
-            <button
-              onClick={toPdf}
-              className={`bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200 ${!isAdminView ? 'ml-auto' : ''}`}
-            >
-              Export to PDF
-            </button>
-          )}
-        </Pdf>
-        */}
-        {/* Placeholder for PDF button while troubleshooting */}
+        {/* This button now triggers the modal */}
         <button
-          className={`bg-gray-400 text-white font-semibold py-2 px-4 rounded-md text-sm cursor-not-allowed ${
+          onClick={() => onExportPdf && onExportPdf(order)}
+          className={`bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200 ${
             !isAdminView ? "ml-auto" : ""
           }`}
         >
-          PDF Disabled
+          Export to PDF
         </button>
       </div>
     </div>
