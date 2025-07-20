@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import Login from "./components/Login";
 import ProductList from "./pages/ProductList";
+import ProductDetailPage from "./pages/ProductDetailPage"; // NEW IMPORT
 import CartPage from "./pages/CartPage";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -21,6 +22,7 @@ function App() {
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<ProductList />} />
+              <Route path="/products/:productId" element={<ProductDetailPage />} /> {/* NEW ROUTE */}
               <Route path="/cart" element={<CartPage />} />
               <Route
                 path="/admin/*"
