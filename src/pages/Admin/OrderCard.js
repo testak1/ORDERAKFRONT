@@ -57,7 +57,7 @@ function OrderCard({ order, onUpdateOrderStatus, isAdminView = true }) {
           {order.items.map((item, index) => (
             <li key={index}>
               {item.product?.title || item.title} (SKU:{" "}
-              {item.product?.sku || item.sku}) - Qty: {item.quantity} @ $ SEK{" "}
+              {item.product?.sku || item.sku}) - Qty: {item.quantity} @ SEK{" "}
               {item.priceAtPurchase?.toFixed(2)} each
             </li>
           ))}
@@ -125,7 +125,7 @@ function OrderCard({ order, onUpdateOrderStatus, isAdminView = true }) {
             {order.items.map((item, index) => (
               <li key={index}>
                 {item.product?.title || item.title} (SKU:{" "}
-                {item.product?.sku || item.sku}) - Qty: {item.quantity} @ $ SEK{" "}
+                {item.product?.sku || item.sku}) - Qty: {item.quantity} @ SEK{" "}
                 {item.priceAtPurchase?.toFixed(2)} each
               </li>
             ))}
