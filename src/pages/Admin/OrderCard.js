@@ -1,73 +1,54 @@
 // src/pages/Admin/OrderCard.js
-import React, { useRef } from "react"; // Import useRef here!
-import Pdf from "react-to-pdf";
-import { client } from "../../sanityClient"; // Need client for status update
+import React, { useRef } from 'react';
+import Pdf from 'react-to-pdf';
+// Removed client import as handleUpdate is now passed as prop
+// import { client } from '../../sanityClient';
 
-function OrderCard({ order, onUpdateOrderStatus, fetchOrders }) {
-  const currentPdfRef = useRef(); // Correctly called at the top level of OrderCard component
+function OrderCard({ order, onUpdateOrderStatus }) {
+  const currentPdfRef = useRef();
 
   const handleUpdate = async (e) => {
+    // Call the prop function directly
     await onUpdateOrderStatus(order._id, e.target.value);
-    // You might want to re-fetch orders in AdminOrderManagement after update
-    // or let its state update directly via onUpdateOrderStatus if it does that.
-    // For now, onUpdateOrderStatus already handles state update.
   };
 
   return (
     <div className="p-6 border border-gray-200 rounded-lg shadow-sm bg-gray-50">
       <div className="flex justify-between items-start mb-4 border-b pb-3">
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            Order ID: {order._id}
-          </h3>
-          <p className="text-sm text-gray-600">
-            Ordered by: {order.user?.username || "N/A"}
-          </p>
-          <p className="text-sm text-gray-600">
-            Created At: {new Date(order.createdAt).toLocaleString()}
-          </p>
+          <h3 className="text-lg font-semibold text-gray-900">Order ID: {order._id}</h3>
+          <p className="text-sm text-gray-600">Ordered by: {order.user?.username || "N/A"}</p>
+          <p className="text-sm text-gray-600">Created At: {new Date(order.createdAt).toLocaleString()}</p>
         </div>
         <div className="text-right">
-          <p
-            className={`text-lg font-bold ${
-              order.orderStatus === "pending"
-                ? "text-yellow-600"
-                : order.orderStatus === "processing"
-                ? "text-blue-600"
-                : order.orderStatus === "shipped"
-                ? "text-purple-600"
-                : order.orderStatus === "completed"
-                ? "text-green-600"
-                : order.orderStatus === "cancelled"
-                ? "text-red-600"
-                : "text-gray-600"
-            } capitalize`}
-          >
+          <p className={`text-lg font-bold ${
+              order.orderStatus === 'pending' ? 'text-yellow-600' :
+              order.orderStatus === 'processing' ? 'text-blue-600' :
+              order.orderStatus === 'shipped' ? 'text-purple-600' :
+              order.orderStatus === 'completed' ? 'text-green-600' :
+              order.orderStatus === 'cancelled' ? 'text-red-600' : 'text-gray-600'
+            } capitalize`}>
             Status: {order.orderStatus}
           </p>
-          <p className="text-xl font-bold text-gray-800">
-            Total: ${order.totalAmount?.toFixed(2) || "N/A"}
-          </p>
+          <p className="text-xl font-bold text-gray-800">Total: SEK {order.totalAmount?.toFixed(2) || "N/A"}</p> {/* CURRENCY CHANGE */}
         </div>
       </div>
 
       <div className="mb-4">
         <h4 className="text-md font-semibold text-gray-800 mb-2">Items:</h4>
         <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-          {order.items.map((item, index) => (
+          {order.items?.map((item, index) => ( // Added optional chaining for safety
             <li key={index}>
               {item.product?.title || item.title} (SKU:{" "}
-              {item.product?.sku || item.sku}) - Qty: {item.quantity} @ $
-              {item.priceAtPurchase?.toFixed(2)} each
+              {item.product?.sku || item.sku}) - Qty: {item.quantity} @ SEK{" "}
+              {item.priceAtPurchase?.toFixed(2)} each {/* CURRENCY CHANGE */}
             </li>
           ))}
         </ul>
       </div>
 
       <div className="mb-4">
-        <h4 className="text-md font-semibold text-gray-800 mb-2">
-          Shipping Address:
-        </h4>
+        <h4 className="text-md font-semibold text-gray-800 mb-2">Shipping Address:</h4>
         <address className="not-italic text-sm text-gray-700">
           <p>{order.shippingAddress?.fullName}</p>
           <p>{order.shippingAddress?.addressLine1}</p>
@@ -83,9 +64,7 @@ function OrderCard({ order, onUpdateOrderStatus, fetchOrders }) {
 
       <div className="flex items-center justify-between pt-4 border-t border-gray-200">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            Update Status:
-          </label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Update Status:</label>
           <select
             value={order.orderStatus}
             onChange={handleUpdate}
@@ -100,50 +79,30 @@ function OrderCard({ order, onUpdateOrderStatus, fetchOrders }) {
         </div>
 
         {/* PDF Export Section */}
-        <div
-          ref={currentPdfRef}
-          className="p-6 bg-white border border-gray-200 rounded-lg shadow-md hidden"
-        >
-          <h3 className="text-xl font-bold mb-4">
-            Order Details - {order._id}
-          </h3>
-          <p>
-            <strong>Status:</strong> {order.orderStatus}
-          </p>
-          <p>
-            <strong>Ordered by:</strong> {order.user?.username || "N/A"}
-          </p>
-          <p>
-            <strong>Total:</strong> ${order.totalAmount?.toFixed(2) || "N/A"}
-          </p>
-          <p>
-            <strong>Created At:</strong>{" "}
-            {new Date(order.createdAt).toLocaleString()}
-          </p>
+        <div ref={currentPdfRef} className="p-6 bg-white border border-gray-200 rounded-lg shadow-md hidden">
+            <h3 className="text-xl font-bold mb-4">Order Details - {order._id}</h3>
+            <p><strong>Status:</strong> {order.orderStatus}</p>
+            <p><strong>Ordered by:</strong> {order.user?.username || "N/A"}</p>
+            <p><strong>Total:</strong> SEK {order.totalAmount?.toFixed(2) || "N/A"}</p> {/* CURRENCY CHANGE */}
+            <p><strong>Created At:</strong> {new Date(order.createdAt).toLocaleString()}</p>
 
-          <h4 className="text-lg font-semibold mt-4 mb-2">Items:</h4>
-          <ul className="list-disc list-inside text-sm">
-            {order.items.map((item, index) => (
-              <li key={index}>
-                {item.product?.title || item.title} (SKU:{" "}
-                {item.product?.sku || item.sku}) - Qty: {item.quantity} @ $
-                {item.priceAtPurchase?.toFixed(2)}
-              </li>
-            ))}
-          </ul>
+            <h4 className="text-lg font-semibold mt-4 mb-2">Items:</h4>
+            <ul className="list-disc list-inside text-sm">
+              {order.items?.map((item, index) => ( // Added optional chaining for safety
+                <li key={index}>
+                  {item.product?.title || item.title} (SKU: {item.product?.sku || item.sku}) - Qty: {item.quantity} @ SEK {item.priceAtPurchase?.toFixed(2)}
+                </li>
+              ))}
+            </ul>
 
-          <h4 className="text-lg font-semibold mt-4 mb-2">Shipping Address:</h4>
-          <address className="not-italic text-sm">
-            <p>{order.shippingAddress?.fullName}</p>
-            <p>{order.shippingAddress?.addressLine1}</p>
-            {order.shippingAddress?.addressLine2 && (
-              <p>{order.shippingAddress.addressLine2}</p>
-            )}
-            <p>
-              {order.shippingAddress?.city}, {order.shippingAddress?.postalCode}
-            </p>
-            <p>{order.shippingAddress?.country}</p>
-          </address>
+            <h4 className="text-lg font-semibold mt-4 mb-2">Shipping Address:</h4>
+            <address className="not-italic text-sm">
+              <p>{order.shippingAddress?.fullName}</p>
+              <p>{order.shippingAddress?.addressLine1}</p>
+              {order.shippingAddress?.addressLine2 && <p>{order.shippingAddress.addressLine2}</p>}
+              <p>{order.shippingAddress?.city}, {order.shippingAddress?.postalCode}</p>
+              <p>{order.shippingAddress?.country}</p>
+            </address>
         </div>
         <Pdf targetRef={currentPdfRef} filename={`order-${order._id}.pdf`}>
           {({ toPdf }) => (
