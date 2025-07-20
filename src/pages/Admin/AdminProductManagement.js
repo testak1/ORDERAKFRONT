@@ -184,171 +184,228 @@ function AdminProductManagement() {
     }
   };
 
-  if (loading) return <div>Loading products...</div>;
-  if (error) return <div>Error: {error}</div>;
+  if (loading)
+    return <div className="text-center py-8">Loading products...</div>;
+  if (error)
+    return <div className="text-center text-red-500 py-8">Error: {error}</div>;
 
   return (
-    <div>
-      <h2>Product Management</h2>
+    <div className="p-4 bg-white rounded-lg shadow-md">
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">
+        Product Management
+      </h2>
 
       {/* Add Single Product */}
-      <h3>Add New Product</h3>
-      <form onSubmit={handleAddProduct}>
-        <div>
-          <label>
-            Title:{" "}
-            <input
-              type="text"
-              name="title"
-              value={newProduct.title}
-              onChange={handleNewProductChange}
-              required
-            />
-          </label>
-        </div>
-        <div>
-          <label>
-            Description:{" "}
-            <textarea
-              name="description"
-              value={newProduct.description}
-              onChange={handleNewProductChange}
-            ></textarea>
-          </label>
-        </div>
-        <div>
-          <label>
-            SKU:{" "}
-            <input
-              type="text"
-              name="sku"
-              value={newProduct.sku}
-              onChange={handleNewProductChange}
-              required
-            />
-          </label>
-        </div>
-        <div>
-          <label>
-            Brand:{" "}
-            <input
-              type="text"
-              name="brand"
-              value={newProduct.brand}
-              onChange={handleNewProductChange}
-            />
-          </label>
-        </div>
-        <div>
-          <label>
-            Base Price:{" "}
-            <input
-              type="number"
-              name="price"
-              value={newProduct.price}
-              onChange={handleNewProductChange}
-              required
-              min="0"
-              step="0.01"
-            />
-          </label>
-        </div>
-        <div>
-          <label>
-            Image:{" "}
-            <input
-              type="file"
-              name="image"
-              onChange={handleNewProductChange}
-              accept="image/*"
-            />
-          </label>
-        </div>
-        <button type="submit">Add Product</button>
-      </form>
+      <div className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
+        <h3 className="text-xl font-semibold text-gray-700 mb-4">
+          Add New Product
+        </h3>
+        <form onSubmit={handleAddProduct} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Title:{" "}
+              <input
+                type="text"
+                name="title"
+                value={newProduct.title}
+                onChange={handleNewProductChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </label>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Description:{" "}
+              <textarea
+                name="description"
+                value={newProduct.description}
+                onChange={handleNewProductChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              ></textarea>
+            </label>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              SKU:{" "}
+              <input
+                type="text"
+                name="sku"
+                value={newProduct.sku}
+                onChange={handleNewProductChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </label>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Brand:{" "}
+              <input
+                type="text"
+                name="brand"
+                value={newProduct.brand}
+                onChange={handleNewProductChange}
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </label>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Base Price:{" "}
+              <input
+                type="number"
+                name="price"
+                value={newProduct.price}
+                onChange={handleNewProductChange}
+                required
+                min="0"
+                step="0.01"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </label>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Image:{" "}
+              <input
+                type="file"
+                name="image"
+                onChange={handleNewProductChange}
+                accept="image/*"
+                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+            </label>
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
+          >
+            Add Product
+          </button>
+        </form>
+      </div>
 
       {/* Bulk Product Upload */}
-      <h3>Bulk Upload Products (CSV)</h3>
-      <input type="file" accept=".csv" onChange={handleBulkUpload} />
+      <div className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
+        <h3 className="text-xl font-semibold text-gray-700 mb-4">
+          Bulk Upload Products (CSV)
+        </h3>
+        <input
+          type="file"
+          accept=".csv"
+          onChange={handleBulkUpload}
+          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100"
+        />
+      </div>
 
       {/* Bulk Price Adjustments */}
-      <h3>Bulk Price Adjustment</h3>
-      <div>
-        <label>
-          Adjustment Value:{" "}
-          <input
-            type="number"
-            value={priceAdjustmentValue}
-            onChange={(e) =>
-              setPriceAdjustmentValue(parseFloat(e.target.value))
-            }
-          />
-        </label>
-        <select
-          value={priceAdjustmentType}
-          onChange={(e) => setPriceAdjustmentType(e.target.value)}
-        >
-          <option value="percentage">Percentage (%)</option>
-          <option value="fixed">Fixed Amount ($)</option>
-        </select>
+      <div className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
+        <h3 className="text-xl font-semibold text-gray-700 mb-4">
+          Bulk Price Adjustment
+        </h3>
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Adjustment Value:{" "}
+              <input
+                type="number"
+                value={priceAdjustmentValue}
+                onChange={(e) =>
+                  setPriceAdjustmentValue(parseFloat(e.target.value))
+                }
+                className="mt-1 inline-block w-32 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </label>
+            <select
+              value={priceAdjustmentType}
+              onChange={(e) => setPriceAdjustmentType(e.target.value)}
+              className="ml-2 mt-1 inline-block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white"
+            >
+              <option value="percentage">Percentage (%)</option>
+              <option value="fixed">Fixed Amount ($)</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Filter by Brand:{" "}
+              <input
+                type="text"
+                value={priceAdjustmentBrand}
+                onChange={(e) => setPriceAdjustmentBrand(e.target.value)}
+                placeholder="Optional Brand"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </label>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              Filter by Search Term:{" "}
+              <input
+                type="text"
+                value={priceAdjustmentSearchTerm}
+                onChange={(e) => setPriceAdjustmentSearchTerm(e.target.value)}
+                placeholder="Optional Search"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              />
+            </label>
+          </div>
+          <button
+            onClick={handleBulkPriceAdjustment}
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
+          >
+            Apply Adjustment
+          </button>
+        </div>
       </div>
-      <div>
-        <label>
-          Filter by Brand:{" "}
-          <input
-            type="text"
-            value={priceAdjustmentBrand}
-            onChange={(e) => setPriceAdjustmentBrand(e.target.value)}
-            placeholder="Optional Brand"
-          />
-        </label>
-      </div>
-      <div>
-        <label>
-          Filter by Search Term:{" "}
-          <input
-            type="text"
-            value={priceAdjustmentSearchTerm}
-            onChange={(e) => setPriceAdjustmentSearchTerm(e.target.value)}
-            placeholder="Optional Search"
-          />
-        </label>
-      </div>
-      <button onClick={handleBulkPriceAdjustment}>Apply Adjustment</button>
 
       {/* Existing Products List (for editing/deleting) */}
-      <h3>Existing Products</h3>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))",
-          gap: "10px",
-        }}
-      >
-        {products.map((product) => (
-          <div
-            key={product._id}
-            style={{ border: "1px solid #eee", padding: "10px" }}
-          >
-            {product.imageUrl && (
-              <img
-                src={product.imageUrl}
-                alt={product.title}
-                style={{ maxWidth: "100px", height: "auto" }}
-              />
-            )}
-            <h4>{product.title}</h4>
-            <p>SKU: {product.sku}</p>
-            <p>Price: ${product.price.toFixed(2)}</p>
-            <button onClick={() => alert(`Edit ${product.title}`)}>
-              Edit
-            </button>{" "}
-            {/* Implement Edit Modal later */}
-            <button onClick={() => handleDeleteProduct(product._id)}>
-              Delete
-            </button>
-          </div>
-        ))}
+      <div className="p-6 border border-gray-200 rounded-lg bg-gray-50">
+        <h3 className="text-xl font-semibold text-gray-700 mb-4">
+          Existing Products
+        </h3>
+        {products.length === 0 && (
+          <p className="text-gray-500">No products found.</p>
+        )}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {products.map((product) => (
+            <div
+              key={product._id}
+              className="border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow duration-200 overflow-hidden bg-white"
+            >
+              {product.imageUrl && (
+                <img
+                  src={product.imageUrl}
+                  alt={product.title}
+                  className="w-full h-32 object-cover object-center"
+                />
+              )}
+              <div className="p-4">
+                <h4 className="text-lg font-medium text-gray-900 truncate">
+                  {product.title}
+                </h4>
+                <p className="text-sm text-gray-600 mt-1">SKU: {product.sku}</p>
+                <p className="text-md font-bold text-green-700 mt-2">
+                  ${product.price.toFixed(2)}
+                </p>
+                <div className="flex justify-between mt-4 space-x-2">
+                  <button
+                    onClick={() => alert(`Edit ${product.title}`)}
+                    className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-1.5 px-3 rounded-md text-sm transition-colors duration-200"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteProduct(product._id)}
+                    className="flex-1 bg-red-500 hover:bg-red-600 text-white font-semibold py-1.5 px-3 rounded-md text-sm transition-colors duration-200"
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
