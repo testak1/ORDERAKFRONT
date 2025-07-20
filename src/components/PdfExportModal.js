@@ -1,27 +1,24 @@
 import React, { useRef, useEffect, useState } from "react";
 import ReactToPdf from "react-to-pdf";
-import { Button } from "@mui/material"; // Eller byt till vanliga <button>
+import { Button } from "@mui/material"; // Du kan ersätta med vanlig <button> vid behov
 
 const PdfExportModal = ({ order, onClose }) => {
   const pdfRef = useRef();
-  const [isMounted, setIsMounted] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
-  // Se till att elementet har hunnit mountas innan PDF genereras
+  // För att undvika SSR/render-fel
   useEffect(() => {
-    const timer = setTimeout(() => setIsMounted(true), 100);
-    return () => clearTimeout(timer);
+    setIsClient(true);
   }, []);
 
-  if (!order) return null;
+  // Skydd om order-data är ofullständig
+  if (!order || !order.items || !Array.isArray(order.items)) return null;
 
   return (
     <div
       style={{
         position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        inset: 0,
         backgroundColor: "rgba(0,0,0,0.5)",
         zIndex: 1000,
         display: "flex",
@@ -42,10 +39,8 @@ const PdfExportModal = ({ order, onClose }) => {
       >
         <h2>Orderdetaljer (#{order._id})</h2>
 
-        <div
-          ref={pdfRef}
-          style={{ padding: "10px", backgroundColor: "#f9f9f9" }}
-        >
+        {/* Ref: det här exporteras */}
+        <div ref={pdfRef} style={{ padding: 10, backgroundColor: "#f9f9f9" }}>
           <p>
             <strong>Kund:</strong> {order.user?.username}
           </p>
@@ -70,11 +65,17 @@ const PdfExportModal = ({ order, onClose }) => {
           </ul>
 
           <h3>Adress:</h3>
-          <pre>{JSON.stringify(order.shippingAddress, null, 2)}</pre>
+          <p>{order.shippingAddress?.fullName}</p>
+          <p>{order.shippingAddress?.addressLine1}</p>
+          <p>
+            {order.shippingAddress?.postalCode} {order.shippingAddress?.city}
+          </p>
+          <p>{order.shippingAddress?.country}</p>
         </div>
 
+        {/* PDF-export & stäng-knapp */}
         <div style={{ marginTop: 20 }}>
-          {isMounted && pdfRef.current && (
+          {isClient && pdfRef.current && (
             <ReactToPdf targetRef={pdfRef} filename={`order-${order._id}.pdf`}>
               {({ toPdf }) => (
                 <Button variant="contained" color="primary" onClick={toPdf}>
@@ -83,7 +84,6 @@ const PdfExportModal = ({ order, onClose }) => {
               )}
             </ReactToPdf>
           )}
-
           <Button
             variant="outlined"
             color="secondary"
