@@ -386,7 +386,7 @@ function AdminProductManagement() {
                 </h4>
                 <p className="text-sm text-gray-600 mt-1">SKU: {product.sku}</p>
                 <p className="text-md font-bold text-green-700 mt-2">
-                  ${product.price.toFixed(2)}
+                  SEK {product.price.toFixed(2)}
                 </p>
                 <div className="flex justify-between mt-4 space-x-2">
                   <button

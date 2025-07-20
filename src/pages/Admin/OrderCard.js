@@ -57,7 +57,7 @@ function OrderCard({ order, onUpdateOrderStatus, isAdminView = true }) {
           {order.items.map((item, index) => (
             <li key={index}>
               {item.product?.title || item.title} (SKU:{" "}
-              {item.product?.sku || item.sku}) - Qty: {item.quantity} @ $
+              {item.product?.sku || item.sku}) - Qty: {item.quantity} @ $ SEK{" "}
               {item.priceAtPurchase?.toFixed(2)} each
             </li>
           ))}
@@ -112,8 +112,8 @@ function OrderCard({ order, onUpdateOrderStatus, isAdminView = true }) {
           <p>
             <strong>Ordered by:</strong> {order.user?.username || "N/A"}
           </p>
-          <p>
-            <strong>Total:</strong> ${order.totalAmount?.toFixed(2) || "N/A"}
+          <p className="text-xl font-bold text-gray-800">
+            Total: SEK {order.totalAmount?.toFixed(2) || "N/A"}
           </p>
           <p>
             <strong>Created At:</strong>{" "}
@@ -125,8 +125,8 @@ function OrderCard({ order, onUpdateOrderStatus, isAdminView = true }) {
             {order.items.map((item, index) => (
               <li key={index}>
                 {item.product?.title || item.title} (SKU:{" "}
-                {item.product?.sku || item.sku}) - Qty: {item.quantity} @ $
-                {item.priceAtPurchase?.toFixed(2)}
+                {item.product?.sku || item.sku}) - Qty: {item.quantity} @ $ SEK{" "}
+                {item.priceAtPurchase?.toFixed(2)} each
               </li>
             ))}
           </ul>

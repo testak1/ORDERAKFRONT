@@ -123,7 +123,7 @@ function CartPage() {
                 </h3>
                 <p className="text-sm text-gray-500">SKU: {item.sku}</p>
                 <p className="text-md font-medium text-green-700 mt-1">
-                  Price: ${item.priceAtPurchase.toFixed(2)}
+                  Price: SEK {item.priceAtPurchase.toFixed(2)}
                 </p>
               </div>
               <div className="flex items-center space-x-3">
@@ -148,7 +148,7 @@ function CartPage() {
           ))}
           <div className="flex justify-end pt-4 border-t border-gray-200">
             <h2 className="text-2xl font-bold text-gray-800">
-              Total: ${getTotalPrice().toFixed(2)}
+              Total: SEK {getTotalPrice().toFixed(2)}
             </h2>
           </div>
         </div>

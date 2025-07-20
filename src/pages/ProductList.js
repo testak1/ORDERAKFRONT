@@ -151,7 +151,7 @@ function ProductList() {
                 <span>Brand: {product.brand}</span>
               </div>
               <p className="text-2xl font-bold text-green-700 mb-4">
-                ${applyDiscount(product.price).toFixed(2)}
+                SEK {applyDiscount(product.price).toFixed(2)}
               </p>
               <button
                 onClick={() => handleAddToCartFromList(product)} // Updated click handler

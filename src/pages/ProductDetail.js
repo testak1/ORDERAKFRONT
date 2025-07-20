@@ -110,7 +110,7 @@ function ProductDetail() {
             <span className="ml-4">Brand: {product.brand}</span>
           </div>
           <p className="text-3xl font-bold text-green-700 mb-6">
-            ${discountedPrice.toFixed(2)}
+            SEK {discountedPrice.toFixed(2)}
           </p>
 
           <div className="flex items-center space-x-4 mb-6">
