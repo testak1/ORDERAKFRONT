@@ -5,8 +5,9 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import Login from "./components/Login";
 import ProductList from "./pages/ProductList";
-import ProductDetailPage from "./pages/ProductDetailPage"; // NEW IMPORT
+import ProductDetailPage from "./pages/ProductDetailPage";
 import CartPage from "./pages/CartPage";
+import ProfilePage from "./pages/ProfilePage"; // NEW IMPORT
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -17,13 +18,19 @@ function App() {
         <CartProvider>
           <NavBar />
           <div className="container mx-auto p-4 md:p-6 lg:p-8 min-h-screen bg-gray-50">
-            {" "}
-            {/* Main content wrapper */}
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<ProductList />} />
-              <Route path="/products/:productId" element={<ProductDetailPage />} /> {/* NEW ROUTE */}
+              <Route path="/products/:productId" element={<ProductDetailPage />} />
               <Route path="/cart" element={<CartPage />} />
+              <Route
+                path="/profile" // NEW ROUTE
+                element={
+                  <ProtectedRoute roles={["user", "admin"]}> {/* Both roles can access profile */}
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
               <Route
                 path="/admin/*"
                 element={
@@ -32,7 +39,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              {/* Add more routes for order history, user profile etc. */}
             </Routes>
           </div>
         </CartProvider>
@@ -71,10 +77,12 @@ function NavBar() {
         <div>
           {user ? (
             <div className="flex items-center space-x-4">
-              <span className="text-sm">
-                Welcome, <span className="font-medium">{user.username}</span> (
-                <span className="capitalize">{user.role}</span>)
-              </span>
+              <Link // NEW Profile Link
+                to="/profile"
+                className="text-sm hover:text-blue-200 transition duration-200"
+              >
+                Welcome, <span className="font-medium">{user.username}</span>
+              </Link>
               <button
                 onClick={logout}
                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-md text-sm transition duration-200"
