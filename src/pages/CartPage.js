@@ -79,7 +79,7 @@ function CartPage() {
       setOrderSuccess(true);
       clearCart();
       alert("Order placed successfully!");
-      navigate("/admin"); // Redirect to admin panel for order visibility
+      navigate("/profile"); // Redirect to admin panel for order visibility
     } catch (error) {
       console.error("Order placement error:", error);
       setOrderError("Failed to place order. Please try again.");
