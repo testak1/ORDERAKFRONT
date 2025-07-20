@@ -1,9 +1,16 @@
-import React, { useRef } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import ReactToPdf from "react-to-pdf";
-import { Button } from "@mui/material";
+import { Button } from "@mui/material"; // Eller byt till vanliga <button>
 
 const PdfExportModal = ({ order, onClose }) => {
   const pdfRef = useRef();
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Se till att elementet har hunnit mountas innan PDF genereras
+  useEffect(() => {
+    const timer = setTimeout(() => setIsMounted(true), 100);
+    return () => clearTimeout(timer);
+  }, []);
 
   if (!order) return null;
 
@@ -35,7 +42,6 @@ const PdfExportModal = ({ order, onClose }) => {
       >
         <h2>Orderdetaljer (#{order._id})</h2>
 
-        {/* Innehållet som ska exporteras */}
         <div
           ref={pdfRef}
           style={{ padding: "10px", backgroundColor: "#f9f9f9" }}
@@ -67,15 +73,17 @@ const PdfExportModal = ({ order, onClose }) => {
           <pre>{JSON.stringify(order.shippingAddress, null, 2)}</pre>
         </div>
 
-        {/* Export-knappen */}
         <div style={{ marginTop: 20 }}>
-          <ReactToPdf targetRef={pdfRef} filename={`order-${order._id}.pdf`}>
-            {({ toPdf }) => (
-              <Button variant="contained" color="primary" onClick={toPdf}>
-                Exportera som PDF
-              </Button>
-            )}
-          </ReactToPdf>
+          {isMounted && pdfRef.current && (
+            <ReactToPdf targetRef={pdfRef} filename={`order-${order._id}.pdf`}>
+              {({ toPdf }) => (
+                <Button variant="contained" color="primary" onClick={toPdf}>
+                  Exportera som PDF
+                </Button>
+              )}
+            </ReactToPdf>
+          )}
+
           <Button
             variant="outlined"
             color="secondary"
