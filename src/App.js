@@ -5,9 +5,10 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 import Login from "./components/Login";
 import ProductList from "./pages/ProductList";
+import ProductDetail from "./pages/ProductDetail"; // Import ProductDetail
 import CartPage from "./pages/CartPage";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
-import UserProfile from "./pages/UserProfile"; // Import UserProfile
+import UserProfile from "./pages/UserProfile";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
@@ -17,11 +18,14 @@ function App() {
         <CartProvider>
           <NavBar />
           <div className="container mx-auto p-4 md:p-6 lg:p-8 min-h-screen bg-gray-50">
-            {" "}
-            {/* Main content wrapper */}
             <Routes>
               <Route path="/login" element={<Login />} />
               <Route path="/" element={<ProductList />} />
+              <Route
+                path="/products/:productId"
+                element={<ProductDetail />}
+              />{" "}
+              {/* New Product Detail Route */}
               <Route path="/cart" element={<CartPage />} />
               <Route
                 path="/admin/*"
@@ -31,17 +35,14 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              <Route // Add route for UserProfile
+              <Route
                 path="/profile"
                 element={
                   <ProtectedRoute>
-                    {" "}
-                    {/* Protected for any logged-in user */}
                     <UserProfile />
                   </ProtectedRoute>
                 }
               />
-              {/* Add more routes for order history, user profile etc. */}
             </Routes>
           </div>
         </CartProvider>
@@ -76,15 +77,14 @@ function NavBar() {
               Admin
             </Link>
           )}
-          {user &&
-            user.role === "user" && ( // Link to profile for regular users
-              <Link
-                to="/profile"
-                className="text-lg font-semibold hover:text-blue-200 transition duration-200"
-              >
-                Profile
-              </Link>
-            )}
+          {user && ( // Show profile link for any logged-in user
+            <Link
+              to="/profile"
+              className="text-lg font-semibold hover:text-blue-200 transition duration-200"
+            >
+              Profile
+            </Link>
+          )}
         </div>
         <div>
           {user ? (

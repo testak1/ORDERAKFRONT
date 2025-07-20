@@ -1,16 +1,16 @@
-// src/pages/ProductList.js
+// src/pages/ProductList.js (Updated to link to ProductDetail)
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom"; // NEW IMPORT
+import { Link } from "react-router-dom"; // Import Link
 import { client } from "../sanityClient";
 import { useAuth } from "../context/AuthContext";
-import { useCart } from "../context/CartContext"; // NEW IMPORT
+import { useCart } from "../context/CartContext"; // Add useCart to add from list
 
 function ProductList() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const { user } = useAuth();
-  const { addToCart } = useCart(); // NEW
+  const { addToCart } = useCart(); // Get addToCart
 
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBrand, setSelectedBrand] = useState("");
@@ -69,6 +69,11 @@ function ProductList() {
       return 0;
     });
 
+  const handleAddToCartFromList = (product) => {
+    addToCart(product._id, 1); // Add 1 quantity from list view
+    alert(`${product.title} added to basket!`);
+  };
+
   if (loading)
     return <div className="text-center py-8">Loading products...</div>;
   if (error)
@@ -118,38 +123,43 @@ function ProductList() {
             key={product._id}
             className="border border-gray-200 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden bg-white"
           >
-            {/* Wrap image and title in Link */}
+            {/* Link the image and title to the product detail page */}
             <Link to={`/products/${product._id}`} className="block">
-                {product.imageUrl && (
+              {product.imageUrl && (
                 <img
-                    src={product.imageUrl}
-                    alt={product.title}
-                    className="w-full h-48 object-cover object-center"
+                  src={product.imageUrl}
+                  alt={product.title}
+                  className="w-full h-48 object-cover object-center"
                 />
-                )}
-                <div className="p-4">
+              )}
+              <div className="p-4">
                 <h3 className="text-xl font-semibold text-gray-900 mb-2 truncate">
-                    {product.title}
+                  {product.title}
                 </h3>
                 <p className="text-gray-600 text-sm mb-3 line-clamp-2">
-                    {product.description}
+                  {product.description}
                 </p>
-                </div>
+              </div>
             </Link>
-            <div className="p-4 pt-0"> {/* Adjusted padding for better flow */}
-                <div className="flex justify-between items-center text-xs text-gray-500 mb-4">
-                    <span>SKU: {product.sku}</span>
-                    <span>Brand: {product.brand}</span>
-                </div>
-                <p className="text-2xl font-bold text-green-700 mb-4">
-                    SEK {applyDiscount(product.price).toFixed(2)} {/* CURRENCY CHANGE */}
-                </p>
-                <button
-                    onClick={() => addToCart(product._id)} // Changed to use addToCart
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
-                >
-                    Add to Basket
-                </button>
+            {/* End Link */}
+
+            <div className="px-4 pb-4">
+              {" "}
+              {/* Moved common details outside the link */}
+              <div className="flex justify-between items-center text-xs text-gray-500 mb-4">
+                <span>SKU: {product.sku}</span>
+                <span>Brand: {product.brand}</span>
+              </div>
+              <p className="text-2xl font-bold text-green-700 mb-4">
+                ${applyDiscount(product.price).toFixed(2)}
+              </p>
+              <button
+                onClick={() => handleAddToCartFromList(product)} // Updated click handler
+                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
+              >
+                Add to Basket
+              </button>
+              {/* No Quick View Modal, as we're navigating to a detail page */}
             </div>
           </div>
         ))}

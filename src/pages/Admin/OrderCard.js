@@ -1,9 +1,8 @@
 // src/pages/Admin/OrderCard.js
 import React, { useRef } from "react";
-import { client } from "../../sanityClient";
 import Pdf from "react-to-pdf";
+import { client } from "../../sanityClient";
 
-// Add isAdminView prop, default to true for existing admin usage
 function OrderCard({ order, onUpdateOrderStatus, isAdminView = true }) {
   const currentPdfRef = useRef();
 
