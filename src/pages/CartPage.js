@@ -19,7 +19,6 @@ function CartPage() {
   const [shippingAddress, setShippingAddress] = useState({
     fullName: "",
     addressLine1: "",
-    addressLine2: "",
     city: "",
     postalCode: "",
     country: "",
@@ -175,7 +174,7 @@ function CartPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Address Line 1:
+                Address Line:
               </label>
               <input
                 type="text"
@@ -183,18 +182,6 @@ function CartPage() {
                 value={shippingAddress.addressLine1}
                 onChange={handleShippingChange}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700">
-                Address Line 2 (Optional):
-              </label>
-              <input
-                type="text"
-                name="addressLine2"
-                value={shippingAddress.addressLine2}
-                onChange={handleShippingChange}
                 className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
               />
             </div>

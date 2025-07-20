@@ -71,9 +71,6 @@ function OrderCard({ order, onUpdateOrderStatus, isAdminView = true }) {
         <address className="not-italic text-sm text-gray-700">
           <p>{order.shippingAddress?.fullName}</p>
           <p>{order.shippingAddress?.addressLine1}</p>
-          {order.shippingAddress?.addressLine2 && (
-            <p>{order.shippingAddress.addressLine2}</p>
-          )}
           <p>
             {order.shippingAddress?.city}, {order.shippingAddress?.postalCode}
           </p>
@@ -138,9 +135,6 @@ function OrderCard({ order, onUpdateOrderStatus, isAdminView = true }) {
           <address className="not-italic text-sm">
             <p>{order.shippingAddress?.fullName}</p>
             <p>{order.shippingAddress?.addressLine1}</p>
-            {order.shippingAddress?.addressLine2 && (
-              <p>{order.shippingAddress.addressLine2}</p>
-            )}
             <p>
               {order.shippingAddress?.city}, {order.shippingAddress?.postalCode}
             </p>
