@@ -10,7 +10,7 @@ function OrderCard({
   const { t } = useTranslation();
   // Använder 'isAdminView' för att avgöra om kortet ska vara öppet från start.
   // Admin-vyn är öppen som standard, användarens profil är stängd.
-  const [isOpen, setIsOpen] = useState(isAdminView);
+  const [isOpen, setIsOpen] = useState(false);
 
   const handleUpdate = async (e) => {
     if (isAdminView) {
