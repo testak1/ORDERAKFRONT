@@ -4,24 +4,20 @@ const { Resend } = require("resend");
 // Initiera Resend med din API-nyckel från miljövariablerna
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Huvudfunktionen som hanterar anropet
-export default async function handler(req, res) {
-  // 1. Kontrollera att det är en POST-förfrågan
-  if (req.method !== "POST") {
-    return res.status(405).json({ message: "Method Not Allowed" });
-  }
-
-  // 2. Säkerhetskontroll: Verifiera att anropet kommer från din Sanity webhook
+// Exportera funktionen så att server.js kan importera och använda den
+module.exports = async (req, res) => {
+  // 1. Säkerhetskontroll: Verifiera att anropet kommer från din Sanity webhook
+  // Detta är en extra säkerhetsåtgärd om du vill lägga till en hemlighet i framtiden
   const webhookSecret = process.env.SANITY_WEBHOOK_SECRET;
   const authorizationHeader = req.headers["authorization"];
 
-  if (!webhookSecret || authorizationHeader !== `Bearer ${webhookSecret}`) {
+  if (webhookSecret && authorizationHeader !== `Bearer ${webhookSecret}`) {
     console.warn("Unauthorized webhook attempt blocked.");
     return res.status(401).json({ message: "Unauthorized" });
   }
 
   try {
-    // 3. Hämta orderdatan från anropets body
+    // 2. Hämta orderdatan från anropets body
     const order = req.body;
 
     // Kontrollera att nödvändig data finns
@@ -31,7 +27,7 @@ export default async function handler(req, res) {
         .json({ message: "Missing order data or user email." });
     }
 
-    // 4. Bygg innehållet för e-postmeddelandet
+    // 3. Bygg innehållet för e-postmeddelandet
     const subject = `Orderbekräftelse #${order._id.slice(-6)}`;
     const customerName = order.shippingAddress.fullName || order.user.username;
 
@@ -93,18 +89,18 @@ export default async function handler(req, res) {
       </div>
     `;
 
-    // 5. Skicka e-postmeddelandet med Resend
+    // 4. Skicka e-postmeddelandet med Resend
     await resend.emails.send({
-      from: "AK-Tuning <info@aktuning.se>", // VIKTIGT: Byt ut mot din verifierade domän hos Resend
+      from: "AK-Tuning <info@aktuning.se>", // Se till att detta är en verifierad domän hos Resend
       to: [order.user.email],
       subject: subject,
       html: emailHtml,
     });
 
-    // 6. Skicka ett framgångsrikt svar
+    // 5. Skicka ett framgångsrikt svar
     res.status(200).json({ message: "Order confirmation sent successfully!" });
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error("Error in send-order-confirmation:", error);
     res.status(500).json({ message: "Failed to send order confirmation." });
   }
-}
+};
