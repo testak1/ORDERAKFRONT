@@ -9,7 +9,7 @@ import ProductDetail from "./pages/ProductDetail";
 import CartPage from "./pages/CartPage";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import UserProfile from "./pages/UserProfile";
-import Unauthorized from "./pages/Unauthorized"; // Import Unauthorized component
+import Unauthorized from "./pages/Unauthorized";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
