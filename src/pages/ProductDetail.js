@@ -62,9 +62,17 @@ function ProductDetail() {
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             {product.title}
           </h1>
-          <p className="text-gray-600 mb-6">{product.description}</p>
+
+          {/* --- THIS IS THE FIX --- */}
+          {/* Replaced the <p> tag with a div that renders HTML */}
+          <div
+            className="text-gray-600 mb-6"
+            dangerouslySetInnerHTML={{ __html: product.description }}
+          />
+          {/* ---------------------- */}
+
           <p className="text-3xl font-extrabold text-gray-800 mb-6">
-            SEK {product.price}
+            SEK {product.price.toFixed(2)}
           </p>
           <button
             onClick={handleAddToCart}
