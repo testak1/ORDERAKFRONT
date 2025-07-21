@@ -3,8 +3,10 @@ import { useAuth } from "../context/AuthContext";
 import { client } from "../sanityClient";
 import OrderCard from "./Admin/OrderCard";
 import PdfExportModal from "../components/PdfExportModal";
+import { useTranslation } from "react-i18next";
 
 function UserProfile() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,7 +41,7 @@ function UserProfile() {
   };
 
   if (!user) {
-    return <div>Please log in to see your profile.</div>;
+    return <div>{t('profile.pleaseLogIn', "Vänligen logga in för att se din profil.")}</div>;
   }
 
   return (
@@ -53,24 +55,22 @@ function UserProfile() {
       <div className="p-6 bg-white rounded-lg shadow-xl">
         <div className="flex justify-between items-start mb-6 border-b pb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">My Profile</h1>
+            <h1 className="text-3xl font-bold text-gray-800">{t('profile.myProfile')}</h1>
             <p className="text-lg text-gray-600">
-              Welcome, {user.fullName || user.username}!
+              {t('navbar.welcome')}, {user.fullName || user.username}!
             </p>
           </div>
           <button
             onClick={logout}
             className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md"
           >
-            Logout
+            {t('navbar.logout')}
           </button>
         </div>
-
-        {/* --- NEW USER STATS SECTION --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 text-center">
           <div className="p-4 bg-gray-100 rounded-lg">
             <p className="text-sm text-gray-600 font-semibold">
-              Total Orders Placed
+              {t('profile.totalOrders')}
             </p>
             <p className="text-2xl font-bold text-red-600">
               {loading ? "..." : orders.length}
@@ -78,18 +78,17 @@ function UserProfile() {
           </div>
           <div className="p-4 bg-gray-100 rounded-lg">
             <p className="text-sm text-gray-600 font-semibold">
-              Your Dealer Discount
+              {t('profile.dealerDiscount')}
             </p>
             <p className="text-2xl font-bold text-green-600">
               {user.discountPercentage || 0}%
             </p>
           </div>
         </div>
-
         <div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">My Orders</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">{t('profile.myOrders')}</h2>
           {loading ? (
-            <p>Loading orders...</p>
+            <p>{t('common.loading')}...</p>
           ) : orders.length > 0 ? (
             <div className="space-y-6">
               {orders.map((order) => (
@@ -102,7 +101,7 @@ function UserProfile() {
               ))}
             </div>
           ) : (
-            <p>You have not placed any orders yet.</p>
+            <p>{t('profile.noOrders', "Du har inte lagt några beställningar än.")}</p>
           )}
         </div>
       </div>
