@@ -78,18 +78,16 @@ function NavBar() {
         {/* --- LOGOTYP TILLAGD HÄR --- */}
         <div className="flex items-center space-x-6">
           <Link to="/" className="flex items-center space-x-2">
-            <img src="https://cdn.sanity.io/images/2toaqqka/production/5f481742567a7b80342565e76f4d161aa6ed725b-112x112.png" alt="AK Tuning Logo" className="h-10" />
+            <img
+              src="https://cdn.sanity.io/images/2toaqqka/production/fe195e2982641e4d117dd66c4c92768480c7aaaa-600x564.png"
+              alt="AK Tuning Logo"
+              className="h-10"
+            />
           </Link>
-          <Link
-            to="/"
-            className="text-lg font-semibold hover:text-red-200"
-          >
+          <Link to="/" className="text-lg font-semibold hover:text-red-200">
             Products
           </Link>
-          <Link
-            to="/cart"
-            className="text-lg font-semibold hover:text-red-200"
-          >
+          <Link to="/cart" className="text-lg font-semibold hover:text-red-200">
             Cart
           </Link>
           {user?.role === "admin" && (
