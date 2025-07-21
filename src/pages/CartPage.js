@@ -1,12 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { useTranslation } from "react-i18next";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { client } from "../sanityClient";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 function CartPage() {
-  const { t } = useTranslation();
   const {
     cartItems,
     removeFromCart,
@@ -16,6 +15,7 @@ function CartPage() {
   } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   // STATE FOR ADDRESS
   const [shippingAddress, setShippingAddress] = useState({
@@ -69,16 +69,16 @@ function CartPage() {
 
   const handlePlaceOrder = async () => {
     if (!user) {
-      alert("Please log in to place an order.");
+      alert(t("cart.alerts.loginRequired"));
       navigate("/login");
       return;
     }
     if (cartItems.length === 0) {
-      alert("Your cart is empty.");
+      alert(t("cart.alerts.emptyCart"));
       return;
     }
     if (Object.values(shippingAddress).some((val) => val === "")) {
-      alert("Please fill in all shipping address fields.");
+      alert(t("cart.alerts.fillAddress"));
       return;
     }
 
@@ -103,15 +103,17 @@ function CartPage() {
     try {
       await client.create(orderDoc);
       clearCart();
-      alert("Order placed successfully!");
+      alert(t("cart.alerts.orderSuccess"));
       navigate("/profile");
     } catch (error) {
       console.error("Order placement error:", error);
-      alert("Failed to place order.");
+      alert(t("cart.alerts.orderFailure"));
     } finally {
       setOrderLoading(false);
     }
   };
+  
+  const total = getTotalPrice();
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
@@ -119,6 +121,7 @@ function CartPage() {
         {t("cart.title")}
       </h1>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* --- THIS SECTION IS NOW RESTORED --- */}
         <div className="md:col-span-2 space-y-4">
           {cartItems.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
@@ -140,7 +143,7 @@ function CartPage() {
                   <div>
                     <h3 className="text-lg font-semibold">{item.title}</h3>
                     <p className="text-md font-medium text-green-700">
-                      {item.priceAtPurchase} kr
+                      {t("common.priceFormatted", { price: item.priceAtPurchase })}
                     </p>
                   </div>
                   <div className="flex items-center space-x-4">
@@ -157,23 +160,24 @@ function CartPage() {
                       onClick={() => removeFromCart(item._id)}
                       className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1.5 px-3 rounded-md text-sm"
                     >
-                      Remove
+                      {t("cart.remove")}
                     </button>
                   </div>
                 </div>
               ))}
               <div className="flex justify-end pt-4 border-t mt-4">
                 <h2 className="text-2xl font-bold text-gray-800">
-                  {t("cart.total")}: {getTotalPrice()} kr
+                  {t("cart.total", { total })}
                 </h2>
               </div>
             </>
           )}
         </div>
+        {/* --- END OF RESTORED SECTION --- */}
+
         <div className="md:col-span-1 p-6 border rounded-lg bg-gray-50 h-fit">
-          <h3 className="text-xl font-semibold mb-4">
-            {t("cart.shippingAddress")}
-          </h3>
+          <h3 className="text-xl font-semibold mb-4">{t("cart.shippingAddress")}</h3>
+
           {user?.address?.addressLine1 && (
             <div className="mb-4">
               <label className="flex items-center space-x-2">
@@ -181,16 +185,16 @@ function CartPage() {
                   type="checkbox"
                   checked={useDefaultAddress}
                   onChange={(e) => setUseDefaultAddress(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
                 />
                 <span>{t("cart.useDefaultAddress")}</span>
               </label>
             </div>
           )}
+
           <form className="space-y-4">
             <div>
-              <label className="block text-sm font-medium">
-                {t("cart.fullName")}:
-              </label>
+              <label className="block text-sm font-medium">{t("cart.fullName")}:</label>
               <input
                 type="text"
                 name="fullName"
@@ -202,7 +206,7 @@ function CartPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Address Line:</label>
+              <label className="block text-sm font-medium">{t("cart.addressLine")}:</label>
               <input
                 type="text"
                 name="addressLine1"
@@ -215,7 +219,7 @@ function CartPage() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium">City:</label>
+                <label className="block text-sm font-medium">{t("cart.city")}:</label>
                 <input
                   type="text"
                   name="city"
@@ -228,7 +232,7 @@ function CartPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium">
-                  Postal Code:
+                  {t("cart.postalCode")}:
                 </label>
                 <input
                   type="text"
@@ -242,7 +246,7 @@ function CartPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium">Country:</label>
+              <label className="block text-sm font-medium">{t("cart.country")}:</label>
               <input
                 type="text"
                 name="country"
@@ -254,14 +258,15 @@ function CartPage() {
               />
             </div>
           </form>
+
           <button
             onClick={handlePlaceOrder}
             disabled={orderLoading || cartItems.length === 0}
-            className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-4 rounded-md"
+            className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-4 rounded-md disabled:opacity-50"
           >
             {orderLoading
               ? t("cart.placingOrder")
-              : `${t("cart.buyNow")} (${getTotalPrice()} kr)`}
+              : t("cart.buyNow", { total })}
           </button>
         </div>
       </div>
