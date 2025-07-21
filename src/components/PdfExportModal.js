@@ -6,9 +6,21 @@ import ReactToPdf from "react-to-pdf";
 export default function PdfExportModal({ order, onClose }) {
   const pdfRef = useRef();
   const [isClient, setIsClient] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
+
+    // Vänta tills DOM och ref är tillgängliga
+    const timeout = setTimeout(() => {
+      if (pdfRef.current) {
+        setIsReady(true);
+      } else {
+        console.warn("pdfRef.current är inte tillgänglig ännu.");
+      }
+    }, 500);
+
+    return () => clearTimeout(timeout);
   }, []);
 
   if (!order || !order.items || !Array.isArray(order.items)) return null;
@@ -55,7 +67,7 @@ export default function PdfExportModal({ order, onClose }) {
           <ul>
             {order.items.map((item, index) => (
               <li key={index}>
-                {item.product?.title} – {item.quantity} st à{" "}
+                {item.product?.title ?? item.title} – {item.quantity} st à{" "}
                 {item.priceAtPurchase} kr
               </li>
             ))}
@@ -71,7 +83,7 @@ export default function PdfExportModal({ order, onClose }) {
         </div>
 
         <div style={{ marginTop: 20 }}>
-          {isClient && pdfRef.current && (
+          {isClient && isReady && (
             <ReactToPdf targetRef={pdfRef} filename={`order-${order._id}.pdf`}>
               {({ toPdf }) => (
                 <button
