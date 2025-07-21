@@ -3,8 +3,10 @@ import React, { useState } from "react";
 import AdminProductManagement from "./AdminProductManagement";
 import AdminUserManagement from "./AdminUserManagement";
 import AdminOrderManagement from "./AdminOrderManagement";
+import { useTranslation } from "react-i18next";
 
 function AdminDashboard() {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState("products");
 
   const tabClasses = (tabName) =>
@@ -16,7 +18,7 @@ function AdminDashboard() {
   return (
     <div className="p-2 md:p-4 bg-white rounded-lg shadow-md">
       <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 border-b-2 border-red-200 pb-4">
-        Admin Dashboard
+        {t("admin.dashboard")}
       </h1>
 
       {/* Nav-länkarna kommer nu att radbrytas snyggt på små skärmar */}
@@ -25,19 +27,19 @@ function AdminDashboard() {
           onClick={() => setActiveTab("products")}
           className={tabClasses("products")}
         >
-          Product Management
+          {t("admin.productManagement")}
         </button>
         <button
           onClick={() => setActiveTab("users")}
           className={tabClasses("users")}
         >
-          User Management
+          {t("admin.userManagement")}
         </button>
         <button
           onClick={() => setActiveTab("orders")}
           className={tabClasses("orders")}
         >
-          Order Management
+          {t("admin.orderManagement")}
         </button>
       </nav>
 
