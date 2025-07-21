@@ -1,26 +1,226 @@
 import React, { useState, useEffect } from "react";
 import { client } from "../../sanityClient";
 import bcrypt from "bcryptjs";
-import CollapsibleSection from "../../components/CollapsibleSection"; // Import component
+import CollapsibleSection from "../../components/CollapsibleSection";
+
+// A sub-component for managing a single user to keep the main component cleaner
+const UserEditor = ({ user, refreshUsers }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [editData, setEditData] = useState({
+    fullName: user.fullName || "",
+    email: user.email || "",
+    phone: user.phone || "",
+    discountPercentage: user.discountPercentage || 0,
+    address: user.address || {
+      addressLine1: "",
+      city: "",
+      postalCode: "",
+      country: "",
+    },
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setEditData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleAddressChange = (e) => {
+    const { name, value } = e.target;
+    setEditData((prev) => ({
+      ...prev,
+      address: { ...prev.address, [name]: value },
+    }));
+  };
+
+  const handleUpdateUser = async (e) => {
+    e.preventDefault();
+    try {
+      await client
+        .patch(user._id)
+        .set({
+          ...editData,
+          discountPercentage: parseFloat(editData.discountPercentage),
+        })
+        .commit();
+      alert("User updated successfully!");
+      setIsEditing(false);
+      refreshUsers();
+    } catch (error) {
+      console.error("Failed to update user:", error);
+      alert("Failed to update user.");
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this user? This action cannot be undone and may affect their past orders."
+      )
+    ) {
+      try {
+        await client.delete(userId);
+        alert("User deleted successfully!");
+        refreshUsers();
+      } catch (error) {
+        console.error("Failed to delete user:", error);
+        alert(
+          "Failed to delete user. They may have existing orders linked to them."
+        );
+      }
+    }
+  };
+
+  return (
+    <div className="bg-white p-4 rounded-md shadow-sm border border-red-100">
+      <div className="flex justify-between items-center">
+        <div>
+          <h4 className="text-lg font-medium text-gray-900">
+            {user.username} ({user.role})
+          </h4>
+          <p className="text-sm text-gray-500">
+            {user.email || "No email set"}
+          </p>
+        </div>
+        <div>
+          <button
+            onClick={() => setIsEditing(!isEditing)}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-1 px-3 rounded-md text-sm mr-2"
+          >
+            {isEditing ? "Cancel" : "Edit"}
+          </button>
+          <button
+            onClick={() => handleDeleteUser(user._id)}
+            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md text-sm"
+          >
+            Delete
+          </button>
+        </div>
+      </div>
+
+      {isEditing && (
+        <form
+          onSubmit={handleUpdateUser}
+          className="mt-4 pt-4 border-t space-y-4"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium">Full Name</label>
+              <input
+                type="text"
+                name="fullName"
+                value={editData.fullName}
+                onChange={handleChange}
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={editData.email}
+                onChange={handleChange}
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium">Phone</label>
+              <input
+                type="tel"
+                name="phone"
+                value={editData.phone}
+                onChange={handleChange}
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Discount (%)</label>
+              <input
+                type="number"
+                name="discountPercentage"
+                value={editData.discountPercentage}
+                onChange={handleChange}
+                min="0"
+                max="100"
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+          </div>
+          <fieldset className="border p-4 rounded-md">
+            <legend className="text-md font-medium px-2">
+              Default Address
+            </legend>
+            <div className="space-y-2">
+              <input
+                type="text"
+                name="addressLine1"
+                placeholder="Address Line 1"
+                value={editData.address.addressLine1}
+                onChange={handleAddressChange}
+                className="w-full px-3 py-2 border rounded-md"
+              />
+              <div className="grid grid-cols-3 gap-2">
+                <input
+                  type="text"
+                  name="city"
+                  placeholder="City"
+                  value={editData.address.city}
+                  onChange={handleAddressChange}
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+                <input
+                  type="text"
+                  name="postalCode"
+                  placeholder="Postal Code"
+                  value={editData.address.postalCode}
+                  onChange={handleAddressChange}
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+                <input
+                  type="text"
+                  name="country"
+                  placeholder="Country"
+                  value={editData.address.country}
+                  onChange={handleAddressChange}
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+              </div>
+            </div>
+          </fieldset>
+          <button
+            type="submit"
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md"
+          >
+            Save Changes
+          </button>
+        </form>
+      )}
+    </div>
+  );
+};
 
 function AdminUserManagement() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const [newUsername, setNewUsername] = useState("");
-  const [newUserPassword, setNewUserPassword] = useState("");
-  const [newUserRole, setNewUserRole] = useState("user");
-  const [newUserDiscount, setNewUserDiscount] = useState(0);
-
-  useEffect(() => {
-    fetchUsers();
-  }, []);
+  const [newUser, setNewUser] = useState({
+    username: "",
+    password: "",
+    role: "user",
+    discountPercentage: 0,
+    fullName: "",
+    email: "",
+    phone: "",
+  });
 
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const query = `*[_type == "user"]{_id, username, role, discountPercentage}`;
+      // Updated query to fetch all necessary fields
+      const query = `*[_type == "user"]{_id, username, role, discountPercentage, fullName, email, phone, address}`;
       const fetchedUsers = await client.fetch(query);
       setUsers(fetchedUsers);
     } catch (err) {
@@ -31,72 +231,49 @@ function AdminUserManagement() {
     }
   };
 
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const handleNewUserChange = (e) => {
+    const { name, value } = e.target;
+    setNewUser((prev) => ({ ...prev, [name]: value }));
+  };
+
   const handleAddUser = async (e) => {
     e.preventDefault();
-    if (!newUsername || !newUserPassword) {
+    if (!newUser.username || !newUser.password) {
       alert("Username and Password are required.");
       return;
     }
 
-    const hashedPassword = bcrypt.hashSync(newUserPassword, 10);
-
+    const hashedPassword = bcrypt.hashSync(newUser.password, 10);
     const userDoc = {
       _type: "user",
-      username: newUsername,
+      ...newUser,
       password: hashedPassword,
-      role: newUserRole,
-      discountPercentage: parseFloat(newUserDiscount),
+      discountPercentage: parseFloat(newUser.discountPercentage),
     };
 
     try {
       await client.create(userDoc);
       alert("User added successfully!");
-      setNewUsername("");
-      setNewUserPassword("");
-      setNewUserRole("user");
-      setNewUserDiscount(0);
+      // Reset form
+      setNewUser({
+        username: "",
+        password: "",
+        role: "user",
+        discountPercentage: 0,
+        fullName: "",
+        email: "",
+        phone: "",
+      });
       fetchUsers();
     } catch (error) {
       console.error("Failed to add user:", error);
-      if (
-        error.details &&
-        error.details.some((d) => d.type === "uniqueConstraintViolation")
-      ) {
-        alert("Failed to add user. Username already exists.");
-      } else {
-        alert("Failed to add user.");
-      }
-    }
-  };
-
-  const handleUpdateUserDiscount = async (userId, newDiscount) => {
-    try {
-      await client
-        .patch(userId)
-        .set({ discountPercentage: parseFloat(newDiscount) })
-        .commit();
-      alert("User discount updated!");
-      fetchUsers();
-    } catch (error) {
-      console.error("Failed to update user discount:", error);
-      alert("Failed to update user discount.");
-    }
-  };
-
-  const handleDeleteUser = async (userId) => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete this user? All their orders will remain unless manually deleted."
-      )
-    ) {
-      try {
-        await client.delete(userId);
-        alert("User deleted successfully!");
-        fetchUsers();
-      } catch (error) {
-        console.error("Failed to delete user:", error);
-        alert("Failed to delete user.");
-      }
+      alert(
+        "Failed to add user. The username or email might already be taken."
+      );
     }
   };
 
@@ -108,59 +285,91 @@ function AdminUserManagement() {
 
       <CollapsibleSection title="Add New User">
         <form onSubmit={handleAddUser} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Username:
-            </label>
-            <input
-              type="text"
-              value={newUsername}
-              onChange={(e) => setNewUsername(e.target.value)}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Password:
-            </label>
-            <input
-              type="password"
-              value={newUserPassword}
-              onChange={(e) => setNewUserPassword(e.target.value)}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Role:
-            </label>
-            <select
-              value={newUserRole}
-              onChange={(e) => setNewUserRole(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm bg-white"
-            >
-              <option value="user">User (Dealer)</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Discount (%):
-            </label>
-            <input
-              type="number"
-              value={newUserDiscount}
-              onChange={(e) => setNewUserDiscount(parseFloat(e.target.value))}
-              min="0"
-              max="100"
-              className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium">
+                Username:<span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="username"
+                value={newUser.username}
+                onChange={handleNewUserChange}
+                required
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">
+                Password:<span className="text-red-500">*</span>
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={newUser.password}
+                onChange={handleNewUserChange}
+                required
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Full Name:</label>
+              <input
+                type="text"
+                name="fullName"
+                value={newUser.fullName}
+                onChange={handleNewUserChange}
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Email:</label>
+              <input
+                type="email"
+                name="email"
+                value={newUser.email}
+                onChange={handleNewUserChange}
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Phone:</label>
+              <input
+                type="tel"
+                name="phone"
+                value={newUser.phone}
+                onChange={handleNewUserChange}
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Role:</label>
+              <select
+                name="role"
+                value={newUser.role}
+                onChange={handleNewUserChange}
+                className="mt-1 w-full px-3 py-2 border rounded-md bg-white"
+              >
+                <option value="user">User (Dealer)</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div className="md:col-span-2">
+              <label className="block text-sm font-medium">Discount (%):</label>
+              <input
+                type="number"
+                name="discountPercentage"
+                value={newUser.discountPercentage}
+                onChange={handleNewUserChange}
+                min="0"
+                max="100"
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
+            </div>
           </div>
           <button
             type="submit"
-            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md"
           >
             Add User
           </button>
@@ -170,43 +379,9 @@ function AdminUserManagement() {
       <CollapsibleSection title="Existing Users" startOpen={true}>
         {loading && <p>Loading users...</p>}
         {error && <p className="text-red-500">{error}</p>}
-        {users.length === 0 && !loading && (
-          <p className="text-gray-500">No users found.</p>
-        )}
         <div className="space-y-4">
           {users.map((user) => (
-            <div
-              key={user._id}
-              className="flex justify-between items-center bg-white p-4 rounded-md shadow-sm border border-red-100"
-            >
-              <div>
-                <h4 className="text-lg font-medium text-gray-900">
-                  {user.username} (
-                  <span className="capitalize">{user.role}</span>)
-                </h4>
-                <div className="flex items-center mt-1">
-                  <span className="text-sm text-gray-600 mr-2">
-                    Current Discount: {user.discountPercentage}%
-                  </span>
-                  <input
-                    type="number"
-                    defaultValue={user.discountPercentage}
-                    onBlur={(e) =>
-                      handleUpdateUserDiscount(user._id, e.target.value)
-                    }
-                    min="0"
-                    max="100"
-                    className="w-20 px-2 py-1 border border-red-300 rounded-md text-sm focus:ring-red-500 focus:border-red-500"
-                  />
-                </div>
-              </div>
-              <button
-                onClick={() => handleDeleteUser(user._id)}
-                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200"
-              >
-                Delete User
-              </button>
-            </div>
+            <UserEditor key={user._id} user={user} refreshUsers={fetchUsers} />
           ))}
         </div>
       </CollapsibleSection>
