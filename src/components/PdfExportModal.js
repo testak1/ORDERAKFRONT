@@ -1,166 +1,164 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useEffect } from "react";
 import { useReactToPrint } from "react-to-print";
 
 export default function PdfExportModal({ order, onClose }) {
   const pdfRef = useRef(null);
-  const [isMounted, setIsMounted] = useState(false);
 
-  useEffect(() => {
-    setIsMounted(true);
-    return () => setIsMounted(false);
-  }, []);
+  // Create a printable component that matches your Sanity schema
+  const PrintableOrder = React.forwardRef(({ order }, ref) => {
+    // Calculate total quantity
+    const totalQuantity = order.items.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
+
+    return (
+      <div ref={ref} className="p-4 font-sans">
+        <div className="mb-6 border-b pb-4">
+          <h1 className="text-2xl font-bold">Order #{order._id.slice(0, 8)}</h1>
+          <p className="text-gray-600 text-sm">
+            {new Date(order.createdAt).toLocaleDateString("sv-SE", {
+              year: "numeric",
+              month: "long",
+              day: "numeric",
+              hour: "2-digit",
+              minute: "2-digit",
+            })}
+          </p>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-2">Customer Information</h2>
+          <p>
+            <strong>User:</strong> {order.user?.username || "Guest"}
+          </p>
+          <p>
+            <strong>Status:</strong>{" "}
+            <span className="capitalize">{order.orderStatus}</span>
+          </p>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-2">Order Items</h2>
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="bg-gray-100">
+                <th className="p-2 border text-left">Product</th>
+                <th className="p-2 border text-left">SKU</th>
+                <th className="p-2 border text-right">Qty</th>
+                <th className="p-2 border text-right">Price</th>
+                <th className="p-2 border text-right">Total</th>
+              </tr>
+            </thead>
+            <tbody>
+              {order.items.map((item, index) => (
+                <tr key={index}>
+                  <td className="p-2 border">
+                    {item.title || item.product?.title}
+                  </td>
+                  <td className="p-2 border">
+                    {item.sku || item.product?.sku}
+                  </td>
+                  <td className="p-2 border text-right">{item.quantity}</td>
+                  <td className="p-2 border text-right">
+                    {item.priceAtPurchase.toFixed(2)} kr
+                  </td>
+                  <td className="p-2 border text-right">
+                    {(item.quantity * item.priceAtPurchase).toFixed(2)} kr
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colSpan="2" className="p-2 border font-semibold">
+                  Total
+                </td>
+                <td className="p-2 border text-right font-semibold">
+                  {totalQuantity}
+                </td>
+                <td className="p-2 border"></td>
+                <td className="p-2 border text-right font-semibold">
+                  {order.totalAmount.toFixed(2)} kr
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+
+        <div className="mb-6">
+          <h2 className="text-lg font-semibold mb-2">Shipping Address</h2>
+          <address className="not-italic">
+            <p>{order.shippingAddress?.fullName}</p>
+            <p>{order.shippingAddress?.addressLine1}</p>
+            <p>
+              {order.shippingAddress?.postalCode} {order.shippingAddress?.city}
+            </p>
+            <p>{order.shippingAddress?.country}</p>
+          </address>
+        </div>
+
+        <div className="text-xs text-gray-500 mt-8">
+          <p>Thank you for your order!</p>
+          <p>Order ID: {order._id}</p>
+        </div>
+      </div>
+    );
+  });
 
   const handlePrint = useReactToPrint({
-    content: () => {
-      // Create a clone of the printable content
-      const printableContent = document
-        .getElementById("printable-content")
-        .cloneNode(true);
-      printableContent.style.display = "block";
-      document.body.appendChild(printableContent);
-      return printableContent;
-    },
+    content: () => pdfRef.current,
     documentTitle: `order-${order._id}`,
-    onAfterPrint: () => {
-      // Clean up the cloned content
-      const clonedContent = document.getElementById("printable-content-clone");
-      if (clonedContent) {
-        document.body.removeChild(clonedContent);
-      }
-      onClose();
-    },
     pageStyle: `
-      @page { size: auto; margin: 10mm; }
+      @page { 
+        size: A4;
+        margin: 10mm;
+      }
       @media print {
-        body { -webkit-print-color-adjust: exact; }
-        * { 
-          -webkit-print-color-adjust: exact !important; 
-          color-adjust: exact !important;
+        body { 
+          -webkit-print-color-adjust: exact;
+          font-size: 12pt;
         }
       }
     `,
+    onAfterPrint: onClose,
   });
-
-  if (!order || !order.items || !Array.isArray(order.items)) return null;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-      <div className="bg-white p-5 rounded-lg w-4/5 max-h-[90vh] overflow-y-auto">
-        <h2 className="text-2xl font-bold mb-4">
-          Order Details (#{order._id})
-        </h2>
-
-        {/* Printable content - hidden but in DOM */}
-        <div id="printable-content" ref={pdfRef} style={{ display: "none" }}>
-          <div className="p-4">
-            <h1 className="text-xl font-bold mb-2">Order #{order._id}</h1>
-            <div className="mb-4">
-              <p>
-                <strong>Customer:</strong> {order.user?.username}
-              </p>
-              <p>
-                <strong>Date:</strong>{" "}
-                {new Date(order.createdAt).toLocaleString()}
-              </p>
-              <p>
-                <strong>Total:</strong> {order.totalAmount.toFixed(2)} kr
-              </p>
-              <p>
-                <strong>Status:</strong> {order.orderStatus}
-              </p>
-            </div>
-
-            <h2 className="text-lg font-semibold mb-2">Products:</h2>
-            <table className="w-full mb-4 border-collapse">
-              <thead>
-                <tr className="bg-gray-100">
-                  <th className="p-2 border text-left">Product</th>
-                  <th className="p-2 border text-left">SKU</th>
-                  <th className="p-2 border text-right">Quantity</th>
-                  <th className="p-2 border text-right">Price</th>
-                  <th className="p-2 border text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {order.items.map((item, index) => (
-                  <tr key={index}>
-                    <td className="p-2 border">{item.product?.title}</td>
-                    <td className="p-2 border">{item.product?.sku}</td>
-                    <td className="p-2 border text-right">{item.quantity}</td>
-                    <td className="p-2 border text-right">
-                      {item.priceAtPurchase.toFixed(2)} kr
-                    </td>
-                    <td className="p-2 border text-right">
-                      {(item.quantity * item.priceAtPurchase).toFixed(2)} kr
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-
-            <h2 className="text-lg font-semibold mb-2">Shipping Address:</h2>
-            <address className="not-italic">
-              <p>{order.shippingAddress?.fullName}</p>
-              <p>{order.shippingAddress?.addressLine1}</p>
-              {order.shippingAddress?.addressLine2 && (
-                <p>{order.shippingAddress.addressLine2}</p>
-              )}
-              <p>
-                {order.shippingAddress?.postalCode}{" "}
-                {order.shippingAddress?.city}
-              </p>
-              <p>{order.shippingAddress?.country}</p>
-            </address>
-          </div>
+      <div className="bg-white p-5 rounded-lg w-11/12 md:w-4/5 max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-xl font-bold">Order #{order._id.slice(0, 8)}</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700"
+          >
+            ✕
+          </button>
         </div>
 
-        {/* Preview content */}
-        <div className="p-4 border border-gray-200 rounded mb-4">
-          <h3 className="text-lg font-semibold mb-2">Order Preview</h3>
-          <div className="space-y-2">
-            <p>
-              <strong>Customer:</strong> {order.user?.username}
-            </p>
-            <p>
-              <strong>Date:</strong>{" "}
-              {new Date(order.createdAt).toLocaleString()}
-            </p>
-            <p>
-              <strong>Total:</strong> {order.totalAmount.toFixed(2)} kr
-            </p>
-            <p>
-              <strong>Status:</strong> {order.orderStatus}
-            </p>
-          </div>
+        {/* Hidden printable content */}
+        <div style={{ display: "none" }}>
+          <PrintableOrder ref={pdfRef} order={order} />
+        </div>
 
-          <h3 className="text-lg font-semibold mt-4 mb-2">Products:</h3>
-          <div className="space-y-2">
-            {order.items.map((item, index) => (
-              <div key={index} className="flex justify-between">
-                <span>
-                  {item.product?.title} (SKU: {item.product?.sku})
-                </span>
-                <span>
-                  {item.quantity} × {item.priceAtPurchase.toFixed(2)} kr
-                </span>
-              </div>
-            ))}
-          </div>
+        {/* Preview */}
+        <div className="border rounded p-4 mb-4">
+          <PrintableOrder order={order} />
         </div>
 
         <div className="flex justify-end space-x-4">
           <button
             onClick={handlePrint}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
-            disabled={!isMounted}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
           >
             Export to PDF
           </button>
           <button
             onClick={onClose}
-            className="border border-gray-400 px-4 py-2 rounded hover:bg-gray-100"
+            className="border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded"
           >
             Close
           </button>
