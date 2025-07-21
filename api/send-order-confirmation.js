@@ -1,43 +1,48 @@
 // api/send-order-confirmation.js
 const { Resend } = require("resend");
 
-// Initialize Resend with your API key from environment variables
+// Initiera Resend med din API-nyckel från miljövariablerna
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-// Main function that handles the request
+// Huvudfunktionen som hanterar anropet
 export default async function handler(req, res) {
-  // 1. Check for POST request
+  // 1. Kontrollera att det är en POST-förfrågan
   if (req.method !== "POST") {
     return res.status(405).json({ message: "Method Not Allowed" });
   }
 
-  // 2. Security: Verify the webhook signature (optional but recommended)
-  // You would need to implement signature verification if Sanity provides it
-  // For now, we'll rely on a simple secret, but signature is better.
+  // 2. Säkerhetskontroll: Verifiera att anropet kommer från din Sanity webhook
+  const webhookSecret = process.env.SANITY_WEBHOOK_SECRET;
+  const authorizationHeader = req.headers["authorization"];
+
+  if (!webhookSecret || authorizationHeader !== `Bearer ${webhookSecret}`) {
+    console.warn("Unauthorized webhook attempt blocked.");
+    return res.status(401).json({ message: "Unauthorized" });
+  }
 
   try {
-    // 3. Parse the order data from the request body
+    // 3. Hämta orderdatan från anropets body
     const order = req.body;
 
-    // Check if we have the necessary data
+    // Kontrollera att nödvändig data finns
     if (!order || !order.user?.email || !order.items) {
       return res
         .status(400)
         .json({ message: "Missing order data or user email." });
     }
 
-    // 4. Construct the email content
-    const subject = `Order Confirmation #${order._id.slice(-6)}`;
+    // 4. Bygg innehållet för e-postmeddelandet
+    const subject = `Orderbekräftelse #${order._id.slice(-6)}`;
     const customerName = order.shippingAddress.fullName || order.user.username;
 
     const itemsHtml = order.items
       .map(
         (item) => `
       <tr>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${
+        <td style="padding: 10px; border-bottom: 1px solid #eaeaea;">${
           item.title
         } (x${item.quantity})</td>
-        <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${Math.round(
+        <td style="padding: 10px; border-bottom: 1px solid #eaeaea; text-align: right;">${Math.round(
           item.priceAtPurchase * item.quantity
         )} kr</td>
       </tr>
@@ -46,20 +51,20 @@ export default async function handler(req, res) {
       .join("");
 
     const emailHtml = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee;">
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
         <img src="https://cdn.sanity.io/images/2toaqqka/production/fe195e2982641e4d117dd66c4c92768480c7aaaa-600x564.png" alt="AK-Tuning Logo" style="width: 150px; margin-bottom: 20px;">
-        <h2 style="color: #333;">Thank you for your order, ${customerName}!</h2>
-        <p>We've received your order and will start working on it right away. Here is a summary of your purchase:</p>
+        <h2 style="color: #111;">Tack för din order, ${customerName}!</h2>
+        <p>Vi har tagit emot din beställning och kommer att börja behandla den omgående. Nedan följer en sammanfattning av ditt köp:</p>
         <p><strong>Order ID:</strong> #${order._id.slice(-6)}</p>
-        <p><strong>Order Date:</strong> ${new Date(
+        <p><strong>Orderdatum:</strong> ${new Date(
           order.createdAt
-        ).toLocaleDateString("sv-SE")}</p>
+        ).toLocaleString("sv-SE")}</p>
         
-        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+        <table style="width: 100%; border-collapse: collapse; margin-top: 25px; margin-bottom: 25px;">
           <thead>
             <tr>
-              <th style="text-align: left; padding: 8px; border-bottom: 2px solid #333;">Product</th>
-              <th style="text-align: right; padding: 8px; border-bottom: 2px solid #333;">Total</th>
+              <th style="text-align: left; padding: 8px; border-bottom: 2px solid #333;">Produkt</th>
+              <th style="text-align: right; padding: 8px; border-bottom: 2px solid #333;">Totalt</th>
             </tr>
           </thead>
           <tbody>
@@ -67,36 +72,36 @@ export default async function handler(req, res) {
           </tbody>
           <tfoot>
             <tr>
-              <td style="padding-top: 15px; text-align: right; font-weight: bold;">Total Amount:</td>
-              <td style="padding-top: 15px; text-align: right; font-weight: bold;">${Math.round(
+              <td style="padding-top: 15px; text-align: right; font-weight: bold; font-size: 1.1em;">Totalbelopp:</td>
+              <td style="padding-top: 15px; text-align: right; font-weight: bold; font-size: 1.1em;">${Math.round(
                 order.totalAmount
               )} kr</td>
             </tr>
           </tfoot>
         </table>
 
-        <h3 style="margin-top: 30px; color: #333;">Shipping Address</h3>
-        <p>
+        <h3 style="margin-top: 30px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 5px;">Leveransadress</h3>
+        <p style="line-height: 1.5;">
           ${order.shippingAddress.fullName}<br>
           ${order.shippingAddress.addressLine1}<br>
           ${order.shippingAddress.postalCode} ${order.shippingAddress.city}<br>
           ${order.shippingAddress.country}
         </p>
-        <p style="margin-top: 30px; font-size: 0.9em; color: #888;">
-          If you have any questions, please reply to this email.
+        <p style="margin-top: 30px; font-size: 0.9em; color: #888; text-align: center;">
+          Om du har några frågor, vänligen svara på detta mail.
         </p>
       </div>
     `;
 
-    // 5. Send the email using Resend
+    // 5. Skicka e-postmeddelandet med Resend
     await resend.emails.send({
-      from: "AK-Tuning <info@aktuning.se>", // Replace with your verified Resend domain
+      from: "AK-Tuning <info@aktuning.se>", // VIKTIGT: Byt ut mot din verifierade domän hos Resend
       to: [order.user.email],
       subject: subject,
       html: emailHtml,
     });
 
-    // 6. Send a success response
+    // 6. Skicka ett framgångsrikt svar
     res.status(200).json({ message: "Order confirmation sent successfully!" });
   } catch (error) {
     console.error("Error sending email:", error);
