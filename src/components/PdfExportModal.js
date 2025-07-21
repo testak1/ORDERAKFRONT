@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import React, { useRef, useState, useEffect } from "react";
 import ReactToPdf from "react-to-pdf";
@@ -6,14 +6,14 @@ import ReactToPdf from "react-to-pdf";
 export default function PdfExportModal({ order, onClose }) {
   const pdfRef = useRef();
   const [isClient, setIsClient] = useState(false);
-  const [isReady, setIsReady] = useState(false);
+  const [triggerPdf, setTriggerPdf] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
 
     const observer = new MutationObserver(() => {
       if (pdfRef.current) {
-        setIsReady(true);
+        setTriggerPdf(true);
         observer.disconnect();
       }
     });
@@ -50,25 +50,16 @@ export default function PdfExportModal({ order, onClose }) {
         <h2>Orderdetaljer (#{order._id})</h2>
 
         <div ref={pdfRef} style={{ padding: 10, backgroundColor: "#f9f9f9" }}>
-          <p>
-            <strong>Kund:</strong> {order.user?.username}
-          </p>
-          <p>
-            <strong>Datum:</strong> {new Date(order.createdAt).toLocaleString()}
-          </p>
-          <p>
-            <strong>Totalt:</strong> {order.totalAmount} kr
-          </p>
-          <p>
-            <strong>Status:</strong> {order.orderStatus}
-          </p>
+          <p><strong>Kund:</strong> {order.user?.username}</p>
+          <p><strong>Datum:</strong> {new Date(order.createdAt).toLocaleString()}</p>
+          <p><strong>Totalt:</strong> {order.totalAmount} kr</p>
+          <p><strong>Status:</strong> {order.orderStatus}</p>
 
           <h3>Produkter:</h3>
           <ul>
             {order.items.map((item, index) => (
               <li key={index}>
-                {item.product?.title} – {item.quantity} st à{" "}
-                {item.priceAtPurchase} kr
+                {item.product?.title} – {item.quantity} st à {item.priceAtPurchase} kr
               </li>
             ))}
           </ul>
@@ -76,23 +67,23 @@ export default function PdfExportModal({ order, onClose }) {
           <h3>Adress:</h3>
           <p>{order.shippingAddress?.fullName}</p>
           <p>{order.shippingAddress?.addressLine1}</p>
-          <p>
-            {order.shippingAddress?.postalCode} {order.shippingAddress?.city}
-          </p>
+          <p>{order.shippingAddress?.postalCode} {order.shippingAddress?.city}</p>
           <p>{order.shippingAddress?.country}</p>
         </div>
 
         <div style={{ marginTop: 20 }}>
-          {isClient && isReady && (
+          {isClient && pdfRef.current && (
             <ReactToPdf targetRef={pdfRef} filename={`order-${order._id}.pdf`}>
-              {({ toPdf }) => (
-                <button
-                  onClick={toPdf}
-                  className="bg-blue-600 text-white px-4 py-2 rounded"
-                >
-                  Exportera som PDF
-                </button>
-              )}
+              {({ toPdf }) => {
+                // Trigger automatic download when ready
+                useEffect(() => {
+                  if (triggerPdf) {
+                    toPdf();
+                  }
+                }, [triggerPdf]);
+
+                return null; // No button needed
+              }}
             </ReactToPdf>
           )}
           <button
