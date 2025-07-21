@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { client } from "../sanityClient";
 import { useCart } from "../context/CartContext";
-import { useAuth } from "../context/AuthContext"; // Import useAuth to access user info
+import { useAuth } from "../context/AuthContext";
 
 function ProductList() {
   const [products, setProducts] = useState([]);
@@ -10,7 +10,7 @@ function ProductList() {
   const [error, setError] = useState(null);
   const [filter, setFilter] = useState("");
   const { addToCart } = useCart();
-  const { user } = useAuth(); // Get the logged-in user
+  const { user } = useAuth();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -23,7 +23,6 @@ function ProductList() {
         setProducts(data);
       } catch (err) {
         setError("Failed to load products.");
-        console.error("Failed to fetch products:", err);
       } finally {
         setLoading(false);
       }
@@ -37,26 +36,22 @@ function ProductList() {
       (product.sku && product.sku.toLowerCase().includes(filter.toLowerCase()))
   );
 
-  // --- PRICE CALCULATION LOGIC ---
   const getDisplayPrice = (productPrice) => {
     if (user && user.discountPercentage > 0) {
-      const discountedPrice =
-        productPrice * (1 - user.discountPercentage / 100);
+      const discountedPrice = productPrice * (1 - user.discountPercentage / 100);
       return {
-        original: productPrice,
-        discounted: discountedPrice,
+        original: productPrice.toFixed(2), // Use toFixed for decimals
+        discounted: discountedPrice.toFixed(2),
       };
     }
-    return { original: productPrice };
+    return { original: productPrice.toFixed(2) };
   };
 
   if (loading) return <div className="text-center py-10">Loading...</div>;
-  if (error)
-    return <div className="text-red-500 text-center py-10">{error}</div>;
+  if (error) return <div className="text-red-500 text-center py-10">{error}</div>;
 
   return (
     <div className="p-4">
-      {/* Search and filter UI remains the same */}
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-4xl font-bold text-gray-800">Products</h1>
         <input
@@ -71,25 +66,20 @@ function ProductList() {
         {filteredProducts.map((product) => {
           const displayPrice = getDisplayPrice(product.price);
           return (
-            <div
-              key={product._id}
-              className="bg-white rounded-lg shadow-lg flex flex-col"
-            >
+            <div key={product._id} className="bg-white rounded-lg shadow-lg flex flex-col">
               <Link to={`/products/${product._id}`}>
                 <img
-                  src={
-                    product.imageUrl ||
-                    "https://placehold.co/400x300?text=BILD%20KOMMER%20INKOM%20KORT"
-                  }
+                  src={product.imageUrl || "https://placehold.co/400x300?text=BILD%20KOMMER%20INKOM%20KORT"}
                   alt={product.title}
                   className="w-full h-56 object-cover bg-gray-200"
                 />
-                <div className="p-4">
-                  <h2 className="text-xl font-semibold truncate h-14">
-                    {product.title}
-                  </h2>
-                  {/* --- NEW PRICE DISPLAY --- */}
-                  <div className="mt-2 h-8">
+                <div className="p-4 flex-grow">
+                  <h2 className="text-xl font-semibold h-14">{product.title}</h2>
+                  
+                  {/* --- SKU DISPLAY --- */}
+                  <p className="text-xs text-gray-500 mb-2">SKU: {product.sku}</p>
+
+                  <div className="h-12">
                     {displayPrice.discounted ? (
                       <div>
                         <p className="text-gray-500 line-through">
