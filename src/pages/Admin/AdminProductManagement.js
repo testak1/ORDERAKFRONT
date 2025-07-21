@@ -23,7 +23,8 @@ function AdminProductManagement() {
   const [priceAdjustmentValue, setPriceAdjustmentValue] = useState(0);
   const [priceAdjustmentType, setPriceAdjustmentType] = useState("percentage");
   const [priceAdjustmentBrand, setPriceAdjustmentBrand] = useState("");
-  const [priceAdjustmentSearchTerm, setPriceAdjustmentSearchTerm] = useState("");
+  const [priceAdjustmentSearchTerm, setPriceAdjustmentSearchTerm] =
+    useState("");
 
   // State for CSV Upload and Field Mapping
   const [csvFile, setCsvFile] = useState(null);
@@ -39,7 +40,6 @@ function AdminProductManagement() {
   const [showCsvMapping, setShowCsvMapping] = useState(false);
   const [csvUploadError, setCsvUploadError] = useState("");
 
-
   useEffect(() => {
     fetchProducts();
   }, []);
@@ -48,7 +48,8 @@ function AdminProductManagement() {
     setLoading(true);
     setError("");
     try {
-      const query = '*[_type == "product"]{_id, title, description, sku, brand, price, "imageUrl": image.asset->url}';
+      const query =
+        '*[_type == "product"]{_id, title, description, sku, brand, price, "imageUrl": image.asset->url}';
       const fetchedProducts = await client.fetch(query);
       setProducts(fetchedProducts);
     } catch (err) {
@@ -121,6 +122,23 @@ function AdminProductManagement() {
     }
   };
 
+  const handleDeleteAllProducts = async () => {
+    if (
+      window.confirm(
+        "Are you sure you want to delete ALL products? This action cannot be undone."
+      )
+    ) {
+      try {
+        await client.delete({ query: '*[_type == "product"]' });
+        alert("All products have been deleted successfully!");
+        fetchProducts(); // Refresh the product list
+      } catch (error) {
+        console.error("Failed to delete all products:", error);
+        alert("Failed to delete all products.");
+      }
+    }
+  };
+
   const handleCsvFileSelect = (event) => {
     setCsvUploadError("");
     const file = event.target.files[0];
@@ -132,7 +150,9 @@ function AdminProductManagement() {
       const data = new Uint8Array(e.target.result);
       const workbook = XLSX.read(data, { type: "array" });
       const sheetName = workbook.SheetNames[0];
-      const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { header: 1 });
+      const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+        header: 1,
+      });
 
       if (json.length === 0) {
         setCsvUploadError("CSV file is empty.");
@@ -162,42 +182,54 @@ function AdminProductManagement() {
 
   const handleConfirmBulkUpload = async () => {
     // Validate mapping
-    for (const key of ['title', 'sku', 'price']) {
-        if (!fieldMapping[key]) {
-            setCsvUploadError(`Please map the '${key}' field.`);
-            return;
-        }
+    for (const key of ["title", "sku", "price"]) {
+      if (!fieldMapping[key]) {
+        setCsvUploadError(`Please map the '${key}' field.`);
+        return;
+      }
     }
 
     setCsvUploadError("");
-    const productsToCreate = csvData.map((row, rowIndex) => {
-      const product = { _type: "product" };
-      for (const sanityField in fieldMapping) {
-        const csvHeader = fieldMapping[sanityField];
-        if (csvHeader) {
-          const columnIndex = csvHeaders.indexOf(csvHeader);
-          if (columnIndex !== -1) {
-            let value = row[columnIndex];
-            if (sanityField === "price") {
-              value = parseFloat(value || 0);
-              if (isNaN(value)) {
-                  console.warn(`Invalid price for product on row ${rowIndex + 2}: ${row}`);
-                  setCsvUploadError(`Invalid price found in row ${rowIndex + 2}. Please check your CSV data.`);
+    const productsToCreate = csvData
+      .map((row, rowIndex) => {
+        const product = { _type: "product" };
+        for (const sanityField in fieldMapping) {
+          const csvHeader = fieldMapping[sanityField];
+          if (csvHeader) {
+            const columnIndex = csvHeaders.indexOf(csvHeader);
+            if (columnIndex !== -1) {
+              let value = row[columnIndex];
+              if (sanityField === "price") {
+                value = parseFloat(value || 0);
+                if (isNaN(value)) {
+                  console.warn(
+                    `Invalid price for product on row ${
+                      rowIndex + 2
+                    }: ${row}`
+                  );
+                  setCsvUploadError(
+                    `Invalid price found in row ${
+                      rowIndex + 2
+                    }. Please check your CSV data.`
+                  );
                   return null;
+                }
+              } else if (sanityField === "sku") {
+                value = String(value);
               }
-            } else if (sanityField === "sku") {
-              value = String(value);
+              product[sanityField] = value;
             }
-            product[sanityField] = value;
           }
         }
-      }
-      return product;
-    }).filter(product => product !== null);
+        return product;
+      })
+      .filter((product) => product !== null);
 
     if (productsToCreate.length === 0) {
-        setCsvUploadError("No valid products to upload after mapping. Please check your CSV and mapping.");
-        return;
+      setCsvUploadError(
+        "No valid products to upload after mapping. Please check your CSV and mapping."
+      );
+      return;
     }
 
     const transaction = client.transaction();
@@ -222,7 +254,9 @@ function AdminProductManagement() {
       fetchProducts();
     } catch (error) {
       console.error("Bulk upload failed:", error);
-      setCsvUploadError("Failed to upload products. Check console for details.");
+      setCsvUploadError(
+        "Failed to upload products. Check console for details."
+      );
     }
   };
 
@@ -267,9 +301,17 @@ function AdminProductManagement() {
   };
 
   if (loading)
-    return <div className="text-center py-8 text-lg font-semibold text-gray-700">Loading products...</div>;
+    return (
+      <div className="text-center py-8 text-lg font-semibold text-gray-700">
+        Loading products...
+      </div>
+    );
   if (error)
-    return <div className="text-center text-red-600 py-8 text-lg font-semibold">Error: {error}</div>;
+    return (
+      <div className="text-center text-red-600 py-8 text-lg font-semibold">
+        Error: {error}
+      </div>
+    );
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-xl">
@@ -280,11 +322,18 @@ function AdminProductManagement() {
       {/* Add Single Product */}
       <div className="mb-10 p-8 border border-red-200 rounded-xl bg-red-50/20 shadow-lg">
         <h3 className="text-2xl font-bold text-red-800 mb-6 border-b border-red-300 pb-3">
-          <i className="fas fa-plus-circle mr-2 text-red-600"></i>Add New Product
+          <i className="fas fa-plus-circle mr-2 text-red-600"></i>Add New
+          Product
         </h3>
-        <form onSubmit={handleAddProduct} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <form
+          onSubmit={handleAddProduct}
+          className="grid grid-cols-1 md:grid-cols-2 gap-6"
+        >
           <div>
-            <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="title"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Title:<span className="text-red-500">*</span>
             </label>
             <input
@@ -298,7 +347,10 @@ function AdminProductManagement() {
             />
           </div>
           <div>
-            <label htmlFor="sku" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="sku"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               SKU:<span className="text-red-500">*</span>
             </label>
             <input
@@ -312,7 +364,10 @@ function AdminProductManagement() {
             />
           </div>
           <div className="md:col-span-2">
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="description"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Description:
             </label>
             <textarea
@@ -325,7 +380,10 @@ function AdminProductManagement() {
             ></textarea>
           </div>
           <div>
-            <label htmlFor="brand" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="brand"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Brand:
             </label>
             <input
@@ -338,7 +396,10 @@ function AdminProductManagement() {
             />
           </div>
           <div>
-            <label htmlFor="price" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="price"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Base Price (SEK):<span className="text-red-500">*</span>
             </label>
             <input
@@ -354,7 +415,10 @@ function AdminProductManagement() {
             />
           </div>
           <div className="md:col-span-2">
-            <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
+            <label
+              htmlFor="image"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
               Product Image:
             </label>
             <input
@@ -380,11 +444,15 @@ function AdminProductManagement() {
       {/* Bulk Product Upload */}
       <div className="mb-10 p-8 border border-red-200 rounded-xl bg-red-50/20 shadow-lg">
         <h3 className="text-2xl font-bold text-red-800 mb-6 border-b border-red-300 pb-3">
-          <i className="fas fa-upload mr-2 text-red-600"></i>Bulk Upload Products (CSV)
+          <i className="fas fa-upload mr-2 text-red-600"></i>Bulk Upload
+          Products (CSV)
         </h3>
         {!showCsvMapping ? (
           <div>
-            <label htmlFor="csv-upload" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="csv-upload"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Select CSV File:
             </label>
             <input
@@ -394,10 +462,13 @@ function AdminProductManagement() {
               onChange={handleCsvFileSelect}
               className="block w-full text-sm text-gray-600 file:mr-4 file:py-2.5 file:px-5 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-red-100 file:text-red-700 hover:file:bg-red-200 cursor-pointer transition duration-200"
             />
-            {csvUploadError && <p className="text-red-500 text-sm mt-3">{csvUploadError}</p>}
+            {csvUploadError && (
+              <p className="text-red-500 text-sm mt-3">{csvUploadError}</p>
+            )}
             <p className="text-gray-600 text-sm mt-4">
               <i className="fas fa-info-circle mr-1"></i>
-              Please ensure your CSV has headers. You will map them in the next step.
+              Please ensure your CSV has headers. You will map them in the next
+              step.
             </p>
           </div>
         ) : (
@@ -405,16 +476,24 @@ function AdminProductManagement() {
             <h4 className="text-xl font-semibold text-gray-800 mb-4">
               Map CSV Columns to Product Fields:
             </h4>
-            {csvUploadError && <p className="text-red-500 text-sm mb-4">{csvUploadError}</p>}
+            {csvUploadError && (
+              <p className="text-red-500 text-sm mb-4">{csvUploadError}</p>
+            )}
             <div className="space-y-4 mb-6">
               {Object.keys(fieldMapping).map((sanityField) => (
                 <div key={sanityField} className="flex items-center gap-4">
                   <label className="w-32 text-gray-700 font-medium capitalize">
-                    {sanityField} {["title", "sku", "price"].includes(sanityField) && <span className="text-red-500">*</span>}:
+                    {sanityField}{" "}
+                    {["title", "sku", "price"].includes(sanityField) && (
+                      <span className="text-red-500">*</span>
+                    )}
+                    :
                   </label>
                   <select
                     value={fieldMapping[sanityField]}
-                    onChange={(e) => handleMappingChange(sanityField, e.target.value)}
+                    onChange={(e) =>
+                      handleMappingChange(sanityField, e.target.value)
+                    }
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-base bg-white"
                   >
                     <option value="">-- Select CSV Column --</option>
@@ -430,11 +509,11 @@ function AdminProductManagement() {
             <div className="flex justify-end space-x-4">
               <button
                 onClick={() => {
-                    setShowCsvMapping(false);
-                    setCsvFile(null);
-                    setCsvHeaders([]);
-                    setCsvData([]);
-                    setCsvUploadError("");
+                  setShowCsvMapping(false);
+                  setCsvFile(null);
+                  setCsvHeaders([]);
+                  setCsvData([]);
+                  setCsvUploadError("");
                 }}
                 className="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400 transition-colors duration-200"
               >
@@ -454,7 +533,8 @@ function AdminProductManagement() {
       {/* Bulk Price Adjustments */}
       <div className="mb-10 p-8 border border-red-200 rounded-xl bg-red-50/20 shadow-lg">
         <h3 className="text-2xl font-bold text-red-800 mb-6 border-b border-red-300 pb-3">
-          <i className="fas fa-hand-holding-usd mr-2 text-red-600"></i>Bulk Price Adjustment
+          <i className="fas fa-hand-holding-usd mr-2 text-red-600"></i>Bulk
+          Price Adjustment
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="col-span-1">
@@ -465,7 +545,9 @@ function AdminProductManagement() {
               <input
                 type="number"
                 value={priceAdjustmentValue}
-                onChange={(e) => setPriceAdjustmentValue(parseFloat(e.target.value))}
+                onChange={(e) =>
+                  setPriceAdjustmentValue(parseFloat(e.target.value))
+                }
                 className="flex-1 px-4 py-2 border border-red-300 rounded-l-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-base bg-white transition duration-200"
               />
               <select
@@ -512,14 +594,37 @@ function AdminProductManagement() {
           </div>
         </div>
       </div>
+      {/* Delete All Products */}
+      <div className="mb-10 p-8 border border-red-200 rounded-xl bg-red-50/20 shadow-lg">
+        <h3 className="text-2xl font-bold text-red-800 mb-6 border-b border-red-300 pb-3">
+          <i className="fas fa-trash-alt mr-2 text-red-600"></i>Delete All
+          Products
+        </h3>
+        <p className="text-gray-600 mb-4">
+          This action will permanently delete all products from the database.
+          This cannot be undone.
+        </p>
+        <div className="text-center">
+          <button
+            onClick={handleDeleteAllProducts}
+            className="w-full md:w-1/2 bg-red-800 hover:bg-red-900 text-white font-semibold py-3 px-6 rounded-lg text-lg transition-all duration-300 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-700"
+          >
+            <i className="fas fa-exclamation-triangle mr-2"></i>Delete All
+            Products
+          </button>
+        </div>
+      </div>
 
       {/* Existing Products List (for editing/deleting) */}
       <div className="p-8 border border-red-200 rounded-xl bg-red-50/20 shadow-lg">
         <h3 className="text-2xl font-bold text-red-800 mb-6 border-b border-red-300 pb-3">
-          <i className="fas fa-box-open mr-2 text-red-600"></i>Existing Products
+          <i className="fas fa-box-open mr-2 text-red-600"></i>Existing
+          Products
         </h3>
         {products.length === 0 && (
-          <p className="text-gray-600 text-center py-4 text-lg">No products found. Add some above!</p>
+          <p className="text-gray-600 text-center py-4 text-lg">
+            No products found. Add some above!
+          </p>
         )}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {products.map((product) => (
@@ -544,7 +649,11 @@ function AdminProductManagement() {
                 </p>
                 <div className="flex justify-between mt-5 space-x-3">
                   <button
-                    onClick={() => alert(`Edit functionality for ${product.title} would go here!`)}
+                    onClick={() =>
+                      alert(
+                        `Edit functionality for ${product.title} would go here!`
+                      )
+                    }
                     className="flex-1 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200 transform hover:scale-105"
                   >
                     <i className="fas fa-edit mr-1"></i>Edit
