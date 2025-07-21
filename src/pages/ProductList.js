@@ -14,8 +14,14 @@ function ProductList() {
     const fetchProducts = async () => {
       setLoading(true);
       try {
-        const query = `*[_type == "product"]{
-          _id, title, sku, price, "imageUrl": mainImage.asset->url
+        // --- THIS QUERY IS NOW CORRECTED ---
+        // It now filters out any product where 'isArchived' is true.
+        const query = `*[_type == "product" && (!defined(isArchived) || isArchived == false)] | order(title asc) {
+          _id,
+          title,
+          sku,
+          price,
+          "imageUrl": mainImage.asset->url
         }`;
         const data = await client.fetch(query);
         setProducts(data);
@@ -71,7 +77,7 @@ function ProductList() {
                   {product.title}
                 </h2>
                 <p className="text-gray-700 font-bold mt-2">
-                  SEK {product.price}
+                  SEK {product.price.toFixed(2)}
                 </p>
               </div>
             </Link>
@@ -85,6 +91,12 @@ function ProductList() {
             </div>
           </div>
         ))}
+        {/* Show message if no products match filter */}
+        {filteredProducts.length === 0 && !loading && (
+          <div className="col-span-full text-center py-10 text-gray-500">
+            <p>No products found matching your search.</p>
+          </div>
+        )}
       </div>
     </div>
   );
