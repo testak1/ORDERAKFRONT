@@ -14,8 +14,6 @@
     "axios": "^1.10.0",
     "bcryptjs": "^3.0.2",
     "file-saver": "^2.0.5",
-    "resend": "^3.5.0",
-    "express": "^4.19.2",
     "html2canvas": "^1.4.1",
     "js-cookie": "^3.0.5",
     "jspdf": "^2.5.1",
@@ -31,7 +29,7 @@
     "xlsx": "^0.18.5"
   },
   "scripts": {
-    "start": "node server.js",
+    "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
