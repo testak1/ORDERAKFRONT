@@ -79,7 +79,7 @@ function ProductList() {
                 <img
                   src={
                     product.imageUrl ||
-                    "https://via.placeholder.com/300?text=No+Image"
+                    "https://placehold.co/400x300?text=BILD%20KOMMER%20INKOM%20KORT"
                   }
                   alt={product.title}
                   className="w-full h-56 object-cover bg-gray-200"

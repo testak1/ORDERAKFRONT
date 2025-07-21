@@ -562,7 +562,7 @@ function AdminProductManagement() {
                 <img
                   src={
                     product.imageUrl ||
-                    "https://via.placeholder.com/300?text=No+Image"
+                    "https://placehold.co/400x300?text=BILD%20KOMMER%20INKOM%20KORT"
                   }
                   alt={product.title}
                   className="w-full h-48 object-cover rounded-md mb-4 bg-gray-200"
