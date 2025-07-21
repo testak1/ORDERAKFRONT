@@ -1,8 +1,5 @@
-// src/pages/Admin/OrderCard.js
 import React from "react";
-import { client } from "../../sanityClient";
 
-// Add onExportPdf prop
 function OrderCard({
   order,
   onUpdateOrderStatus,
@@ -15,40 +12,35 @@ function OrderCard({
     }
   };
 
+  const statusColorClass = {
+    pending: "text-yellow-600",
+    processing: "text-blue-600",
+    shipped: "text-purple-600",
+    completed: "text-green-600",
+    cancelled: "text-red-600",
+  }[order.orderStatus] || "text-gray-600";
+
   return (
-    <div className="p-6 border border-gray-200 rounded-lg shadow-sm bg-gray-50">
-      <div className="flex justify-between items-start mb-4 border-b pb-3">
+    <div className="p-4 md:p-6 border border-gray-200 rounded-lg shadow-sm bg-gray-50">
+      {/* Uppdaterad för mobil: flex-col på små skärmar, flex-row på större */}
+      <div className="flex flex-col md:flex-row justify-between items-start mb-4 border-b pb-3 gap-2">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
-            Order ID: {order._id}
+            Order ID: {order._id.slice(-8).toUpperCase()}
           </h3>
           <p className="text-sm text-gray-600">
             Ordered by: {order.user?.username || "N/A"}
           </p>
           <p className="text-sm text-gray-600">
-            Created At: {new Date(order.createdAt).toLocaleString()}
+            Created At: {new Date(order.createdAt).toLocaleString('sv-SE')}
           </p>
         </div>
-        <div className="text-right">
-          <p
-            className={`text-lg font-bold ${
-              order.orderStatus === "pending"
-                ? "text-yellow-600"
-                : order.orderStatus === "processing"
-                ? "text-blue-600"
-                : order.orderStatus === "shipped"
-                ? "text-purple-600"
-                : order.orderStatus === "completed"
-                ? "text-green-600"
-                : order.orderStatus === "cancelled"
-                ? "text-red-600"
-                : "text-gray-600"
-            } capitalize`}
-          >
+        <div className="text-left md:text-right mt-2 md:mt-0 w-full md:w-auto">
+          <p className={`text-lg font-bold ${statusColorClass} capitalize`}>
             Status: {order.orderStatus}
           </p>
           <p className="text-xl font-bold text-gray-800">
-            Total: {order.totalAmount || "N/A"} kr
+            Total: {Math.round(order.totalAmount || 0)} kr
           </p>
         </div>
       </div>
@@ -60,7 +52,7 @@ function OrderCard({
             <li key={index}>
               {item.product?.title || item.title} (SKU:{" "}
               {item.product?.sku || item.sku}) - Qty: {item.quantity} @ kr{" "}
-              {item.priceAtPurchase} each
+              {Math.round(item.priceAtPurchase)} each
             </li>
           ))}
         </ul>
@@ -73,9 +65,6 @@ function OrderCard({
         <address className="not-italic text-sm text-gray-700">
           <p>{order.shippingAddress?.fullName}</p>
           <p>{order.shippingAddress?.addressLine1}</p>
-          {order.shippingAddress?.addressLine2 && ( // Keep this for display even if schema is removed
-            <p>{order.shippingAddress.addressLine2}</p>
-          )}
           <p>
             {order.shippingAddress?.city}, {order.shippingAddress?.postalCode}
           </p>
@@ -83,7 +72,8 @@ function OrderCard({
         </address>
       </div>
 
-      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
+      {/* Uppdaterad för mobil: flex-col på små skärmar, flex-row på större */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between pt-4 border-t border-gray-200 gap-4">
         {isAdminView && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -92,7 +82,7 @@ function OrderCard({
             <select
               value={order.orderStatus}
               onChange={handleUpdate}
-              className="mt-1 block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white"
+              className="mt-1 block w-full md:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white"
             >
               <option value="pending">Pending</option>
               <option value="processing">Processing</option>
@@ -103,11 +93,10 @@ function OrderCard({
           </div>
         )}
 
-        {/* This button now triggers the modal */}
         <button
           onClick={() => onExportPdf && onExportPdf(order)}
-          className={`bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200 ${
-            !isAdminView ? "ml-auto" : ""
+          className={`bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md text-sm w-full md:w-auto ${
+            !isAdminView ? "md:ml-auto" : ""
           }`}
         >
           Export to PDF
