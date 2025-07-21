@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { client } from "../sanityClient";
+import OrderCard from "./Admin/OrderCard"; // We can reuse the OrderCard component!
 
-// Helper for status colors, to be consistent with admin view
-const statusColors = {
-  pending: "bg-yellow-200 text-yellow-800",
-  processing: "bg-blue-200 text-blue-800",
-  shipped: "bg-indigo-200 text-indigo-800",
-  completed: "bg-green-200 text-green-800",
-  cancelled: "bg-red-200 text-red-800",
-};
+// Import libraries for PDF generation
+import jsPDF from "jspdf";
+import "jspdf-autotable";
 
 function UserProfile() {
   const { user, logout } = useAuth();
@@ -21,7 +17,14 @@ function UserProfile() {
       if (user) {
         setLoading(true);
         try {
-          const query = `*[_type == "order" && user._ref == $userId] | order(createdAt desc)`;
+          // This query now fetches referenced product data directly
+          const query = `*[_type == "order" && user._ref == $userId] {
+            ...,
+            items[]{
+              ...,
+              product->{title, sku} // Fetch title and sku from the referenced product
+            }
+          } | order(createdAt desc)`;
           const params = { userId: user._id };
           const userOrders = await client.fetch(query, params);
           setOrders(userOrders);
@@ -34,6 +37,72 @@ function UserProfile() {
     };
     fetchOrders();
   }, [user]);
+
+  // --- NEW PDF EXPORT FUNCTION ---
+  const handleExportOrderPdf = (order) => {
+    const doc = new jsPDF();
+
+    // Add Header
+    doc.setFontSize(20);
+    doc.text("Order Details", 14, 22);
+    doc.setFontSize(10);
+    doc.text(`Order ID: ${order._id}`, 14, 30);
+    doc.text(
+      `Order Date: ${new Date(order.createdAt).toLocaleDateString()}`,
+      14,
+      35
+    );
+
+    // Shipping Details
+    doc.setFontSize(12);
+    doc.text("Shipping Address", 14, 45);
+    doc.setFontSize(10);
+    const shippingAddr = order.shippingAddress;
+    doc.text(`${shippingAddr.fullName}`, 14, 50);
+    doc.text(`${shippingAddr.addressLine1}`, 14, 55);
+    doc.text(`${shippingAddr.city}, ${shippingAddr.postalCode}`, 14, 60);
+    doc.text(`${shippingAddr.country}`, 14, 65);
+
+    // Items Table
+    const tableColumn = ["Product Title", "SKU", "Quantity", "Price", "Total"];
+    const tableRows = [];
+
+    order.items.forEach((item) => {
+      const itemData = [
+        item.title || item.product?.title,
+        item.sku || item.product?.sku,
+        item.quantity,
+        `SEK ${item.priceAtPurchase.toFixed(2)}`,
+        `SEK ${(item.quantity * item.priceAtPurchase).toFixed(2)}`,
+      ];
+      tableRows.push(itemData);
+    });
+
+    // Add a row for the total
+    tableRows.push([
+      "",
+      "",
+      "",
+      "Total Amount:",
+      `SEK ${order.totalAmount.toFixed(2)}`,
+    ]);
+
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 75,
+      styles: { halign: "left" },
+      headStyles: { fillColor: [209, 213, 219] }, // gray-300
+      didDrawCell: (data) => {
+        // Style the total row
+        if (data.row.index === tableRows.length - 1) {
+          doc.setFont(undefined, "bold");
+        }
+      },
+    });
+
+    doc.save(`order_${order._id.slice(-6)}.pdf`);
+  };
 
   if (!user) {
     return <div>Please log in to see your profile.</div>;
@@ -64,39 +133,15 @@ function UserProfile() {
         {loading ? (
           <p>Loading your orders...</p>
         ) : orders.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {orders.map((order) => (
-              <div
+              // Re-use the OrderCard, passing the PDF function and setting isAdminView to false
+              <OrderCard
                 key={order._id}
-                className="border border-gray-200 rounded-lg p-4"
-              >
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className="font-semibold text-lg">
-                      Order #{order._id.slice(-6)}
-                    </h3>
-                    <p className="text-sm text-gray-600">
-                      Date: {new Date(order.createdAt).toLocaleDateString()}
-                    </p>
-                    <p className="font-bold mt-1">
-                      Total: SEK {order.totalAmount.toFixed(2)}
-                    </p>
-                  </div>
-                  {/* Read-only status display for the user */}
-                  <div className="text-right">
-                    <p className="text-sm font-medium text-gray-600 mb-1">
-                      Status:
-                    </p>
-                    <span
-                      className={`px-3 py-1 text-sm font-semibold rounded-full ${
-                        statusColors[order.orderStatus] || "bg-gray-200"
-                      }`}
-                    >
-                      {order.orderStatus}
-                    </span>
-                  </div>
-                </div>
-              </div>
+                order={order}
+                isAdminView={false}
+                onExportPdf={handleExportOrderPdf}
+              />
             ))}
           </div>
         ) : (
