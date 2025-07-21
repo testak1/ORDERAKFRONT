@@ -19,6 +19,7 @@ function App() {
           <NavBar />
           <div className="container mx-auto p-4 md:p-6 lg:p-8 min-h-screen bg-gray-50">
             <Routes>
+              {/* Dina routes är korrekta som de är */}
               <Route path="/login" element={<Login />} />
               <Route
                 path="/"
@@ -73,13 +74,22 @@ function NavBar() {
   const { user, logout } = useAuth();
   return (
     <nav className="bg-gradient-to-r from-red-600 to-red-800 text-white p-4 shadow-lg">
-      {/* Uppdaterad för mobil: flex-wrap och centrerad på små skärmar */}
       <div className="container mx-auto flex flex-wrap justify-between items-center gap-y-2">
-        <div className="flex items-center space-x-4">
-          <Link to="/" className="text-lg font-semibold hover:text-red-200">
+        {/* --- LOGOTYP TILLAGD HÄR --- */}
+        <div className="flex items-center space-x-6">
+          <Link to="/" className="flex items-center space-x-2">
+            <img src="https://cdn.sanity.io/images/2toaqqka/production/5f481742567a7b80342565e76f4d161aa6ed725b-112x112.png" alt="AK Tuning Logo" className="h-10" />
+          </Link>
+          <Link
+            to="/"
+            className="text-lg font-semibold hover:text-red-200"
+          >
             Products
           </Link>
-          <Link to="/cart" className="text-lg font-semibold hover:text-red-200">
+          <Link
+            to="/cart"
+            className="text-lg font-semibold hover:text-red-200"
+          >
             Cart
           </Link>
           {user?.role === "admin" && (
@@ -99,6 +109,8 @@ function NavBar() {
             </Link>
           )}
         </div>
+        {/* --------------------------- */}
+
         <div className="flex items-center space-x-4">
           {user ? (
             <>
