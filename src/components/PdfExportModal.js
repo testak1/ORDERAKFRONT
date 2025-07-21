@@ -1,187 +1,150 @@
-import React, { useRef, useState } from "react";
+import React, { useState, useEffect } from "react";
 import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
+import "jspdf-autotable";
 
 function PdfExportModal({ order, onClose }) {
-  const contentRef = useRef();
   const [isGenerating, setIsGenerating] = useState(false);
+  const [logoBase64, setLogoBase64] = useState(null);
 
-  const generatePdf = async () => {
-    if (!order) return;
+  // This effect runs once to fetch the logo and convert it to a format
+  // that can be safely embedded in the PDF, solving the cross-origin issue.
+  useEffect(() => {
+    const convertImageToBase64 = async () => {
+      try {
+        const response = await fetch("https://tuning.aktuning.se/ak-logo2.png");
+        const blob = await response.blob();
+        const reader = new FileReader();
+        reader.onload = () => setLogoBase64(reader.result);
+        reader.readAsDataURL(blob);
+      } catch (error) {
+        console.error("Failed to load logo for PDF:", error);
+      }
+    };
+    convertImageToBase64();
+  }, []);
+
+  const generatePdf = () => {
+    if (!order || !logoBase64) {
+      alert("PDF components are not ready yet. Please wait a moment.");
+      return;
+    }
     setIsGenerating(true);
 
-    try {
-      const input = contentRef.current;
-      const canvas = await html2canvas(input, { scale: 2, useCORS: true });
-      const imgData = canvas.toDataURL("image/png");
+    const doc = new jsPDF();
 
-      const pdf = new jsPDF("p", "mm", "a4");
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = pdf.internal.pageSize.getHeight();
-      const imgWidth = pdfWidth;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-      let position = 0;
+    // --- HEADER ---
+    // Add the logo image
+    doc.addImage(logoBase64, "PNG", 14, 15, 50, 15); // x, y, width, height
 
-      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-      heightLeft -= pdfHeight;
+    // Add Invoice title
+    doc.setFontSize(22);
+    doc.setFont(undefined, "bold");
+    doc.text("Invoice", 200, 25, { align: "right" });
 
-      while (heightLeft > 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
-        heightLeft -= pdfHeight;
-      }
+    doc.setFontSize(10);
+    doc.setFont(undefined, "normal");
+    doc.text(`Order ID: #${order._id.slice(-6)}`, 200, 32, { align: "right" });
 
-      pdf.save(`Order_${order._id.slice(-6)}.pdf`);
-      onClose();
-    } catch (error) {
-      console.error("Error generating PDF:", error);
-      alert("Failed to generate PDF.");
-    } finally {
-      setIsGenerating(false);
-    }
+    // --- BILLING AND ORDER INFO ---
+    doc.setLineWidth(0.5);
+    doc.line(14, 40, 200, 40);
+
+    doc.setFontSize(10);
+    doc.text("BILLED TO", 14, 48);
+    doc.setFont(undefined, "bold");
+    doc.text(order.shippingAddress?.fullName || order.user?.username, 14, 54);
+    doc.setFont(undefined, "normal");
+    doc.text(order.shippingAddress?.addressLine1 || "", 14, 59);
+    doc.text(
+      `${order.shippingAddress?.postalCode || ""} ${
+        order.shippingAddress?.city || ""
+      }`,
+      14,
+      64
+    );
+    doc.text(order.shippingAddress?.country || "", 14, 69);
+
+    doc.text(
+      `Order Date: ${new Date(order.createdAt).toLocaleDateString()}`,
+      200,
+      48,
+      { align: "right" }
+    );
+    doc.text(`Status: ${order.orderStatus}`, 200, 54, { align: "right" });
+
+    // --- ITEMS TABLE ---
+    const tableColumn = ["Product", "SKU", "Qty", "Price", "Total"];
+    const tableRows = [];
+
+    order.items.forEach((item) => {
+      const itemData = [
+        doc.splitTextToSize(item.product?.title || item.title, 80), // Wrap long titles
+        item.product?.sku || item.sku,
+        item.quantity,
+        `${Math.round(item.priceAtPurchase)} kr`,
+        `${Math.round(item.quantity * item.priceAtPurchase)} kr`,
+      ];
+      tableRows.push(itemData);
+    });
+
+    doc.autoTable({
+      head: [tableColumn],
+      body: tableRows,
+      startY: 80,
+      headStyles: { fillColor: [230, 230, 230], textColor: 20 },
+      styles: { fontSize: 9 },
+    });
+
+    // --- TOTALS ---
+    const finalY = doc.lastAutoTable.finalY || 120;
+    doc.setFontSize(12);
+    doc.setFont(undefined, "bold");
+    doc.text("Total Amount:", 140, finalY + 15, { align: "left" });
+    doc.text(`${Math.round(order.totalAmount)} kr`, 200, finalY + 15, {
+      align: "right",
+    });
+
+    // --- FOOTER ---
+    doc.setFontSize(9);
+    doc.setTextColor(150);
+    doc.text("Thank you for your order!", 105, 280, { align: "center" });
+    doc.text("AK-TUNING", 105, 285, { align: "center" });
+
+    doc.save(`Order_${order._id.slice(-6)}.pdf`);
+
+    setIsGenerating(false);
+    onClose();
   };
 
-  if (!order) {
-    return null;
-  }
+  if (!order) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-start z-50 p-4 overflow-y-auto">
-      <div className="bg-white rounded-lg shadow-xl max-w-3xl w-full my-8 p-6 relative">
-        <button
-          onClick={onClose}
-          className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-3xl font-light"
-        >
-          &times;
-        </button>
-
-        <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">
-          PDF Preview
-        </h2>
-
-        <div ref={contentRef} className="p-8 bg-white" id="pdf-content">
-          <div className="flex justify-between items-center mb-8 pb-4 border-b">
-            <img
-              src="https://tuning.aktuning.se/ak-logo2.png"
-              alt="Company Logo"
-              className="w-48"
-              crossOrigin="anonymous"
-            />
-            <div className="text-right">
-              <h1 className="text-4xl font-bold text-gray-800">Invoice</h1>
-              <p className="text-sm text-gray-500">
-                Order ID: #{order._id.slice(-6)}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-6 mb-8">
-            <div>
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-2">
-                Billed To
-              </h3>
-              <p className="text-md text-gray-800 font-medium">
-                {order.shippingAddress?.fullName || order.user?.username}
-              </p>
-              <p className="text-md text-gray-600">
-                {order.shippingAddress?.addressLine1}
-              </p>
-              <p className="text-md text-gray-600">
-                {order.shippingAddress?.postalCode}{" "}
-                {order.shippingAddress?.city}
-              </p>
-              <p className="text-md text-gray-600">
-                {order.shippingAddress?.country}
-              </p>
-            </div>
-            <div className="text-right">
-              <p className="text-sm text-gray-600">
-                <strong>Order Date:</strong>{" "}
-                {new Date(order.createdAt).toLocaleDateString()}
-              </p>
-              <p className="text-sm text-gray-600">
-                <strong>Generated:</strong> {new Date().toLocaleDateString()}
-              </p>
-              <p className="text-sm font-medium mt-2">
-                Status:
-                <span className="font-bold capitalize">
-                  {" "}
-                  {order.orderStatus}
-                </span>
-              </p>
-            </div>
-          </div>
-
-          <div className="mb-8">
-            <table className="w-full text-left">
-              <thead>
-                <tr className="bg-gray-100 text-sm text-gray-700">
-                  <th className="py-2 px-4 font-semibold">Product</th>
-                  <th className="py-2 px-4 font-semibold">SKU</th>
-                  <th className="py-2 px-4 font-semibold text-center">Qty</th>
-                  <th className="py-2 px-4 font-semibold text-right">Price</th>
-                  <th className="py-2 px-4 font-semibold text-right">Total</th>
-                </tr>
-              </thead>
-              <tbody>
-                {order.items.map((item, index) => (
-                  <tr key={index} className="border-b">
-                    <td className="py-3 px-4 text-sm">
-                      {item.product?.title || item.title}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-gray-600">
-                      {item.product?.sku || item.sku}
-                    </td>
-                    <td className="py-3 px-4 text-sm text-center">
-                      {item.quantity}
-                    </td>
-                    {/* --- FIXED PRICE FORMATTING (NO DECIMALS) --- */}
-                    <td className="py-3 px-4 text-sm text-right">
-                      {Math.round(item.priceAtPurchase)} kr
-                    </td>
-                    <td className="py-3 px-4 text-sm text-right font-medium">
-                      {Math.round(item.quantity * item.priceAtPurchase)} kr
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="flex justify-end text-right">
-            <div>
-              <p className="text-lg font-semibold text-gray-800">
-                Total Amount:
-              </p>
-              <p className="text-3xl font-extrabold text-gray-900">
-                {/* --- FIXED PRICE FORMATTING (NO DECIMALS) --- */}
-                {Math.round(order.totalAmount) || "N/A"} kr
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-12 pt-4 border-t text-center text-xs text-gray-500">
-            <p>TACK FÖR DIN ORDER!</p>
-            <p>AK-TUNING</p>
-          </div>
-        </div>
-
-        <div className="mt-6 flex justify-end space-x-3 border-t pt-4">
+    // The modal now only serves as a confirmation dialog
+    <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 text-center">
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">Generate PDF</h2>
+        <p className="text-gray-600 mb-6">
+          A high-quality PDF invoice will be generated for order #
+          {order._id.slice(-6)}.
+        </p>
+        <div className="flex justify-center space-x-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
+            className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
             disabled={isGenerating}
           >
             Cancel
           </button>
           <button
             onClick={generatePdf}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
-            disabled={isGenerating}
+            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+            disabled={isGenerating || !logoBase64}
           >
-            {isGenerating ? "Generating..." : "Download PDF"}
+            {isGenerating
+              ? "Generating..."
+              : logoBase64
+              ? "Download"
+              : "Loading assets..."}
           </button>
         </div>
       </div>
