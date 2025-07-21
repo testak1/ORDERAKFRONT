@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { client } from "../../sanityClient";
 import CollapsibleSection from "../../components/CollapsibleSection";
 import * as XLSX from "xlsx"; // For CSV import
+import { useTranslation } from "react-i18next";
 
 function AdminProductManagement() {
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -57,7 +59,7 @@ function AdminProductManagement() {
       setProducts(data);
     } catch (err) {
       console.error("Failed to fetch products:", err);
-      setError("Failed to load products.");
+      setError(t("productList.loadError"));
     } finally {
       setLoading(false);
     }
@@ -78,7 +80,7 @@ function AdminProductManagement() {
     e.preventDefault();
     const { title, price, mainImage, sku } = newProduct;
     if (!title || !price || !mainImage || !sku) {
-      alert("Title, Price, SKU, and Image are required.");
+      alert(t("adminProductManagement.form.required"));
       return;
     }
     try {
@@ -100,7 +102,7 @@ function AdminProductManagement() {
       delete productDoc.mainImageFile;
 
       await client.create(productDoc);
-      alert("Product added successfully!");
+      alert(t("adminProductManagement.form.addSuccess"));
       document.getElementById("newProductForm").reset();
       setNewProduct({
         title: "",
@@ -114,23 +116,21 @@ function AdminProductManagement() {
       fetchProducts();
     } catch (error) {
       console.error("Failed to add product:", error);
-      alert("Failed to add product. Check if SKU is unique.");
+      alert(t("adminProductManagement.form.addError"));
     }
   };
 
   const handleArchiveProduct = async (productId) => {
     if (
-      window.confirm(
-        "Are you sure you want to archive this product? It will be hidden from the store."
-      )
+      window.confirm(t("adminProductManagement.form.archiveConfirm"))
     ) {
       try {
         await client.patch(productId).set({ isArchived: true }).commit();
-        alert("Product archived successfully!");
+        alert(t("adminProductManagement.form.archiveSuccess"));
         fetchProducts(); // Refresh list
       } catch (err) {
         console.error("Failed to archive product:", err);
-        alert("Failed to archive product.");
+        alert(t("adminProductManagement.form.archiveError"));
       }
     }
   };
@@ -154,7 +154,7 @@ function AdminProductManagement() {
         });
 
         if (json.length < 2) {
-          throw new Error("CSV file is empty or has no data rows.");
+          throw new Error(t("adminProductManagement.bulkUpload.errorEmptyFile"));
         }
         setCsvHeaders(json[0]);
         setCsvData(json.slice(1));
@@ -173,7 +173,7 @@ function AdminProductManagement() {
 
   const handleConfirmBulkUpload = async () => {
     if (!fieldMapping.sku || !fieldMapping.title || !fieldMapping.price) {
-      setCsvUploadError("SKU, Title, and Price fields must be mapped.");
+      setCsvUploadError(t("adminProductManagement.bulkUpload.errorMappingRequired"));
       return;
     }
 
@@ -201,21 +201,19 @@ function AdminProductManagement() {
 
     try {
       await transaction.commit();
-      alert("Bulk upload completed successfully!");
+      alert(t("adminProductManagement.bulkUpload.uploadSuccess"));
       setShowCsvMapping(false);
       setCsvFile(null);
       fetchProducts();
     } catch (error) {
       console.error("Bulk upload failed:", error);
-      setCsvUploadError(
-        "Bulk upload failed. Please check console for details. SKUs might not be unique."
-      );
+      setCsvUploadError(t("adminProductManagement.bulkUpload.uploadError"));
     }
   };
 
   const handleBulkPriceAdjustment = async () => {
     if (!priceAdjustmentValue) {
-      alert("Please enter a value for price adjustment.");
+      alert(t("adminProductManagement.bulkPrice.alertValueMissing"));
       return;
     }
     const query = `*[_type == "product" && (!defined(isArchived) || isArchived == false) 
@@ -229,7 +227,7 @@ function AdminProductManagement() {
     try {
       const productsToAdjust = await client.fetch(query + "{_id, price}");
       if (productsToAdjust.length === 0) {
-        alert("No products found matching your criteria.");
+        alert(t("adminProductManagement.bulkPrice.alertNoMatch"));
         return;
       }
       const transaction = client.transaction();
@@ -241,18 +239,18 @@ function AdminProductManagement() {
         transaction.patch(product._id).set({ price: Math.max(0, newPrice) }); // Ensure price doesn't go below 0
       });
       await transaction.commit();
-      alert(`${productsToAdjust.length} products have been updated.`);
+      alert(t("adminProductManagement.bulkPrice.alertSuccess", { count: productsToAdjust.length }));
       fetchProducts();
     } catch (error) {
       console.error("Bulk price adjustment failed:", error);
-      alert("Failed to apply bulk price adjustment.");
+      alert(t("adminProductManagement.bulkPrice.alertError"));
     }
   };
 
   const handleDeleteAllUnreferencedProducts = async () => {
     if (
       window.confirm(
-        "DANGER: This will delete ALL products that are NOT part of an order. This cannot be undone. Continue?"
+        t("adminProductManagement.dangerZone.confirm")
       )
     ) {
       try {
@@ -260,7 +258,7 @@ function AdminProductManagement() {
         const unreferencedProducts = await client.fetch(query + "{_id}");
         if (unreferencedProducts.length === 0) {
           alert(
-            "No products to delete. All products are referenced in existing orders."
+            t("adminProductManagement.dangerZone.noProductsToDelete")
           );
           return;
         }
@@ -268,11 +266,11 @@ function AdminProductManagement() {
           query: `*[_id in $ids]`,
           params: { ids: unreferencedProducts.map((p) => p._id) },
         });
-        alert(`${unreferencedProducts.length} unreferenced products deleted.`);
+        alert(t("adminProductManagement.dangerZone.deleteSuccess", { count: unreferencedProducts.length }));
         fetchProducts();
       } catch (error) {
         console.error("Failed to delete products:", error);
-        alert("An error occurred during deletion.");
+        alert(t("adminProductManagement.dangerZone.deleteError"));
       }
     }
   };
@@ -281,19 +279,19 @@ function AdminProductManagement() {
     p.title.toLowerCase().includes(filterText.toLowerCase())
   );
 
-  if (loading) return <div className="text-center py-8">Loading...</div>;
+  if (loading) return <div className="text-center py-8">{t("common.loading")}</div>;
   if (error)
     return <div className="text-center text-red-500 py-8">{error}</div>;
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-xl">
       <h2 className="text-3xl font-extrabold text-gray-900 mb-8 text-center border-b-2 border-red-200 pb-4">
-        Product Management
+        {t("adminProductManagement.title")}
       </h2>
 
       {/* --- UI Sections --- */}
 
-      <CollapsibleSection title="Add New Product">
+      <CollapsibleSection title={t("adminProductManagement.addProductTitle")}>
         <form
           id="newProductForm"
           onSubmit={handleAddProduct}
@@ -301,7 +299,7 @@ function AdminProductManagement() {
         >
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Title:<span className="text-red-500">*</span>
+              {t("adminProductManagement.form.title")}:<span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -314,7 +312,7 @@ function AdminProductManagement() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                SKU:<span className="text-red-500">*</span>
+                {t("adminProductManagement.form.sku")}:<span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -326,7 +324,7 @@ function AdminProductManagement() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Brand:
+                {t("adminProductManagement.form.brand")}:
               </label>
               <input
                 type="text"
@@ -338,7 +336,7 @@ function AdminProductManagement() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Description:
+              {t("adminProductManagement.form.description")}:
             </label>
             <textarea
               name="description"
@@ -350,7 +348,7 @@ function AdminProductManagement() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Price (SEK):<span className="text-red-500">*</span>
+                {t("adminProductManagement.form.price")}:<span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -363,7 +361,7 @@ function AdminProductManagement() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                Category:
+                {t("adminProductManagement.form.category")}:
               </label>
               <input
                 type="text"
@@ -375,7 +373,7 @@ function AdminProductManagement() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              Product Image:<span className="text-red-500">*</span>
+              {t("adminProductManagement.form.image")}:<span className="text-red-500">*</span>
             </label>
             <input
               type="file"
@@ -390,19 +388,19 @@ function AdminProductManagement() {
             type="submit"
             className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
           >
-            <i className="fas fa-plus-circle mr-2"></i>Add Product
+            <i className="fas fa-plus-circle mr-2"></i>{t("adminProductManagement.addProductTitle")}
           </button>
         </form>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Bulk Upload (CSV)">
+      <CollapsibleSection title={t("adminProductManagement.bulkUploadTitle")}>
         {!showCsvMapping ? (
           <div>
             <label
               htmlFor="csv-upload"
               className="block text-sm font-medium text-gray-700 mb-2"
             >
-              Select CSV File:
+              {t("adminProductManagement.bulkUpload.selectFile")}
             </label>
             <input
               type="file"
@@ -418,7 +416,7 @@ function AdminProductManagement() {
         ) : (
           <div className="mt-4">
             <h4 className="text-xl font-semibold text-gray-800 mb-4">
-              Map CSV Columns to Product Fields:
+              {t("adminProductManagement.bulkUpload.mapTitle")}
             </h4>
             {csvUploadError && (
               <p className="text-red-500 text-sm mb-4">{csvUploadError}</p>
@@ -427,7 +425,7 @@ function AdminProductManagement() {
               {Object.keys(fieldMapping).map((field) => (
                 <div key={field} className="flex items-center gap-4">
                   <label className="w-32 text-gray-700 font-medium capitalize">
-                    {field}{" "}
+                    {t(`adminProductManagement.form.${field}`)}{" "}
                     {["title", "sku", "price"].includes(field) && (
                       <span className="text-red-500">*</span>
                     )}{" "}
@@ -438,7 +436,7 @@ function AdminProductManagement() {
                     onChange={(e) => handleMappingChange(field, e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white"
                   >
-                    <option value="">-- Select CSV Column --</option>
+                    <option value="">{t("adminProductManagement.bulkUpload.selectColumn")}</option>
                     {csvHeaders.map((header) => (
                       <option key={header} value={header}>
                         {header}
@@ -453,24 +451,24 @@ function AdminProductManagement() {
                 onClick={() => setShowCsvMapping(false)}
                 className="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
               >
-                Cancel
+                {t("common.cancel")}
               </button>
               <button
                 onClick={handleConfirmBulkUpload}
                 className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md"
               >
-                <i className="fas fa-check-circle mr-2"></i>Confirm Upload
+                <i className="fas fa-check-circle mr-2"></i>{t("adminProductManagement.bulkUpload.confirmButton")}
               </button>
             </div>
           </div>
         )}
       </CollapsibleSection>
 
-      <CollapsibleSection title="Bulk Price Adjustment">
+      <CollapsibleSection title={t("adminProductManagement.bulkPriceAdjustTitle")}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Adjustment Value:
+              {t("adminProductManagement.bulkPrice.adjustValue")}
             </label>
             <div className="flex items-center">
               <input
@@ -486,32 +484,32 @@ function AdminProductManagement() {
                 onChange={(e) => setPriceAdjustmentType(e.target.value)}
                 className="px-4 py-2 border border-red-300 rounded-r-md bg-white border-l-0"
               >
-                <option value="percentage">Percentage (%)</option>
-                <option value="fixed">Fixed Amount (kr)</option>
+                <option value="percentage">{t("adminProductManagement.bulkPrice.percentage")}</option>
+                <option value="fixed">{t("adminProductManagement.bulkPrice.fixedAmount")}</option>
               </select>
             </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Filter by Brand:
+              {t("adminProductManagement.bulkPrice.filterBrand")}
             </label>
             <input
               type="text"
               value={priceAdjustmentBrand}
               onChange={(e) => setPriceAdjustmentBrand(e.target.value)}
-              placeholder="(Optional)"
+              placeholder={t("common.optional")}
               className="mt-1 block w-full px-4 py-2 border border-red-300 rounded-md"
             />
           </div>
           <div className="md:col-span-2">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Filter by Search Term (Title/SKU):
+              {t("adminProductManagement.bulkPrice.filterTerm")}
             </label>
             <input
               type="text"
               value={priceAdjustmentSearchTerm}
               onChange={(e) => setPriceAdjustmentSearchTerm(e.target.value)}
-              placeholder="(Optional)"
+              placeholder={t("common.optional")}
               className="mt-1 block w-full px-4 py-2 border border-red-300 rounded-md"
             />
           </div>
@@ -520,34 +518,33 @@ function AdminProductManagement() {
               onClick={handleBulkPriceAdjustment}
               className="w-full md:w-1/2 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg text-lg"
             >
-              <i className="fas fa-percent mr-2"></i>Apply Adjustment
+              <i className="fas fa-percent mr-2"></i>{t("adminProductManagement.bulkPrice.applyButton")}
             </button>
           </div>
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Danger Zone">
+      <CollapsibleSection title={t("adminProductManagement.dangerZoneTitle")}>
         <div className="text-center p-4 bg-red-100 border border-red-300 rounded-lg">
           <p className="text-gray-600 mb-4">
-            This will permanently delete all products that are NOT part of any
-            existing order. Use with caution.
+            {t("adminProductManagement.dangerZone.description")}
           </p>
           <button
             onClick={handleDeleteAllUnreferencedProducts}
             className="bg-red-800 hover:bg-red-900 text-white font-bold py-2 px-6 rounded-md"
           >
-            Delete Unreferenced Products
+            {t("adminProductManagement.dangerZone.button")}
           </button>
         </div>
       </CollapsibleSection>
 
       <CollapsibleSection
-        title={`Active Products (${filteredProducts.length})`}
+        title={t("adminProductManagement.activeProductsTitle", { count: filteredProducts.length })}
         startOpen={true}
       >
         <input
           type="text"
-          placeholder="Filter products by title..."
+          placeholder={t("adminProductManagement.filterPlaceholder")}
           value={filterText}
           onChange={(e) => setFilterText(e.target.value)}
           className="w-full px-3 py-2 mb-4 border border-red-300 rounded-md"
@@ -571,9 +568,9 @@ function AdminProductManagement() {
                   <h4 className="text-lg font-bold text-gray-800">
                     {product.title}
                   </h4>
-                  <p className="text-sm text-gray-500">SKU: {product.sku}</p>
+                  <p className="text-sm text-gray-500">{t("common.skuLabel", { sku: product.sku })}</p>
                   <p className="text-gray-600 font-semibold">
-                    {product.price} kr
+                    {t("common.priceFormatted", { price: product.price })}
                   </p>
                 </div>
                 <div className="mt-4 pt-4 border-t">
@@ -581,7 +578,7 @@ function AdminProductManagement() {
                     onClick={() => handleArchiveProduct(product._id)}
                     className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-md"
                   >
-                    <i className="fas fa-archive mr-2"></i>Archive
+                    <i className="fas fa-archive mr-2"></i>{t("adminProductManagement.productCard.archive")}
                   </button>
                 </div>
               </div>
