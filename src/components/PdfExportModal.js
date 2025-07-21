@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+import { useTranslation } from "react-i18next";
 
 function PdfExportModal({ order, onClose }) {
+  const { t } = useTranslation();
   const [isGenerating, setIsGenerating] = useState(false);
   const [logoBase64, setLogoBase64] = useState(null);
 
@@ -25,7 +27,7 @@ function PdfExportModal({ order, onClose }) {
 
   const generatePdf = () => {
     if (!order || !logoBase64) {
-      alert("PDF components are not ready yet. Please wait a moment.");
+      alert(t("pdfExport.alertNotReady"));
       return;
     }
     setIsGenerating(true);
@@ -33,7 +35,6 @@ function PdfExportModal({ order, onClose }) {
     const doc = new jsPDF();
 
     // --- HEADER ---
-    // FIX: Beräknar loggans höjd proportionerligt för att behålla bildförhållandet
     const logoWidth = 50;
     const logoOriginalWidth = 600; 
     const logoOriginalHeight = 564;
@@ -42,21 +43,20 @@ function PdfExportModal({ order, onClose }) {
 
     doc.setFontSize(22);
     doc.setFont(undefined, "bold");
-    doc.text("Invoice", 200, 25, { align: "right" });
+    doc.text(t("pdfExport.invoiceTitle"), 200, 25, { align: "right" });
 
     doc.setFontSize(10);
     doc.setFont(undefined, "normal");
-    doc.text(`Order ID: #${order._id.slice(-6)}`, 200, 32, { align: "right" });
+    doc.text(t("pdfExport.orderId", { id: order._id.slice(-6) }), 200, 32, { align: "right" });
 
-    // --- BILLING AND ORDER INFO (JUSTERADE Y-KOORDINATER) ---
+    // --- BILLING AND ORDER INFO ---
     doc.setLineWidth(0.5);
-    // Flyttade ner linjen för att ge loggan utrymme
     const lineY = 15 + logoHeight + 5;
     doc.line(14, lineY, 200, lineY);
     
     const textY = lineY + 8;
     doc.setFontSize(10);
-    doc.text("BILLED TO", 14, textY);
+    doc.text(t("pdfExport.billedTo"), 14, textY);
     doc.setFont(undefined, "bold");
     doc.text(order.shippingAddress?.fullName || order.user?.username, 14, textY + 6);
     doc.setFont(undefined, "normal");
@@ -71,15 +71,21 @@ function PdfExportModal({ order, onClose }) {
     doc.text(order.shippingAddress?.country || "", 14, textY + 21);
 
     doc.text(
-      `Order Date: ${new Date(order.createdAt).toLocaleString('sv-SE')}`,
+      t("pdfExport.orderDate", { date: new Date(order.createdAt).toLocaleString('sv-SE') }),
       200,
       textY,
       { align: "right" }
     );
-    doc.text(`Status: ${order.orderStatus}`, 200, textY + 6, { align: "right" });
+    doc.text(t("pdfExport.status", { status: order.orderStatus }), 200, textY + 6, { align: "right" });
 
     // --- ITEMS TABLE ---
-    const tableColumn = ["Product", "SKU", "Qty", "Price", "Total"];
+    const tableColumn = [
+        t("pdfExport.tableHeader.product"), 
+        t("pdfExport.tableHeader.sku"), 
+        t("pdfExport.tableHeader.quantity"), 
+        t("pdfExport.tableHeader.price"), 
+        t("pdfExport.tableHeader.total")
+    ];
     const tableRows = [];
 
     order.items.forEach((item) => {
@@ -96,7 +102,7 @@ function PdfExportModal({ order, onClose }) {
     doc.autoTable({
       head: [tableColumn],
       body: tableRows,
-      startY: textY + 30, // Startar tabellen längre ner
+      startY: textY + 30,
       headStyles: { fillColor: [230, 230, 230], textColor: 20 },
       styles: { fontSize: 9 },
     });
@@ -105,7 +111,7 @@ function PdfExportModal({ order, onClose }) {
     const finalY = doc.lastAutoTable.finalY || 120;
     doc.setFontSize(12);
     doc.setFont(undefined, "bold");
-    doc.text("Total Amount:", 140, finalY + 15, { align: "left" });
+    doc.text(t("pdfExport.totalAmount"), 140, finalY + 15, { align: "left" });
     doc.text(`${Math.round(order.totalAmount)} kr`, 200, finalY + 15, {
       align: "right",
     });
@@ -113,8 +119,8 @@ function PdfExportModal({ order, onClose }) {
     // --- FOOTER ---
     doc.setFontSize(9);
     doc.setTextColor(150);
-    doc.text("Thank you for your order!", 105, 280, { align: "center" });
-    doc.text("AK-TUNING", 105, 285, { align: "center" });
+    doc.text(t("pdfExport.footerThanks"), 105, 280, { align: "center" });
+    doc.text(t("pdfExport.footerCompany"), 105, 285, { align: "center" });
 
     doc.save(`Order_${order._id.slice(-6)}.pdf`);
 
@@ -127,10 +133,9 @@ function PdfExportModal({ order, onClose }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 text-center">
-        <h2 className="text-2xl font-bold text-gray-800 mb-4">Generate PDF</h2>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4">{t("pdfExport.modalTitle")}</h2>
         <p className="text-gray-600 mb-6">
-          A high-quality PDF invoice will be generated for order #
-          {order._id.slice(-6)}.
+          {t("pdfExport.modalDescription", { id: order._id.slice(-6) })}
         </p>
         <div className="flex justify-center space-x-4">
           <button
@@ -138,7 +143,7 @@ function PdfExportModal({ order, onClose }) {
             className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300"
             disabled={isGenerating}
           >
-            Cancel
+            {t("pdfExport.buttonCancel")}
           </button>
           <button
             onClick={generatePdf}
@@ -146,10 +151,10 @@ function PdfExportModal({ order, onClose }) {
             disabled={isGenerating || !logoBase64}
           >
             {isGenerating
-              ? "Generating..."
+              ? t("pdfExport.buttonGenerating")
               : logoBase64
-              ? "Download"
-              : "Loading assets..."}
+              ? t("pdfExport.buttonDownload")
+              : t("pdfExport.buttonLoadingAssets")}
           </button>
         </div>
       </div>

@@ -209,5 +209,30 @@
     "shipped": "Skickad",
     "completed": "Slutförd",
     "cancelled": "Avbruten"
+  },
+    "pdfExport": {
+    "modalTitle": "Skapa PDF",
+    "modalDescription": "En högkvalitativ PDF-faktura kommer att skapas för order #{{id}}.",
+    "buttonCancel": "Avbryt",
+    "buttonGenerating": "Skapar...",
+    "buttonDownload": "Ladda ner",
+    "buttonLoadingAssets": "Laddar resurser...",
+    "alertNotReady": "PDF-komponenterna är inte redo än. Vänligen vänta ett ögonblick.",
+    "invoiceTitle": "Faktura",
+    "orderId": "Order-ID: #{{id}}",
+    "billedTo": "FAKTURERAS TILL",
+    "orderDate": "Orderdatum: {{date}}",
+    "status": "Status: {{status}}",
+    "tableHeader": {
+      "product": "Produkt",
+      "sku": "Art.nr",
+      "quantity": "Antal",
+      "price": "Pris",
+      "total": "Totalt"
+    },
+    "totalAmount": "Totalbelopp:",
+    "footerThanks": "Tack för din beställning!",
+    "footerCompany": "AK-TUNING"
   }
+
 }
