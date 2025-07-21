@@ -34,7 +34,6 @@ function PdfExportModal({ order, onClose }) {
 
     const doc = new jsPDF();
     
-    // Använd samma logik för ID i hela filen
     const displayId = order._id.slice(-8).toUpperCase();
 
     // --- HEADER ---
@@ -50,7 +49,6 @@ function PdfExportModal({ order, onClose }) {
 
     doc.setFontSize(10);
     doc.setFont(undefined, "normal");
-    // KORRIGERING: Använder samma ID-formatering som på webbsidan
     doc.text(t("pdfExport.orderId", { id: displayId }), 200, 32, { align: "right" });
 
     // --- BILLING AND ORDER INFO ---
@@ -80,7 +78,10 @@ function PdfExportModal({ order, onClose }) {
       textY,
       { align: "right" }
     );
-    doc.text(t("pdfExport.status", { status: order.orderStatus }), 200, textY + 6, { align: "right" });
+
+    // KORRIGERING: Hämta den översatta statustexten
+    const translatedStatus = t(`orderStatus.${order.orderStatus}`);
+    doc.text(t("pdfExport.status", { status: translatedStatus }), 200, textY + 6, { align: "right" });
 
     // --- ITEMS TABLE ---
     const tableColumn = [
@@ -126,7 +127,6 @@ function PdfExportModal({ order, onClose }) {
     doc.text(t("pdfExport.footerThanks"), 105, 280, { align: "center" });
     doc.text(t("pdfExport.footerCompany"), 105, 285, { align: "center" });
 
-    // KORRIGERING: Använder samma ID-formatering för filnamnet
     doc.save(`Order_${displayId}.pdf`);
 
     setIsGenerating(false);
@@ -140,7 +140,6 @@ function PdfExportModal({ order, onClose }) {
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">{t("pdfExport.modalTitle")}</h2>
         <p className="text-gray-600 mb-6">
-          {/* KORRIGERING: Använder samma ID-formatering i beskrivningen */}
           {t("pdfExport.modalDescription", { id: order._id.slice(-8).toUpperCase() })}
         </p>
         <div className="flex justify-center space-x-4">
