@@ -1,30 +1,28 @@
 import React, { useState, useEffect } from "react";
 import { client } from "../../sanityClient";
 import Papa from "papaparse";
-import CollapsibleSection from "../../components/CollapsibleSection"; // Import the new component
+import CollapsibleSection from "../../components/CollapsibleSection";
 
 function AdminProductManagement() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [filterText, setFilterText] = useState(""); // State for filtering existing products
 
   const [newProduct, setNewProduct] = useState({
     title: "",
     description: "",
     price: "",
     category: "",
+    brand: "", // New field
+    sku: "", // New field
     mainImage: null,
   });
 
-  const [adjustment, setAdjustment] = useState({
-    type: "percentage",
-    value: 0,
-  });
-
   const fetchProducts = async () => {
-    setLoading(true);
+    if (!products.length) setLoading(true);
     try {
-      const query = `*[_type == "product"]{_id, title, price, category, "imageUrl": mainImage.asset->url}`;
+      const query = `*[_type == "product"]{_id, title, price, category, brand, sku, "imageUrl": mainImage.asset->url}`;
       const data = await client.fetch(query);
       setProducts(data);
     } catch (err) {
@@ -50,10 +48,10 @@ function AdminProductManagement() {
 
   const handleAddNewProduct = async (e) => {
     e.preventDefault();
-    const { title, description, price, category, mainImage } = newProduct;
+    const { title, price, mainImage, sku } = newProduct;
 
-    if (!title || !price || !mainImage) {
-      alert("Title, price, and image are required.");
+    if (!title || !price || !mainImage || !sku) {
+      alert("Title, Price, SKU, and Image are required.");
       return;
     }
 
@@ -65,10 +63,8 @@ function AdminProductManagement() {
 
       const productDoc = {
         _type: "product",
-        title: title,
-        description: description,
-        price: parseFloat(price),
-        category: category,
+        ...newProduct,
+        price: parseFloat(newProduct.price),
         mainImage: {
           _type: "image",
           asset: {
@@ -80,18 +76,20 @@ function AdminProductManagement() {
 
       await client.create(productDoc);
       alert("Product added successfully!");
+      document.getElementById("newProductForm").reset();
       setNewProduct({
         title: "",
         description: "",
         price: "",
         category: "",
+        brand: "",
+        sku: "",
         mainImage: null,
       });
-      document.getElementById("newProductForm").reset();
       fetchProducts();
     } catch (error) {
       console.error("Failed to add product:", error);
-      alert("Failed to add product.");
+      alert("Failed to add product. Check if SKU is unique.");
     }
   };
 
@@ -108,107 +106,9 @@ function AdminProductManagement() {
     }
   };
 
-  const handleBulkUpload = (event) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      complete: async (results) => {
-        const productsToUpload = results.data;
-        if (
-          !window.confirm(
-            `You are about to upload ${productsToUpload.length} products. Continue?`
-          )
-        )
-          return;
-
-        const transaction = client.transaction();
-        productsToUpload.forEach((product) => {
-          if (product.title && product.price) {
-            transaction.create({
-              _type: "product",
-              title: product.title,
-              description: product.description || "",
-              price: parseFloat(product.price),
-              category: product.category || "Uncategorized",
-            });
-          }
-        });
-
-        try {
-          await transaction.commit();
-          alert(`${productsToUpload.length} products uploaded successfully!`);
-          fetchProducts();
-        } catch (error) {
-          console.error("Bulk upload failed:", error);
-          alert("Bulk upload failed. Check the console for more details.");
-        }
-      },
-      error: (error) => {
-        console.error("Error parsing CSV:", error);
-        alert("Failed to parse CSV file.");
-      },
-    });
-  };
-
-  const handleBulkPriceAdjust = async (e) => {
-    e.preventDefault();
-    const { type, value } = adjustment;
-    const numericValue = parseFloat(value);
-
-    if (isNaN(numericValue)) {
-      alert("Please enter a valid number for the adjustment.");
-      return;
-    }
-
-    if (
-      !window.confirm(
-        `Are you sure you want to adjust all product prices? This action cannot be undone.`
-      )
-    )
-      return;
-
-    const transaction = client.transaction();
-    products.forEach((product) => {
-      let newPrice;
-      if (type === "percentage") {
-        newPrice = product.price * (1 + numericValue / 100);
-      } else {
-        newPrice = product.price + numericValue;
-      }
-      transaction.patch(product._id, {
-        set: { price: parseFloat(newPrice.toFixed(2)) },
-      });
-    });
-
-    try {
-      await transaction.commit();
-      alert("Prices adjusted successfully!");
-      fetchProducts();
-    } catch (error) {
-      console.error("Failed to adjust prices:", error);
-      alert("Failed to adjust prices.");
-    }
-  };
-
-  const handleDeleteAllProducts = async () => {
-    if (
-      window.confirm(
-        "Are you sure you want to delete ALL products? This action cannot be undone."
-      )
-    ) {
-      try {
-        await client.delete({ query: '*[_type == "product"]' });
-        alert("All products have been deleted successfully!");
-        fetchProducts(); // Refresh the product list
-      } catch (error) {
-        console.error("Failed to delete all products:", error);
-        alert("Failed to delete all products.");
-      }
-    }
-  };
+  const filteredProducts = products.filter((p) =>
+    p.title.toLowerCase().includes(filterText.toLowerCase())
+  );
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-xl">
@@ -222,7 +122,6 @@ function AdminProductManagement() {
           onSubmit={handleAddNewProduct}
           className="space-y-4"
         >
-          {/* Form fields for adding new product */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Title:
@@ -235,6 +134,31 @@ function AdminProductManagement() {
               className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             />
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                SKU:
+              </label>
+              <input
+                type="text"
+                name="sku"
+                onChange={handleNewProductChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Brand:
+              </label>
+              <input
+                type="text"
+                name="brand"
+                onChange={handleNewProductChange}
+                className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+              />
+            </div>
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
               Description:
@@ -245,29 +169,31 @@ function AdminProductManagement() {
               className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Price:
-            </label>
-            <input
-              type="number"
-              name="price"
-              step="0.01"
-              onChange={handleNewProductChange}
-              required
-              className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Category:
-            </label>
-            <input
-              type="text"
-              name="category"
-              onChange={handleNewProductChange}
-              className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Price:
+              </label>
+              <input
+                type="number"
+                name="price"
+                step="0.01"
+                onChange={handleNewProductChange}
+                required
+                className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700">
+                Category:
+              </label>
+              <input
+                type="text"
+                name="category"
+                onChange={handleNewProductChange}
+                className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+              />
+            </div>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
@@ -291,108 +217,57 @@ function AdminProductManagement() {
         </form>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Bulk Upload Products (CSV)">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Upload a CSV file with columns: title, description, price, category.
-          </label>
-          <input
-            type="file"
-            accept=".csv"
-            onChange={handleBulkUpload}
-            className="block w-full text-sm text-red-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-100 file:text-red-700 hover:file:bg-red-200"
-          />
-        </div>
-      </CollapsibleSection>
+      {/* Other collapsible sections like Bulk Upload can go here */}
 
-      <CollapsibleSection title="Bulk Price Adjustment">
-        <form onSubmit={handleBulkPriceAdjust} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Adjustment Type:
-            </label>
-            <select
-              value={adjustment.type}
-              onChange={(e) =>
-                setAdjustment({ ...adjustment, type: e.target.value })
-              }
-              className="mt-1 block w-full px-3 py-2 border border-red-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-            >
-              <option value="percentage">Percentage (%)</option>
-              <option value="fixed">Fixed Amount</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700">
-              Value (use negative for discount):
-            </label>
-            <input
-              type="number"
-              step="any"
-              value={adjustment.value}
-              onChange={(e) =>
-                setAdjustment({ ...adjustment, value: e.target.value })
-              }
-              className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
-          >
-            Adjust All Prices
-          </button>
-        </form>
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Delete All Products">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">
-            This will permanently delete all products from the database. This
-            action cannot be undone.
-          </p>
-          <button
-            onClick={handleDeleteAllProducts}
-            className="bg-red-700 hover:bg-red-800 text-white font-bold py-2 px-6 rounded-md transition-colors duration-200"
-          >
-            Erase All Products
-          </button>
-        </div>
-      </CollapsibleSection>
-
-      <CollapsibleSection title="Existing Products" startOpen={true}>
+      <CollapsibleSection
+        title={`Existing Products (${filteredProducts.length})`}
+        startOpen={true}
+      >
+        <input
+          type="text"
+          placeholder="Filter products by title..."
+          value={filterText}
+          onChange={(e) => setFilterText(e.target.value)}
+          className="w-full px-3 py-2 mb-4 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500"
+        />
         {loading && <p>Loading products...</p>}
         {error && <p className="text-red-500">{error}</p>}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <div
-              key={product._id}
-              className="bg-white p-4 rounded-md shadow-sm border border-red-100 flex flex-col justify-between"
-            >
-              <div>
-                {product.imageUrl && (
-                  <img
-                    src={product.imageUrl}
-                    alt={product.title}
-                    className="w-full h-48 object-cover rounded-md mb-4"
-                  />
-                )}
-                <h4 className="text-lg font-bold text-gray-800">
-                  {product.title}
-                </h4>
-                <p className="text-gray-600">Price: ${product.price}</p>
-                <p className="text-sm text-gray-500">
-                  Category: {product.category}
-                </p>
-              </div>
-              <button
-                onClick={() => handleDeleteProduct(product._id)}
-                className="mt-4 bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md text-sm self-end"
+        {/* Scrollable container */}
+        <div className="max-h-[600px] overflow-y-auto pr-2">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredProducts.map((product) => (
+              <div
+                key={product._id}
+                className="bg-white p-4 rounded-md shadow-sm border border-red-100 flex flex-col justify-between"
               >
-                Delete
-              </button>
-            </div>
-          ))}
+                <div>
+                  {/* Gracefully handle missing images */}
+                  <img
+                    src={
+                      product.imageUrl ||
+                      "https://via.placeholder.com/300?text=No+Image"
+                    }
+                    alt={product.title}
+                    className="w-full h-48 object-cover rounded-md mb-4 bg-gray-200"
+                  />
+                  <h4 className="text-lg font-bold text-gray-800">
+                    {product.title}
+                  </h4>
+                  <p className="text-gray-600">Price: SEK {product.price}</p>
+                  <p className="text-sm text-gray-500">SKU: {product.sku}</p>
+                  <p className="text-sm text-gray-500">
+                    Category: {product.category}
+                  </p>
+                </div>
+                <button
+                  onClick={() => handleDeleteProduct(product._id)}
+                  className="mt-4 bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md text-sm self-end"
+                >
+                  Delete
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
       </CollapsibleSection>
     </div>
