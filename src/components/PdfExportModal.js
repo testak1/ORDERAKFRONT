@@ -165,10 +165,10 @@ function PdfExportModal({ order, onClose }) {
                         {item.quantity}
                       </td>
                       <td className="py-2 px-4 text-sm text-gray-800 text-right">
-                        {item.priceAtPurchase?.toFixed(2)} kr
+                        {item.priceAtPurchase} kr
                       </td>
                       <td className="py-2 px-4 text-sm text-gray-800 text-right">
-                        {(item.quantity * item.priceAtPurchase).toFixed(2)} kr
+                        {item.quantity * item.priceAtPurchase} kr
                       </td>
                     </tr>
                   ))}
@@ -201,7 +201,7 @@ function PdfExportModal({ order, onClose }) {
                 Order Total:
               </h3>
               <p className="text-4xl font-extrabold text-green-700">
-                {order.totalAmount?.toFixed(2) || "N/A"} kr
+                {order.totalAmount || "N/A"} kr
               </p>
             </div>
           </div>

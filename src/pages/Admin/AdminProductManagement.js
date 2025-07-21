@@ -573,7 +573,7 @@ function AdminProductManagement() {
                   </h4>
                   <p className="text-sm text-gray-500">SKU: {product.sku}</p>
                   <p className="text-gray-600 font-semibold">
-                    {product.price.toFixed(2)} kr
+                    {product.price} kr
                   </p>
                 </div>
                 <div className="mt-4 pt-4 border-t">

@@ -139,7 +139,7 @@ function CartPage() {
                   <div>
                     <h3 className="text-lg font-semibold">{item.title}</h3>
                     <p className="text-md font-medium text-green-700">
-                      {item.priceAtPurchase?.toFixed(2)} kr
+                      {item.priceAtPurchase} kr
                     </p>
                   </div>
                   <div className="flex items-center space-x-4">
@@ -163,7 +163,7 @@ function CartPage() {
               ))}
               <div className="flex justify-end pt-4 border-t mt-4">
                 <h2 className="text-2xl font-bold text-gray-800">
-                  Total: {getTotalPrice().toFixed(2)} kr
+                  Total: {getTotalPrice()} kr
                 </h2>
               </div>
             </>
@@ -262,7 +262,7 @@ function CartPage() {
           >
             {orderLoading
               ? "Placing Order..."
-              : `Buy Now (${getTotalPrice().toFixed(2)} kr)`}
+              : `Buy Now (${getTotalPrice()} kr)`}
           </button>
         </div>
       </div>

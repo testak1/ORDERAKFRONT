@@ -36,11 +36,11 @@ function ProductDetail() {
       const discountedPrice =
         product.price * (1 - user.discountPercentage / 100);
       return {
-        original: product.price.toFixed(2),
-        discounted: discountedPrice.toFixed(2),
+        original: product.price,
+        discounted: discountedPrice,
       };
     }
-    return product ? { original: product.price.toFixed(2) } : {};
+    return product ? { original: product.price } : {};
   };
 
   if (loading) return <div className="text-center py-10">Loading...</div>;

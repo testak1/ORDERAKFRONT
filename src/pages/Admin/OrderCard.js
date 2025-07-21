@@ -48,7 +48,7 @@ function OrderCard({
             Status: {order.orderStatus}
           </p>
           <p className="text-xl font-bold text-gray-800">
-            Total: {order.totalAmount?.toFixed(2) || "N/A"} kr
+            Total: {order.totalAmount || "N/A"} kr
           </p>
         </div>
       </div>
@@ -60,7 +60,7 @@ function OrderCard({
             <li key={index}>
               {item.product?.title || item.title} (SKU:{" "}
               {item.product?.sku || item.sku}) - Qty: {item.quantity} @ kr{" "}
-              {item.priceAtPurchase?.toFixed(2)} each
+              {item.priceAtPurchase} each
             </li>
           ))}
         </ul>
