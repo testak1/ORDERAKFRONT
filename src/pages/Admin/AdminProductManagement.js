@@ -127,7 +127,7 @@ function AdminProductManagement() {
     if (!file) return;
 
     setCsvFile(file);
-    const reader = new FileReader(); // LINE 51: Added semicolon here
+    const reader = new FileReader();
     reader.onload = (e) => {
       [span_24](start_span)const data = new Uint8Array(e.target.result);[span_24](end_span)
       [span_25](start_span)const workbook = XLSX.read(data, { type: "array" });[span_25](end_span)
