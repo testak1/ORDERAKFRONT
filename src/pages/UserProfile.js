@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { client } from "../sanityClient";
 import { useAuth } from "../context/AuthContext";
 import OrderCard from "./Admin/OrderCard";
-import PdfExportModal from "../components/PdfExportModal"; // Import the modal
+import PdfExportModal from "../components/PdfExportModal";
 import bcrypt from "bcryptjs";
 
 function UserProfile() {
@@ -21,6 +21,17 @@ function UserProfile() {
   // State for PDF modal
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedOrderForPdf, setSelectedOrderForPdf] = useState(null);
+
+  // Function to open the PDF modal
+  const handleExportPdf = (order) => {
+    setSelectedOrderForPdf(order);
+    setShowPdfModal(true);
+  };
+
+  const handleClosePdfModal = () => {
+    setShowPdfModal(false);
+    setSelectedOrderForPdf(null);
+  };
 
   useEffect(() => {
     const fetchUserOrders = async () => {
@@ -105,17 +116,6 @@ function UserProfile() {
       console.error("Password change failed:", error);
       setPasswordChangeMessage("Failed to change password. Please try again.");
     }
-  };
-
-  // Function to open the PDF modal
-  const handleExportPdf = (order) => {
-    setSelectedOrderForPdf(order);
-    setShowPdfModal(true);
-  };
-
-  const handleClosePdfModal = () => {
-    setShowPdfModal(false);
-    setSelectedOrderForPdf(null);
   };
 
   if (authLoading) {
