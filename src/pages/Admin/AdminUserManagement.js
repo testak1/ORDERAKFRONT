@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { client } from "../../sanityClient";
 import bcrypt from "bcryptjs";
+import CollapsibleSection from "../../components/CollapsibleSection"; // Import component
 
 function AdminUserManagement() {
   const [users, setUsers] = useState([]);
@@ -99,21 +100,13 @@ function AdminUserManagement() {
     }
   };
 
-  if (loading) return <div className="text-center py-8">Loading users...</div>;
-  if (error)
-    return <div className="text-center text-red-500 py-8">Error: {error}</div>;
-
   return (
     <div className="p-4 bg-white rounded-lg shadow-xl">
       <h2 className="text-3xl font-extrabold text-gray-900 mb-8 text-center border-b-2 border-red-200 pb-4">
         User Management
       </h2>
 
-      {/* Add New User */}
-      <div className="mb-10 p-8 border border-red-200 rounded-xl bg-red-50/20 shadow-lg">
-        <h3 className="text-2xl font-bold text-red-800 mb-6 border-b border-red-300 pb-3">
-          Add New User
-        </h3>
+      <CollapsibleSection title="Add New User">
         <form onSubmit={handleAddUser} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700">
@@ -172,14 +165,14 @@ function AdminUserManagement() {
             Add User
           </button>
         </form>
-      </div>
+      </CollapsibleSection>
 
-      {/* Manage Existing Users */}
-      <div className="p-8 border border-red-200 rounded-xl bg-red-50/20 shadow-lg">
-        <h3 className="text-2xl font-bold text-red-800 mb-6 border-b border-red-300 pb-3">
-          Existing Users
-        </h3>
-        {users.length === 0 && <p className="text-gray-500">No users found.</p>}
+      <CollapsibleSection title="Existing Users" startOpen={true}>
+        {loading && <p>Loading users...</p>}
+        {error && <p className="text-red-500">{error}</p>}
+        {users.length === 0 && !loading && (
+          <p className="text-gray-500">No users found.</p>
+        )}
         <div className="space-y-4">
           {users.map((user) => (
             <div
@@ -216,7 +209,7 @@ function AdminUserManagement() {
             </div>
           ))}
         </div>
-      </div>
+      </CollapsibleSection>
     </div>
   );
 }
