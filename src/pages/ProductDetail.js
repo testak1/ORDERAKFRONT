@@ -36,11 +36,11 @@ function ProductDetail() {
       const discountedPrice =
         product.price * (1 - user.discountPercentage / 100);
       return {
-        original: product.price,
-        discounted: discountedPrice,
+        original: Math.round(product.price), // Rounds to nearest integer
+        discounted: Math.round(discountedPrice), // Rounds to nearest integer
       };
     }
-    return product ? { original: product.price } : {};
+    return product ? { original: Math.round(product.price) } : {};
   };
 
   if (loading) return <div className="text-center py-10">Loading...</div>;
