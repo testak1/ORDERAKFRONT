@@ -2,9 +2,11 @@ import React, { useState, useEffect } from "react";
 import { client } from "../../sanityClient";
 import bcrypt from "bcryptjs";
 import CollapsibleSection from "../../components/CollapsibleSection";
+import { useTranslation } from "react-i18next";
 
 // Sub-komponent för att hantera en enskild användare
 const UserEditor = ({ user, refreshUsers }) => {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
     fullName: user.fullName || "",
@@ -42,30 +44,26 @@ const UserEditor = ({ user, refreshUsers }) => {
           discountPercentage: parseFloat(editData.discountPercentage),
         })
         .commit();
-      alert("User updated successfully!");
+      alert(t("adminUserManagement.userEditor.updateSuccess"));
       setIsEditing(false);
       refreshUsers();
     } catch (error) {
       console.error("Failed to update user:", error);
-      alert("Failed to update user.");
+      alert(t("adminUserManagement.userEditor.updateError"));
     }
   };
 
   const handleDeleteUser = async (userId) => {
     if (
-      window.confirm(
-        "Are you sure you want to delete this user? This may affect their past orders."
-      )
+      window.confirm(t("adminUserManagement.userEditor.deleteConfirm"))
     ) {
       try {
         await client.delete(userId);
-        alert("User deleted successfully!");
+        alert(t("adminUserManagement.userEditor.deleteSuccess"));
         refreshUsers();
       } catch (error) {
         console.error("Failed to delete user:", error);
-        alert(
-          "Failed to delete user. They may have existing orders linked to them."
-        );
+        alert(t("adminUserManagement.userEditor.deleteError"));
       }
     }
   };
@@ -78,7 +76,7 @@ const UserEditor = ({ user, refreshUsers }) => {
             {user.username} ({user.role})
           </h4>
           <p className="text-sm text-gray-500">
-            {user.email || "No email set"}
+            {user.email || t("adminUserManagement.userEditor.noEmail")}
           </p>
         </div>
         <div className="flex space-x-2 mt-2 md:mt-0">
@@ -86,13 +84,13 @@ const UserEditor = ({ user, refreshUsers }) => {
             onClick={() => setIsEditing(!isEditing)}
             className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-1 px-3 rounded-md text-sm"
           >
-            {isEditing ? "Cancel" : "Edit"}
+            {isEditing ? t("adminUserManagement.userEditor.cancel") : t("adminUserManagement.userEditor.edit")}
           </button>
           <button
             onClick={() => handleDeleteUser(user._id)}
             className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md text-sm"
           >
-            Delete
+            {t("common.delete")}
           </button>
         </div>
       </div>
@@ -105,7 +103,7 @@ const UserEditor = ({ user, refreshUsers }) => {
           {/* --- DETTA ÄR DEN ÅTERSTÄLLDA FORMULÄRKODEN --- */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium">Full Name</label>
+              <label className="block text-sm font-medium">{t("adminUserManagement.form.fullName")}</label>
               <input
                 type="text"
                 name="fullName"
@@ -115,7 +113,7 @@ const UserEditor = ({ user, refreshUsers }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Email</label>
+              <label className="block text-sm font-medium">{t("adminUserManagement.form.email")}</label>
               <input
                 type="email"
                 name="email"
@@ -127,7 +125,7 @@ const UserEditor = ({ user, refreshUsers }) => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium">Phone</label>
+              <label className="block text-sm font-medium">{t("adminUserManagement.form.phone")}</label>
               <input
                 type="tel"
                 name="phone"
@@ -137,7 +135,7 @@ const UserEditor = ({ user, refreshUsers }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Discount (%)</label>
+              <label className="block text-sm font-medium">{t("adminUserManagement.form.discount")}</label>
               <input
                 type="number"
                 name="discountPercentage"
@@ -151,13 +149,13 @@ const UserEditor = ({ user, refreshUsers }) => {
           </div>
           <fieldset className="border p-4 rounded-md">
             <legend className="text-md font-medium px-2">
-              Default Address
+              {t("adminUserManagement.userEditor.defaultAddress")}
             </legend>
             <div className="space-y-2">
               <input
                 type="text"
                 name="addressLine1"
-                placeholder="Address Line 1"
+                placeholder={t("adminUserManagement.userEditor.addressLine1")}
                 value={editData.address.addressLine1}
                 onChange={handleAddressChange}
                 className="w-full px-3 py-2 border rounded-md"
@@ -166,7 +164,7 @@ const UserEditor = ({ user, refreshUsers }) => {
                 <input
                   type="text"
                   name="city"
-                  placeholder="City"
+                  placeholder={t("adminUserManagement.userEditor.city")}
                   value={editData.address.city}
                   onChange={handleAddressChange}
                   className="w-full px-3 py-2 border rounded-md"
@@ -174,7 +172,7 @@ const UserEditor = ({ user, refreshUsers }) => {
                 <input
                   type="text"
                   name="postalCode"
-                  placeholder="Postal Code"
+                  placeholder={t("adminUserManagement.userEditor.postalCode")}
                   value={editData.address.postalCode}
                   onChange={handleAddressChange}
                   className="w-full px-3 py-2 border rounded-md"
@@ -182,7 +180,7 @@ const UserEditor = ({ user, refreshUsers }) => {
                 <input
                   type="text"
                   name="country"
-                  placeholder="Country"
+                  placeholder={t("adminUserManagement.userEditor.country")}
                   value={editData.address.country}
                   onChange={handleAddressChange}
                   className="w-full px-3 py-2 border rounded-md"
@@ -194,7 +192,7 @@ const UserEditor = ({ user, refreshUsers }) => {
             type="submit"
             className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md"
           >
-            Save Changes
+            {t("adminUserManagement.form.saveChangesButton")}
           </button>
         </form>
       )}
@@ -203,6 +201,7 @@ const UserEditor = ({ user, refreshUsers }) => {
 };
 
 function AdminUserManagement() {
+  const { t } = useTranslation();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -243,7 +242,7 @@ function AdminUserManagement() {
   const handleAddUser = async (e) => {
     e.preventDefault();
     if (!newUser.username || !newUser.password) {
-      alert("Username and Password are required.");
+      alert(t("adminUserManagement.form.alertRequired"));
       return;
     }
 
@@ -257,7 +256,7 @@ function AdminUserManagement() {
 
     try {
       await client.create(userDoc);
-      alert("User added successfully!");
+      alert(t("adminUserManagement.form.addSuccess"));
       setNewUser({
         username: "",
         password: "",
@@ -270,24 +269,22 @@ function AdminUserManagement() {
       fetchUsers();
     } catch (error) {
       console.error("Failed to add user:", error);
-      alert(
-        "Failed to add user. The username or email might already be taken."
-      );
+      alert(t("adminUserManagement.form.addError"));
     }
   };
 
   return (
     <div className="p-2 md:p-4 bg-white rounded-lg shadow-xl">
       <h2 className="text-2xl md:text-3xl font-extrabold text-gray-900 mb-8 text-center border-b-2 border-red-200 pb-4">
-        User Management
+        {t("adminUserManagement.title")}
       </h2>
 
-      <CollapsibleSection title="Add New User">
+      <CollapsibleSection title={t("adminUserManagement.addUserTitle")}>
         <form onSubmit={handleAddUser} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium">
-                Username:<span className="text-red-500">*</span>
+                {t("adminUserManagement.form.username")}:<span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -300,7 +297,7 @@ function AdminUserManagement() {
             </div>
             <div>
               <label className="block text-sm font-medium">
-                Password:<span className="text-red-500">*</span>
+                {t("adminUserManagement.form.password")}:<span className="text-red-500">*</span>
               </label>
               <input
                 type="password"
@@ -312,7 +309,7 @@ function AdminUserManagement() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Full Name:</label>
+              <label className="block text-sm font-medium">{t("adminUserManagement.form.fullName")}:</label>
               <input
                 type="text"
                 name="fullName"
@@ -322,7 +319,7 @@ function AdminUserManagement() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Email:</label>
+              <label className="block text-sm font-medium">{t("adminUserManagement.form.email")}:</label>
               <input
                 type="email"
                 name="email"
@@ -332,7 +329,7 @@ function AdminUserManagement() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Phone:</label>
+              <label className="block text-sm font-medium">{t("adminUserManagement.form.phone")}:</label>
               <input
                 type="tel"
                 name="phone"
@@ -342,19 +339,19 @@ function AdminUserManagement() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">Role:</label>
+              <label className="block text-sm font-medium">{t("adminUserManagement.form.role")}:</label>
               <select
                 name="role"
                 value={newUser.role}
                 onChange={handleNewUserChange}
                 className="mt-1 w-full px-3 py-2 border rounded-md bg-white"
               >
-                <option value="user">User (Dealer)</option>
-                <option value="admin">Admin</option>
+                <option value="user">{t("adminUserManagement.form.userRole")}</option>
+                <option value="admin">{t("adminUserManagement.form.adminRole")}</option>
               </select>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium">Discount (%):</label>
+              <label className="block text-sm font-medium">{t("adminUserManagement.form.discount")}:</label>
               <input
                 type="number"
                 name="discountPercentage"
@@ -370,13 +367,13 @@ function AdminUserManagement() {
             type="submit"
             className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md"
           >
-            Add User
+            {t("adminUserManagement.form.addUserButton")}
           </button>
         </form>
       </CollapsibleSection>
 
-      <CollapsibleSection title="Existing Users" startOpen={true}>
-        {loading && <p>Loading users...</p>}
+      <CollapsibleSection title={t("adminUserManagement.existingUsersTitle")} startOpen={true}>
+        {loading && <p>{t("common.loading")}...</p>}
         {error && <p className="text-red-500">{error}</p>}
         <div className="space-y-4">
           {users.map((user) => (
