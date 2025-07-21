@@ -76,27 +76,51 @@ function NavBar() {
       {/* Uppdaterad för mobil: flex-wrap och centrerad på små skärmar */}
       <div className="container mx-auto flex flex-wrap justify-between items-center gap-y-2">
         <div className="flex items-center space-x-4">
-          <Link to="/" className="text-lg font-semibold hover:text-red-200">Products</Link>
-          <Link to="/cart" className="text-lg font-semibold hover:text-red-200">Cart</Link>
+          <Link to="/" className="text-lg font-semibold hover:text-red-200">
+            Products
+          </Link>
+          <Link to="/cart" className="text-lg font-semibold hover:text-red-200">
+            Cart
+          </Link>
           {user?.role === "admin" && (
-            <Link to="/admin" className="text-lg font-semibold hover:text-red-200">Admin</Link>
+            <Link
+              to="/admin"
+              className="text-lg font-semibold hover:text-red-200"
+            >
+              Admin
+            </Link>
           )}
           {user && (
-            <Link to="/profile" className="text-lg font-semibold hover:text-red-200">Profile</Link>
+            <Link
+              to="/profile"
+              className="text-lg font-semibold hover:text-red-200"
+            >
+              Profile
+            </Link>
           )}
         </div>
         <div className="flex items-center space-x-4">
           {user ? (
             <>
               <span className="text-sm text-center">
-                Welcome, <span className="font-medium">{user.username}</span> (<span className="capitalize">{user.role}</span>)
+                Welcome,{" "}
+                <span className="font-medium">
+                  {user.fullName || user.username}
+                </span>{" "}
+                (<span className="capitalize">{user.role}</span>)
               </span>
-              <button onClick={logout} className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-1 rounded-md text-sm">
+              <button
+                onClick={logout}
+                className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-1 rounded-md text-sm"
+              >
                 Logout
               </button>
             </>
           ) : (
-            <Link to="/login" className="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded-md text-sm">
+            <Link
+              to="/login"
+              className="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded-md text-sm"
+            >
               Login
             </Link>
           )}
