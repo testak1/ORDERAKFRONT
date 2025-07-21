@@ -38,17 +38,19 @@ function ProductList() {
 
   const getDisplayPrice = (productPrice) => {
     if (user && user.discountPercentage > 0) {
-      const discountedPrice = productPrice * (1 - user.discountPercentage / 100);
+      const discountedPrice =
+        productPrice * (1 - user.discountPercentage / 100);
       return {
-        original: productPrice.toFixed(2), // Use toFixed for decimals
-        discounted: discountedPrice.toFixed(2),
+        original: Math.round(productPrice), // Avrundar till heltal
+        discounted: Math.round(discountedPrice), // Avrundar till heltal
       };
     }
-    return { original: productPrice.toFixed(2) };
+    return { original: Math.round(productPrice) }; // Avrundar till heltal
   };
 
   if (loading) return <div className="text-center py-10">Loading...</div>;
-  if (error) return <div className="text-red-500 text-center py-10">{error}</div>;
+  if (error)
+    return <div className="text-red-500 text-center py-10">{error}</div>;
 
   return (
     <div className="p-4">
@@ -66,20 +68,31 @@ function ProductList() {
         {filteredProducts.map((product) => {
           const displayPrice = getDisplayPrice(product.price);
           return (
-            <div key={product._id} className="bg-white rounded-lg shadow-lg flex flex-col">
-              <Link to={`/products/${product._id}`}>
+            <div
+              key={product._id}
+              className="bg-white rounded-lg shadow-lg flex flex-col"
+            >
+              <Link
+                to={`/products/${product._id}`}
+                className="flex flex-col flex-grow"
+              >
                 <img
-                  src={product.imageUrl || "https://placehold.co/400x300?text=BILD%20KOMMER%20INKOM%20KORT"}
+                  src={
+                    product.imageUrl ||
+                    "https://placehold.co/400x300?text=BILD%20KOMMER%20INKOM%20KORT"
+                  }
                   alt={product.title}
                   className="w-full h-56 object-cover bg-gray-200"
                 />
-                <div className="p-4 flex-grow">
-                  <h2 className="text-xl font-semibold h-14">{product.title}</h2>
-                  
-                  {/* --- SKU DISPLAY --- */}
-                  <p className="text-xs text-gray-500 mb-2">SKU: {product.sku}</p>
-
-                  <div className="h-12">
+                {/* --- IMPROVED LAYOUT FOR TEXT --- */}
+                <div className="p-4 flex flex-col flex-grow">
+                  <h2 className="text-xl font-semibold text-gray-900 flex-grow">
+                    {product.title}
+                  </h2>
+                  <p className="text-xs text-gray-500 mt-2">
+                    SKU: {product.sku}
+                  </p>
+                  <div className="mt-2">
                     {displayPrice.discounted ? (
                       <div>
                         <p className="text-gray-500 line-through">
@@ -97,7 +110,7 @@ function ProductList() {
                   </div>
                 </div>
               </Link>
-              <div className="p-4 mt-auto">
+              <div className="p-4 border-t mt-auto">
                 <button
                   onClick={() => addToCart(product)}
                   className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md"

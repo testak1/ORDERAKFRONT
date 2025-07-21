@@ -11,8 +11,6 @@ function ProductDetail() {
   const [error, setError] = useState(null);
   const { addToCart } = useCart();
   const { user } = useAuth();
-
-  // --- NEW STATE FOR EXPANDABLE DESCRIPTION ---
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
 
   useEffect(() => {
@@ -35,22 +33,22 @@ function ProductDetail() {
 
   const getDisplayPrice = () => {
     if (product && user && user.discountPercentage > 0) {
-      const discountedPrice = product.price * (1 - user.discountPercentage / 100);
+      const discountedPrice =
+        product.price * (1 - user.discountPercentage / 100);
       return {
-        original: product.price.toFixed(2), // Use toFixed(2) for consistency
-        discounted: discountedPrice.toFixed(2),
+        original: Math.round(product.price), // Avrundar
+        discounted: Math.round(discountedPrice), // Avrundar
       };
     }
-    return product ? { original: product.price.toFixed(2) } : {};
+    return product ? { original: Math.round(product.price) } : {}; // Avrundar
   };
 
   if (loading) return <div className="text-center py-10">Loading...</div>;
-  if (error) return <div className="text-red-500 text-center py-10">{error}</div>;
+  if (error)
+    return <div className="text-red-500 text-center py-10">{error}</div>;
   if (!product) return <div>Product not found.</div>;
 
   const displayPrice = getDisplayPrice();
-  
-  // Logic for truncating description
   const descriptionPreview = product.description?.substring(0, 250) + "...";
 
   return (
@@ -58,29 +56,38 @@ function ProductDetail() {
       <div className="bg-white shadow-xl rounded-lg overflow-hidden md:flex">
         <div className="md:w-1/2">
           <img
-            src={product.imageUrl || "https://placehold.co/400x300?text=BILD%20KOMMER%20INKOM%20KORT"}
+            src={
+              product.imageUrl ||
+              "https://placehold.co/400x300?text=BILD%20KOMMER%20INKOM%20KORT"
+            }
             alt={product.title}
             className="w-full h-full object-cover"
           />
         </div>
         <div className="md:w-1/2 p-8 flex flex-col justify-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">{product.title}</h1>
-          
-          {/* --- SKU DISPLAY --- */}
+          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+            {product.title}
+          </h1>
           <p className="text-sm text-gray-500 mb-4">SKU: {product.sku}</p>
 
-          {/* --- EXPANDABLE DESCRIPTION --- */}
           <div className="text-gray-600 mb-6">
             <div
-              dangerouslySetInnerHTML={{ __html: isDescriptionExpanded ? product.description : descriptionPreview }}
+              dangerouslySetInnerHTML={{
+                __html: isDescriptionExpanded
+                  ? product.description
+                  : descriptionPreview,
+              }}
             />
             {product.description?.length > 250 && (
-                 <button onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className="text-red-600 font-semibold hover:underline mt-2">
-                    {isDescriptionExpanded ? "Read less" : "Read more..."}
-                 </button>
+              <button
+                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                className="text-red-600 font-semibold hover:underline mt-2"
+              >
+                {isDescriptionExpanded ? "Read less" : "Read more..."}
+              </button>
             )}
           </div>
-          
+
           <div className="mb-6">
             {displayPrice.discounted ? (
               <>
