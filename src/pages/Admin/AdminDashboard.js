@@ -5,21 +5,22 @@ import AdminUserManagement from "./AdminUserManagement";
 import AdminOrderManagement from "./AdminOrderManagement";
 
 function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState("products"); // 'products', 'users', 'orders'
+  const [activeTab, setActiveTab] = useState("products");
 
   const tabClasses = (tabName) =>
-    `px-4 py-2 text-lg font-medium rounded-t-lg transition-colors duration-200 ` +
+    `px-3 py-2 text-base font-medium rounded-t-lg transition-colors duration-200 ` +
     (activeTab === tabName
       ? "bg-red-600 text-white shadow-md"
       : "bg-gray-200 text-gray-700 hover:bg-gray-300");
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow-md">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6 border-b-2 border-red-200 pb-4">
+    <div className="p-2 md:p-4 bg-white rounded-lg shadow-md">
+      <h1 className="text-2xl md:text-3xl font-bold text-gray-800 mb-6 border-b-2 border-red-200 pb-4">
         Admin Dashboard
       </h1>
 
-      <nav className="flex space-x-2 border-b-2 border-red-200 mb-6">
+      {/* Nav-länkarna kommer nu att radbrytas snyggt på små skärmar */}
+      <nav className="flex flex-wrap gap-2 border-b-2 border-red-200 mb-6">
         <button
           onClick={() => setActiveTab("products")}
           className={tabClasses("products")}
@@ -40,7 +41,7 @@ function AdminDashboard() {
         </button>
       </nav>
 
-      <div className="bg-red-50/20 p-6 rounded-lg border border-red-200 min-h-[500px]">
+      <div className="bg-red-50/20 p-2 md:p-6 rounded-lg border border-red-200 min-h-[500px]">
         {activeTab === "products" && <AdminProductManagement />}
         {activeTab === "users" && <AdminUserManagement />}
         {activeTab === "orders" && <AdminOrderManagement />}
