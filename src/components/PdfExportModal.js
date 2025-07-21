@@ -6,8 +6,6 @@ function PdfExportModal({ order, onClose }) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [logoBase64, setLogoBase64] = useState(null);
 
-  // This effect runs once to fetch the logo and convert it to a format
-  // that can be safely embedded in the PDF, solving the cross-origin issue.
   useEffect(() => {
     const convertImageToBase64 = async () => {
       try {
@@ -35,10 +33,13 @@ function PdfExportModal({ order, onClose }) {
     const doc = new jsPDF();
 
     // --- HEADER ---
-    // Add the logo image
-    doc.addImage(logoBase64, "PNG", 14, 15, 50, 15); // x, y, width, height
+    // --- FIX: Calculate logo height proportionally to maintain aspect ratio ---
+    const logoWidth = 50;
+    const logoOriginalWidth = 600; 
+    const logoOriginalHeight = 564;
+    const logoHeight = (logoOriginalHeight * logoWidth) / logoOriginalWidth;
+    doc.addImage(logoBase64, "PNG", 14, 15, logoWidth, logoHeight);
 
-    // Add Invoice title
     doc.setFontSize(22);
     doc.setFont(undefined, "bold");
     doc.text("Invoice", 200, 25, { align: "right" });
@@ -66,8 +67,9 @@ function PdfExportModal({ order, onClose }) {
     );
     doc.text(order.shippingAddress?.country || "", 14, 69);
 
+    // --- FIX: Use toLocaleString() to include time ---
     doc.text(
-      `Order Date: ${new Date(order.createdAt).toLocaleDateString()}`,
+      `Order Date: ${new Date(order.createdAt).toLocaleString('sv-SE')}`, // Swedish locale for formatting
       200,
       48,
       { align: "right" }
@@ -80,7 +82,7 @@ function PdfExportModal({ order, onClose }) {
 
     order.items.forEach((item) => {
       const itemData = [
-        doc.splitTextToSize(item.product?.title || item.title, 80), // Wrap long titles
+        doc.splitTextToSize(item.product?.title || item.title, 80),
         item.product?.sku || item.sku,
         item.quantity,
         `${Math.round(item.priceAtPurchase)} kr`,
@@ -121,7 +123,6 @@ function PdfExportModal({ order, onClose }) {
   if (!order) return null;
 
   return (
-    // The modal now only serves as a confirmation dialog
     <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">Generate PDF</h2>
