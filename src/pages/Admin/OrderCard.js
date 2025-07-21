@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 
 function OrderCard({
   order,
@@ -6,6 +7,8 @@ function OrderCard({
   isAdminView = true,
   onExportPdf,
 }) {
+  const { t } = useTranslation();
+
   const handleUpdate = async (e) => {
     if (isAdminView) {
       await onUpdateOrderStatus(order._id, e.target.value);
@@ -19,6 +22,8 @@ function OrderCard({
     completed: "text-green-600",
     cancelled: "text-red-600",
   }[order.orderStatus] || "text-gray-600";
+  
+  const orderStatusText = t(`orderStatus.${order.orderStatus}`, order.orderStatus);
 
   return (
     <div className="p-4 md:p-6 border border-gray-200 rounded-lg shadow-sm bg-gray-50">
@@ -26,33 +31,36 @@ function OrderCard({
       <div className="flex flex-col md:flex-row justify-between items-start mb-4 border-b pb-3 gap-2">
         <div>
           <h3 className="text-lg font-semibold text-gray-900">
-            Order ID: {order._id.slice(-8).toUpperCase()}
+            {t("orderCard.orderId", { id: order._id.slice(-8).toUpperCase() })}
           </h3>
           <p className="text-sm text-gray-600">
-            Ordered by: {order.user?.username || "N/A"}
+            {t("orderCard.orderedBy", { username: order.user?.username || "N/A" })}
           </p>
           <p className="text-sm text-gray-600">
-            Created At: {new Date(order.createdAt).toLocaleString('sv-SE')}
+            {t("orderCard.createdAt", { date: new Date(order.createdAt).toLocaleString('sv-SE') })}
           </p>
         </div>
         <div className="text-left md:text-right mt-2 md:mt-0 w-full md:w-auto">
           <p className={`text-lg font-bold ${statusColorClass} capitalize`}>
-            Status: {order.orderStatus}
+            {t("orderCard.statusLabel")}{orderStatusText}
           </p>
           <p className="text-xl font-bold text-gray-800">
-            Total: {Math.round(order.totalAmount || 0)} kr
+            {t("orderCard.total", { total: Math.round(order.totalAmount || 0) })}
           </p>
         </div>
       </div>
 
       <div className="mb-4">
-        <h4 className="text-md font-semibold text-gray-800 mb-2">Items:</h4>
+        <h4 className="text-md font-semibold text-gray-800 mb-2">{t("orderCard.items")}</h4>
         <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
           {order.items.map((item, index) => (
             <li key={index}>
-              {item.product?.title || item.title} (SKU:{" "}
-              {item.product?.sku || item.sku}) - Qty: {item.quantity} @ kr{" "}
-              {Math.round(item.priceAtPurchase)} each
+                {t("orderCard.itemLine", {
+                    title: item.product?.title || item.title,
+                    sku: item.product?.sku || item.sku,
+                    quantity: item.quantity,
+                    price: Math.round(item.priceAtPurchase)
+                })}
             </li>
           ))}
         </ul>
@@ -60,7 +68,7 @@ function OrderCard({
 
       <div className="mb-4">
         <h4 className="text-md font-semibold text-gray-800 mb-2">
-          Shipping Address:
+          {t("orderCard.shippingAddress")}
         </h4>
         <address className="not-italic text-sm text-gray-700">
           <p>{order.shippingAddress?.fullName}</p>
@@ -77,18 +85,18 @@ function OrderCard({
         {isAdminView && (
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Update Status:
+              {t("orderCard.updateStatus")}
             </label>
             <select
               value={order.orderStatus}
               onChange={handleUpdate}
               className="mt-1 block w-full md:w-auto px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-white"
             >
-              <option value="pending">Pending</option>
-              <option value="processing">Processing</option>
-              <option value="shipped">Shipped</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
+              <option value="pending">{t("orderStatus.pending")}</option>
+              <option value="processing">{t("orderStatus.processing")}</option>
+              <option value="shipped">{t("orderStatus.shipped")}</option>
+              <option value="completed">{t("orderStatus.completed")}</option>
+              <option value="cancelled">{t("orderStatus.cancelled")}</option>
             </select>
           </div>
         )}
@@ -99,7 +107,7 @@ function OrderCard({
             !isAdminView ? "md:ml-auto" : ""
           }`}
         >
-          Export to PDF
+          {t("orderCard.exportPdf")}
         </button>
       </div>
     </div>
