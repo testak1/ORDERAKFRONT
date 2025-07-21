@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import { client } from "../sanityClient";
 import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext"; // Import useAuth
 
 function ProductDetail() {
   const { productId } = useParams();
@@ -9,41 +10,45 @@ function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { addToCart } = useCart();
+  const { user } = useAuth(); // Get the logged-in user
 
   useEffect(() => {
     const fetchProduct = async () => {
       setLoading(true);
       try {
         const query = `*[_type == "product" && _id == $productId][0]{
-          _id,
-          title,
-          description,
-          sku,
-          price,
-          "imageUrl": mainImage.asset->url
+          _id, title, description, sku, price, "imageUrl": mainImage.asset->url
         }`;
-        const params = { productId };
-        const data = await client.fetch(query, params);
+        const data = await client.fetch(query, { productId });
         setProduct(data);
       } catch (err) {
         setError("Failed to load product details.");
-        console.error("Failed to fetch product:", err);
       } finally {
         setLoading(false);
       }
     };
-
     fetchProduct();
   }, [productId]);
+
+  // --- PRICE CALCULATION LOGIC ---
+  const getDisplayPrice = () => {
+    if (product && user && user.discountPercentage > 0) {
+      const discountedPrice =
+        product.price * (1 - user.discountPercentage / 100);
+      return {
+        original: product.price.toFixed(2),
+        discounted: discountedPrice.toFixed(2),
+      };
+    }
+    return product ? { original: product.price.toFixed(2) } : {};
+  };
 
   if (loading) return <div className="text-center py-10">Loading...</div>;
   if (error)
     return <div className="text-red-500 text-center py-10">{error}</div>;
   if (!product) return <div>Product not found.</div>;
 
-  const handleAddToCart = () => {
-    addToCart(product);
-  };
+  const displayPrice = getDisplayPrice();
 
   return (
     <div className="container mx-auto p-8">
@@ -62,21 +67,32 @@ function ProductDetail() {
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             {product.title}
           </h1>
-
-          {/* --- THIS IS THE FIX --- */}
-          {/* Replaced the <p> tag with a div that renders HTML */}
           <div
             className="text-gray-600 mb-6"
             dangerouslySetInnerHTML={{ __html: product.description }}
           />
-          {/* ---------------------- */}
 
-          <p className="text-3xl font-extrabold text-gray-800 mb-6">
-            SEK {product.price.toFixed(2)}
-          </p>
+          {/* --- NEW PRICE DISPLAY --- */}
+          <div className="mb-6">
+            {displayPrice.discounted ? (
+              <>
+                <p className="text-2xl text-gray-500 line-through">
+                  ORD PRIS: {displayPrice.original} kr
+                </p>
+                <p className="text-4xl font-extrabold text-green-600">
+                  DITT PRIS: {displayPrice.discounted} kr
+                </p>
+              </>
+            ) : (
+              <p className="text-3xl font-extrabold text-gray-800">
+                {displayPrice.original} kr
+              </p>
+            )}
+          </div>
+
           <button
-            onClick={handleAddToCart}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg transition-transform transform hover:scale-105"
+            onClick={() => addToCart(product)}
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-6 rounded-lg"
           >
             Add to Cart
           </button>

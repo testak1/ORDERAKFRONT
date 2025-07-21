@@ -487,7 +487,7 @@ function AdminProductManagement() {
                 className="px-4 py-2 border border-red-300 rounded-r-md bg-white border-l-0"
               >
                 <option value="percentage">Percentage (%)</option>
-                <option value="fixed">Fixed Amount (SEK)</option>
+                <option value="fixed">Fixed Amount (kr)</option>
               </select>
             </div>
           </div>
@@ -573,7 +573,7 @@ function AdminProductManagement() {
                   </h4>
                   <p className="text-sm text-gray-500">SKU: {product.sku}</p>
                   <p className="text-gray-600 font-semibold">
-                    SEK {product.price.toFixed(2)}
+                    {product.price.toFixed(2)} kr
                   </p>
                 </div>
                 <div className="mt-4 pt-4 border-t">
