@@ -3,10 +3,6 @@ import { useAuth } from "../context/AuthContext";
 import { client } from "../sanityClient";
 import OrderCard from "./Admin/OrderCard"; // We can reuse the OrderCard component!
 
-// Import libraries for PDF generation
-import jsPDF from "jspdf";
-import "jspdf-autotable";
-
 function UserProfile() {
   const { user, logout } = useAuth();
   const [orders, setOrders] = useState([]);
