@@ -121,9 +121,7 @@ function AdminProductManagement() {
   };
 
   const handleArchiveProduct = async (productId) => {
-    if (
-      window.confirm(t("adminProductManagement.form.archiveConfirm"))
-    ) {
+    if (window.confirm(t("adminProductManagement.form.archiveConfirm"))) {
       try {
         await client.patch(productId).set({ isArchived: true }).commit();
         alert(t("adminProductManagement.form.archiveSuccess"));
@@ -154,7 +152,9 @@ function AdminProductManagement() {
         });
 
         if (json.length < 2) {
-          throw new Error(t("adminProductManagement.bulkUpload.errorEmptyFile"));
+          throw new Error(
+            t("adminProductManagement.bulkUpload.errorEmptyFile")
+          );
         }
         setCsvHeaders(json[0]);
         setCsvData(json.slice(1));
@@ -173,7 +173,9 @@ function AdminProductManagement() {
 
   const handleConfirmBulkUpload = async () => {
     if (!fieldMapping.sku || !fieldMapping.title || !fieldMapping.price) {
-      setCsvUploadError(t("adminProductManagement.bulkUpload.errorMappingRequired"));
+      setCsvUploadError(
+        t("adminProductManagement.bulkUpload.errorMappingRequired")
+      );
       return;
     }
 
@@ -239,7 +241,11 @@ function AdminProductManagement() {
         transaction.patch(product._id).set({ price: Math.max(0, newPrice) }); // Ensure price doesn't go below 0
       });
       await transaction.commit();
-      alert(t("adminProductManagement.bulkPrice.alertSuccess", { count: productsToAdjust.length }));
+      alert(
+        t("adminProductManagement.bulkPrice.alertSuccess", {
+          count: productsToAdjust.length,
+        })
+      );
       fetchProducts();
     } catch (error) {
       console.error("Bulk price adjustment failed:", error);
@@ -248,25 +254,23 @@ function AdminProductManagement() {
   };
 
   const handleDeleteAllUnreferencedProducts = async () => {
-    if (
-      window.confirm(
-        t("adminProductManagement.dangerZone.confirm")
-      )
-    ) {
+    if (window.confirm(t("adminProductManagement.dangerZone.confirm"))) {
       try {
         const query = `*[_type == "product" && !(_id in *[_type == "order"].items[].product._ref)]`;
         const unreferencedProducts = await client.fetch(query + "{_id}");
         if (unreferencedProducts.length === 0) {
-          alert(
-            t("adminProductManagement.dangerZone.noProductsToDelete")
-          );
+          alert(t("adminProductManagement.dangerZone.noProductsToDelete"));
           return;
         }
         await client.delete({
           query: `*[_id in $ids]`,
           params: { ids: unreferencedProducts.map((p) => p._id) },
         });
-        alert(t("adminProductManagement.dangerZone.deleteSuccess", { count: unreferencedProducts.length }));
+        alert(
+          t("adminProductManagement.dangerZone.deleteSuccess", {
+            count: unreferencedProducts.length,
+          })
+        );
         fetchProducts();
       } catch (error) {
         console.error("Failed to delete products:", error);
@@ -279,7 +283,8 @@ function AdminProductManagement() {
     p.title.toLowerCase().includes(filterText.toLowerCase())
   );
 
-  if (loading) return <div className="text-center py-8">{t("common.loading")}</div>;
+  if (loading)
+    return <div className="text-center py-8">{t("common.loading")}</div>;
   if (error)
     return <div className="text-center text-red-500 py-8">{error}</div>;
 
@@ -299,7 +304,8 @@ function AdminProductManagement() {
         >
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              {t("adminProductManagement.form.title")}:<span className="text-red-500">*</span>
+              {t("adminProductManagement.form.title")}:
+              <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -312,7 +318,8 @@ function AdminProductManagement() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                {t("adminProductManagement.form.sku")}:<span className="text-red-500">*</span>
+                {t("adminProductManagement.form.sku")}:
+                <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -348,7 +355,8 @@ function AdminProductManagement() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
-                {t("adminProductManagement.form.price")}:<span className="text-red-500">*</span>
+                {t("adminProductManagement.form.price")}:
+                <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -373,7 +381,8 @@ function AdminProductManagement() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              {t("adminProductManagement.form.image")}:<span className="text-red-500">*</span>
+              {t("adminProductManagement.form.image")}:
+              <span className="text-red-500">*</span>
             </label>
             <input
               type="file"
@@ -388,7 +397,8 @@ function AdminProductManagement() {
             type="submit"
             className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
           >
-            <i className="fas fa-plus-circle mr-2"></i>{t("adminProductManagement.addProductTitle")}
+            <i className="fas fa-plus-circle mr-2"></i>
+            {t("adminProductManagement.addProductTitle")}
           </button>
         </form>
       </CollapsibleSection>
@@ -436,7 +446,9 @@ function AdminProductManagement() {
                     onChange={(e) => handleMappingChange(field, e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white"
                   >
-                    <option value="">{t("adminProductManagement.bulkUpload.selectColumn")}</option>
+                    <option value="">
+                      {t("adminProductManagement.bulkUpload.selectColumn")}
+                    </option>
                     {csvHeaders.map((header) => (
                       <option key={header} value={header}>
                         {header}
@@ -457,14 +469,17 @@ function AdminProductManagement() {
                 onClick={handleConfirmBulkUpload}
                 className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md"
               >
-                <i className="fas fa-check-circle mr-2"></i>{t("adminProductManagement.bulkUpload.confirmButton")}
+                <i className="fas fa-check-circle mr-2"></i>
+                {t("adminProductManagement.bulkUpload.confirmButton")}
               </button>
             </div>
           </div>
         )}
       </CollapsibleSection>
 
-      <CollapsibleSection title={t("adminProductManagement.bulkPriceAdjustTitle")}>
+      <CollapsibleSection
+        title={t("adminProductManagement.bulkPriceAdjustTitle")}
+      >
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="col-span-1">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -484,8 +499,12 @@ function AdminProductManagement() {
                 onChange={(e) => setPriceAdjustmentType(e.target.value)}
                 className="px-4 py-2 border border-red-300 rounded-r-md bg-white border-l-0"
               >
-                <option value="percentage">{t("adminProductManagement.bulkPrice.percentage")}</option>
-                <option value="fixed">{t("adminProductManagement.bulkPrice.fixedAmount")}</option>
+                <option value="percentage">
+                  {t("adminProductManagement.bulkPrice.percentage")}
+                </option>
+                <option value="fixed">
+                  {t("adminProductManagement.bulkPrice.fixedAmount")}
+                </option>
               </select>
             </div>
           </div>
@@ -518,7 +537,8 @@ function AdminProductManagement() {
               onClick={handleBulkPriceAdjustment}
               className="w-full md:w-1/2 bg-red-600 hover:bg-red-700 text-white font-semibold py-3 px-6 rounded-lg text-lg"
             >
-              <i className="fas fa-percent mr-2"></i>{t("adminProductManagement.bulkPrice.applyButton")}
+              <i className="fas fa-percent mr-2"></i>
+              {t("adminProductManagement.bulkPrice.applyButton")}
             </button>
           </div>
         </div>
@@ -539,8 +559,9 @@ function AdminProductManagement() {
       </CollapsibleSection>
 
       <CollapsibleSection
-        title={t("adminProductManagement.activeProductsTitle", { count: filteredProducts.length })}
-        startOpen={true}
+        title={t("adminProductManagement.activeProductsTitle", {
+          count: filteredProducts.length,
+        })}
       >
         <input
           type="text"
@@ -568,7 +589,9 @@ function AdminProductManagement() {
                   <h4 className="text-lg font-bold text-gray-800">
                     {product.title}
                   </h4>
-                  <p className="text-sm text-gray-500">{t("common.skuLabel", { sku: product.sku })}</p>
+                  <p className="text-sm text-gray-500">
+                    {t("common.skuLabel", { sku: product.sku })}
+                  </p>
                   <p className="text-gray-600 font-semibold">
                     {t("common.priceFormatted", { price: product.price })}
                   </p>
@@ -578,7 +601,8 @@ function AdminProductManagement() {
                     onClick={() => handleArchiveProduct(product._id)}
                     className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded-md"
                   >
-                    <i className="fas fa-archive mr-2"></i>{t("adminProductManagement.productCard.archive")}
+                    <i className="fas fa-archive mr-2"></i>
+                    {t("adminProductManagement.productCard.archive")}
                   </button>
                 </div>
               </div>

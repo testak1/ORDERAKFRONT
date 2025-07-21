@@ -54,9 +54,7 @@ const UserEditor = ({ user, refreshUsers }) => {
   };
 
   const handleDeleteUser = async (userId) => {
-    if (
-      window.confirm(t("adminUserManagement.userEditor.deleteConfirm"))
-    ) {
+    if (window.confirm(t("adminUserManagement.userEditor.deleteConfirm"))) {
       try {
         await client.delete(userId);
         alert(t("adminUserManagement.userEditor.deleteSuccess"));
@@ -84,7 +82,9 @@ const UserEditor = ({ user, refreshUsers }) => {
             onClick={() => setIsEditing(!isEditing)}
             className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-1 px-3 rounded-md text-sm"
           >
-            {isEditing ? t("adminUserManagement.userEditor.cancel") : t("adminUserManagement.userEditor.edit")}
+            {isEditing
+              ? t("adminUserManagement.userEditor.cancel")
+              : t("adminUserManagement.userEditor.edit")}
           </button>
           <button
             onClick={() => handleDeleteUser(user._id)}
@@ -103,7 +103,9 @@ const UserEditor = ({ user, refreshUsers }) => {
           {/* --- DETTA ÄR DEN ÅTERSTÄLLDA FORMULÄRKODEN --- */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium">{t("adminUserManagement.form.fullName")}</label>
+              <label className="block text-sm font-medium">
+                {t("adminUserManagement.form.fullName")}
+              </label>
               <input
                 type="text"
                 name="fullName"
@@ -113,7 +115,9 @@ const UserEditor = ({ user, refreshUsers }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">{t("adminUserManagement.form.email")}</label>
+              <label className="block text-sm font-medium">
+                {t("adminUserManagement.form.email")}
+              </label>
               <input
                 type="email"
                 name="email"
@@ -125,7 +129,9 @@ const UserEditor = ({ user, refreshUsers }) => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium">{t("adminUserManagement.form.phone")}</label>
+              <label className="block text-sm font-medium">
+                {t("adminUserManagement.form.phone")}
+              </label>
               <input
                 type="tel"
                 name="phone"
@@ -135,7 +141,9 @@ const UserEditor = ({ user, refreshUsers }) => {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">{t("adminUserManagement.form.discount")}</label>
+              <label className="block text-sm font-medium">
+                {t("adminUserManagement.form.discount")}
+              </label>
               <input
                 type="number"
                 name="discountPercentage"
@@ -284,7 +292,8 @@ function AdminUserManagement() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium">
-                {t("adminUserManagement.form.username")}:<span className="text-red-500">*</span>
+                {t("adminUserManagement.form.username")}:
+                <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -297,7 +306,8 @@ function AdminUserManagement() {
             </div>
             <div>
               <label className="block text-sm font-medium">
-                {t("adminUserManagement.form.password")}:<span className="text-red-500">*</span>
+                {t("adminUserManagement.form.password")}:
+                <span className="text-red-500">*</span>
               </label>
               <input
                 type="password"
@@ -309,7 +319,9 @@ function AdminUserManagement() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">{t("adminUserManagement.form.fullName")}:</label>
+              <label className="block text-sm font-medium">
+                {t("adminUserManagement.form.fullName")}:
+              </label>
               <input
                 type="text"
                 name="fullName"
@@ -319,7 +331,9 @@ function AdminUserManagement() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">{t("adminUserManagement.form.email")}:</label>
+              <label className="block text-sm font-medium">
+                {t("adminUserManagement.form.email")}:
+              </label>
               <input
                 type="email"
                 name="email"
@@ -329,7 +343,9 @@ function AdminUserManagement() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">{t("adminUserManagement.form.phone")}:</label>
+              <label className="block text-sm font-medium">
+                {t("adminUserManagement.form.phone")}:
+              </label>
               <input
                 type="tel"
                 name="phone"
@@ -339,19 +355,27 @@ function AdminUserManagement() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium">{t("adminUserManagement.form.role")}:</label>
+              <label className="block text-sm font-medium">
+                {t("adminUserManagement.form.role")}:
+              </label>
               <select
                 name="role"
                 value={newUser.role}
                 onChange={handleNewUserChange}
                 className="mt-1 w-full px-3 py-2 border rounded-md bg-white"
               >
-                <option value="user">{t("adminUserManagement.form.userRole")}</option>
-                <option value="admin">{t("adminUserManagement.form.adminRole")}</option>
+                <option value="user">
+                  {t("adminUserManagement.form.userRole")}
+                </option>
+                <option value="admin">
+                  {t("adminUserManagement.form.adminRole")}
+                </option>
               </select>
             </div>
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium">{t("adminUserManagement.form.discount")}:</label>
+              <label className="block text-sm font-medium">
+                {t("adminUserManagement.form.discount")}:
+              </label>
               <input
                 type="number"
                 name="discountPercentage"
@@ -372,7 +396,7 @@ function AdminUserManagement() {
         </form>
       </CollapsibleSection>
 
-      <CollapsibleSection title={t("adminUserManagement.existingUsersTitle")} startOpen={true}>
+      <CollapsibleSection title={t("adminUserManagement.existingUsersTitle")}>
         {loading && <p>{t("common.loading")}...</p>}
         {error && <p className="text-red-500">{error}</p>}
         <div className="space-y-4">
