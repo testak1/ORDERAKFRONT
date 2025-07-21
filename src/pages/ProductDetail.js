@@ -52,7 +52,7 @@ function ProductDetail() {
           <img
             src={
               product.imageUrl ||
-              "https://placehold.co/400x300?text=IMAGE%20COOMING%20SOON"
+              "https://placehold.co/400x300?text=BILD%20KOMMER%20INKOM%20KORT"
             }
             alt={product.title}
             className="w-full h-full object-cover"
