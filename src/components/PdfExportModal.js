@@ -11,16 +11,16 @@ export default function PdfExportModal({ order, onClose }) {
   useEffect(() => {
     setIsClient(true);
 
-    // Vänta tills DOM och ref är tillgängliga
-    const timeout = setTimeout(() => {
+    const observer = new MutationObserver(() => {
       if (pdfRef.current) {
         setIsReady(true);
-      } else {
-        console.warn("pdfRef.current är inte tillgänglig ännu.");
+        observer.disconnect();
       }
-    }, 500);
+    });
 
-    return () => clearTimeout(timeout);
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    return () => observer.disconnect();
   }, []);
 
   if (!order || !order.items || !Array.isArray(order.items)) return null;
@@ -67,7 +67,7 @@ export default function PdfExportModal({ order, onClose }) {
           <ul>
             {order.items.map((item, index) => (
               <li key={index}>
-                {item.product?.title ?? item.title} – {item.quantity} st à{" "}
+                {item.product?.title} – {item.quantity} st à{" "}
                 {item.priceAtPurchase} kr
               </li>
             ))}
