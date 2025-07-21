@@ -17,7 +17,7 @@
     "products": "Produkter",
     "cart": "Varukorg",
     "admin": "Admin",
-    "profile": "Min Profil",
+    "profile": "Profil",
     "logout": "Logga ut",
     "login": "Logga in",
     "welcome": "Välkommen",
@@ -99,11 +99,11 @@
   },
   "adminProductManagement": {
     "title": "Produkthantering",
-    "addProductTitle": "Lägg till ny produkt",
-    "bulkUploadTitle": "Massuppladdning (CSV)",
-    "bulkPriceAdjustTitle": "Massjustering av priser",
+    "addProductTitle": "Lägg till",
+    "bulkUploadTitle": "CSV",
+    "bulkPriceAdjustTitle": "Massjustering",
     "dangerZoneTitle": "Farlig zon",
-    "activeProductsTitle": "Aktiva produkter ({{count}})",
+    "activeProductsTitle": "Produkter ({{count}})",
     "filterPlaceholder": "Filtrera produkter på titel...",
     "form": {
       "title": "Titel",
@@ -156,7 +156,7 @@
   },
   "adminUserManagement": {
     "title": "Användarhantering",
-    "addUserTitle": "Lägg till ny användare",
+    "addUserTitle": "Ny användare",
     "existingUsersTitle": "Befintliga användare",
     "form": {
       "username": "Användarnamn",
@@ -220,7 +220,7 @@
     "alertNotReady": "PDF-komponenterna är inte redo än. Vänligen vänta ett ögonblick.",
     "invoiceTitle": "Faktura",
     "orderId": "Order-ID: #{{id}}",
-    "billedTo": "FAKTURERAS TILL",
+    "billedTo": "FAKTURERAS TILL:",
     "orderDate": "Orderdatum: {{date}}",
     "status": "Status: {{status}}",
     "tableHeader": {

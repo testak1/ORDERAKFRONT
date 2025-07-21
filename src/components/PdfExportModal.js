@@ -78,8 +78,7 @@ function PdfExportModal({ order, onClose }) {
       textY,
       { align: "right" }
     );
-
-    // KORRIGERING: Hämta den översatta statustexten
+    
     const translatedStatus = t(`orderStatus.${order.orderStatus}`);
     doc.text(t("pdfExport.status", { status: translatedStatus }), 200, textY + 6, { align: "right" });
 
@@ -104,12 +103,25 @@ function PdfExportModal({ order, onClose }) {
       tableRows.push(itemData);
     });
 
+    // NY LAYOUT FÖR TABELLEN
     doc.autoTable({
       head: [tableColumn],
       body: tableRows,
       startY: textY + 30,
-      headStyles: { fillColor: [230, 230, 230], textColor: 20 },
-      styles: { fontSize: 9 },
+      theme: 'grid', // Använder 'grid'-temat för tydliga linjer
+      headStyles: {
+        fillColor: [220, 220, 220], // Något mörkare grå för rubrikraden
+        textColor: 20,
+        fontStyle: 'bold',
+      },
+      styles: {
+        fontSize: 9,
+        cellPadding: 3, // Ökad padding för mer luft och högre rader
+        valign: 'middle', // Centrerar texten vertikalt i cellerna
+      },
+      alternateRowStyles: {
+        fillColor: [250, 250, 250], // Mycket ljusgrå färg för varannan rad
+      },
     });
 
     // --- TOTALS ---
