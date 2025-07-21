@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-import { useTranslation } from "react-i18next";
 import { client } from "../sanityClient";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
+import { useTranslation } from "react-i18next";
 
 function ProductList() {
   const { t } = useTranslation();
@@ -24,13 +24,13 @@ function ProductList() {
         const data = await client.fetch(query);
         setProducts(data);
       } catch (err) {
-        setError("Failed to load products.");
+        setError(t("productList.loadError"));
       } finally {
         setLoading(false);
       }
     };
     fetchProducts();
-  }, []);
+  }, [t]);
 
   const filteredProducts = products.filter(
     (product) =>
@@ -50,17 +50,14 @@ function ProductList() {
     return { original: Math.round(productPrice) }; // Avrundar till heltal
   };
 
-  if (loading)
-    return <div className="text-center py-10">{t("common.loading")}</div>;
+  if (loading) return <div className="text-center py-10">{t("common.loading")}</div>;
   if (error)
     return <div className="text-red-500 text-center py-10">{error}</div>;
 
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold text-gray-800">
-          {t("productList.title")}
-        </h1>
+        <h1 className="text-4xl font-bold text-gray-800">{t("productList.title")}</h1>
         <input
           type="text"
           placeholder={t("productList.searchPlaceholder")}
@@ -95,21 +92,21 @@ function ProductList() {
                     {product.title}
                   </h2>
                   <p className="text-xs text-gray-500 mt-2">
-                    {t("common.sku")}: {product.sku}
+                    {t("common.skuLabel", { sku: product.sku })}
                   </p>
                   <div className="mt-2">
                     {displayPrice.discounted ? (
                       <div>
                         <p className="text-gray-500 line-through">
-                          {displayPrice.original} kr
+                          {t("common.priceFormatted", { price: displayPrice.original })}
                         </p>
                         <p className="text-green-600 font-bold text-lg">
-                          {displayPrice.discounted} kr
+                          {t("common.priceFormatted", { price: displayPrice.discounted })}
                         </p>
                       </div>
                     ) : (
                       <p className="text-gray-700 font-bold text-lg">
-                        {displayPrice.original} kr
+                        {t("common.priceFormatted", { price: displayPrice.original })}
                       </p>
                     )}
                   </div>
