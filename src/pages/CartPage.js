@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { client } from "../sanityClient";
 import { useNavigate } from "react-router-dom";
 
 function CartPage() {
+  const { t } = useTranslation();
   const {
     cartItems,
     removeFromCart,
@@ -114,19 +116,18 @@ function CartPage() {
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">
-        Your Shopping Cart
+        {t("cart.title")}
       </h1>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* --- THIS SECTION IS NOW RESTORED --- */}
         <div className="md:col-span-2 space-y-4">
           {cartItems.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
-              <p>Your cart is currently empty.</p>
+              <p>{t("cart.emptyCart")}</p>
               <button
                 onClick={() => navigate("/")}
                 className="mt-4 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md"
               >
-                Continue Shopping
+                {t("cart.continueShopping")}
               </button>
             </div>
           ) : (
@@ -163,17 +164,16 @@ function CartPage() {
               ))}
               <div className="flex justify-end pt-4 border-t mt-4">
                 <h2 className="text-2xl font-bold text-gray-800">
-                  Total: {getTotalPrice()} kr
+                  {t("cart.total")}: {getTotalPrice()} kr
                 </h2>
               </div>
             </>
           )}
         </div>
-        {/* --- END OF RESTORED SECTION --- */}
-
         <div className="md:col-span-1 p-6 border rounded-lg bg-gray-50 h-fit">
-          <h3 className="text-xl font-semibold mb-4">Shipping Address</h3>
-
+          <h3 className="text-xl font-semibold mb-4">
+            {t("cart.shippingAddress")}
+          </h3>
           {user?.address?.addressLine1 && (
             <div className="mb-4">
               <label className="flex items-center space-x-2">
@@ -181,16 +181,16 @@ function CartPage() {
                   type="checkbox"
                   checked={useDefaultAddress}
                   onChange={(e) => setUseDefaultAddress(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
                 />
-                <span>Use my default address</span>
+                <span>{t("cart.useDefaultAddress")}</span>
               </label>
             </div>
           )}
-
           <form className="space-y-4">
             <div>
-              <label className="block text-sm font-medium">Full Name:</label>
+              <label className="block text-sm font-medium">
+                {t("cart.fullName")}:
+              </label>
               <input
                 type="text"
                 name="fullName"
@@ -254,15 +254,14 @@ function CartPage() {
               />
             </div>
           </form>
-
           <button
             onClick={handlePlaceOrder}
             disabled={orderLoading || cartItems.length === 0}
-            className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-4 rounded-md disabled:opacity-50"
+            className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold py-2.5 px-4 rounded-md"
           >
             {orderLoading
-              ? "Placing Order..."
-              : `Buy Now (${getTotalPrice()} kr)`}
+              ? t("cart.placingOrder")
+              : `${t("cart.buyNow")} (${getTotalPrice()} kr)`}
           </button>
         </div>
       </div>

@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
+import { useTranslation } from "react-i18next";
 import Login from "./components/Login";
 import ProductList from "./pages/ProductList";
 import ProductDetail from "./pages/ProductDetail";
@@ -19,7 +20,6 @@ function App() {
           <NavBar />
           <div className="container mx-auto p-4 md:p-6 lg:p-8 min-h-screen bg-gray-50">
             <Routes>
-              {/* Dina routes är korrekta som de är */}
               <Route path="/login" element={<Login />} />
               <Route
                 path="/"
@@ -71,11 +71,12 @@ function App() {
 }
 
 function NavBar() {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
+
   return (
     <nav className="bg-gradient-to-r from-red-600 to-red-800 text-white p-4 shadow-lg">
       <div className="container mx-auto flex flex-wrap justify-between items-center gap-y-2">
-        {/* --- LOGOTYP TILLAGD HÄR --- */}
         <div className="flex items-center space-x-6">
           <Link to="/" className="flex items-center space-x-2">
             <img
@@ -85,17 +86,17 @@ function NavBar() {
             />
           </Link>
           <Link to="/" className="text-lg font-semibold hover:text-red-200">
-            Products
+            {t("navbar.products")}
           </Link>
           <Link to="/cart" className="text-lg font-semibold hover:text-red-200">
-            Cart
+            {t("navbar.cart")}
           </Link>
           {user?.role === "admin" && (
             <Link
               to="/admin"
               className="text-lg font-semibold hover:text-red-200"
             >
-              Admin
+              {t("navbar.admin")}
             </Link>
           )}
           {user && (
@@ -103,17 +104,15 @@ function NavBar() {
               to="/profile"
               className="text-lg font-semibold hover:text-red-200"
             >
-              Profile
+              {t("navbar.profile")}
             </Link>
           )}
         </div>
-        {/* --------------------------- */}
-
         <div className="flex items-center space-x-4">
           {user ? (
             <>
               <span className="text-sm text-center">
-                Welcome,{" "}
+                {t("navbar.welcome")},{" "}
                 <span className="font-medium">
                   {user.fullName || user.username}
                 </span>{" "}
@@ -123,7 +122,7 @@ function NavBar() {
                 onClick={logout}
                 className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-1 rounded-md text-sm"
               >
-                Logout
+                {t("navbar.logout")}
               </button>
             </>
           ) : (
@@ -131,7 +130,7 @@ function NavBar() {
               to="/login"
               className="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded-md text-sm"
             >
-              Login
+              {t("login.buttonText")}
             </Link>
           )}
         </div>
