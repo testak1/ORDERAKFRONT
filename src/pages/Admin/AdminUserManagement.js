@@ -3,52 +3,69 @@ import { client } from "../../sanityClient";
 import bcrypt from "bcryptjs";
 import CollapsibleSection from "../../components/CollapsibleSection";
 
-// A sub-component for managing a single user to keep the main component cleaner
+// Sub-komponent för att hantera en enskild användare
 const UserEditor = ({ user, refreshUsers }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState({
-    fullName: user.fullName || '',
-    email: user.email || '',
-    phone: user.phone || '',
+    fullName: user.fullName || "",
+    email: user.email || "",
+    phone: user.phone || "",
     discountPercentage: user.discountPercentage || 0,
-    address: user.address || { addressLine1: '', city: '', postalCode: '', country: '' },
+    address: user.address || {
+      addressLine1: "",
+      city: "",
+      postalCode: "",
+      country: "",
+    },
   });
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setEditData(prev => ({ ...prev, [name]: value }));
+    setEditData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleAddressChange = (e) => {
     const { name, value } = e.target;
-    setEditData(prev => ({ ...prev, address: { ...prev.address, [name]: value } }));
+    setEditData((prev) => ({
+      ...prev,
+      address: { ...prev.address, [name]: value },
+    }));
   };
 
   const handleUpdateUser = async (e) => {
     e.preventDefault();
     try {
-      await client.patch(user._id).set({
-        ...editData,
-        discountPercentage: parseFloat(editData.discountPercentage)
-      }).commit();
-      alert('User updated successfully!');
+      await client
+        .patch(user._id)
+        .set({
+          ...editData,
+          discountPercentage: parseFloat(editData.discountPercentage),
+        })
+        .commit();
+      alert("User updated successfully!");
       setIsEditing(false);
       refreshUsers();
     } catch (error) {
-      console.error('Failed to update user:', error);
-      alert('Failed to update user.');
+      console.error("Failed to update user:", error);
+      alert("Failed to update user.");
     }
   };
-  
+
   const handleDeleteUser = async (userId) => {
-    if (window.confirm("Are you sure you want to delete this user? This action cannot be undone and may affect their past orders.")) {
+    if (
+      window.confirm(
+        "Are you sure you want to delete this user? This may affect their past orders."
+      )
+    ) {
       try {
         await client.delete(userId);
         alert("User deleted successfully!");
         refreshUsers();
       } catch (error) {
         console.error("Failed to delete user:", error);
-        alert("Failed to delete user. They may have existing orders linked to them.");
+        alert(
+          "Failed to delete user. They may have existing orders linked to them."
+        );
       }
     }
   };
@@ -57,28 +74,133 @@ const UserEditor = ({ user, refreshUsers }) => {
     <div className="bg-white p-4 rounded-md shadow-sm border border-red-100">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
         <div>
-          <h4 className="text-lg font-medium text-gray-900">{user.username} ({user.role})</h4>
-          <p className="text-sm text-gray-500">{user.email || 'No email set'}</p>
+          <h4 className="text-lg font-medium text-gray-900">
+            {user.username} ({user.role})
+          </h4>
+          <p className="text-sm text-gray-500">
+            {user.email || "No email set"}
+          </p>
         </div>
         <div className="flex space-x-2 mt-2 md:mt-0">
-          <button onClick={() => setIsEditing(!isEditing)} className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-1 px-3 rounded-md text-sm">
+          <button
+            onClick={() => setIsEditing(!isEditing)}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-1 px-3 rounded-md text-sm"
+          >
             {isEditing ? "Cancel" : "Edit"}
           </button>
-          <button onClick={() => handleDeleteUser(user._id)} className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md text-sm">
+          <button
+            onClick={() => handleDeleteUser(user._id)}
+            className="bg-red-600 hover:bg-red-700 text-white font-semibold py-1 px-3 rounded-md text-sm"
+          >
             Delete
           </button>
         </div>
       </div>
 
       {isEditing && (
-        <form onSubmit={handleUpdateUser} className="mt-4 pt-4 border-t space-y-4">
-          {/* Form fields for editing a user, already responsive */}
+        <form
+          onSubmit={handleUpdateUser}
+          className="mt-4 pt-4 border-t space-y-4"
+        >
+          {/* --- DETTA ÄR DEN ÅTERSTÄLLDA FORMULÄRKODEN --- */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium">Full Name</label>
+              <input
+                type="text"
+                name="fullName"
+                value={editData.fullName}
+                onChange={handleChange}
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={editData.email}
+                onChange={handleChange}
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium">Phone</label>
+              <input
+                type="tel"
+                name="phone"
+                value={editData.phone}
+                onChange={handleChange}
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium">Discount (%)</label>
+              <input
+                type="number"
+                name="discountPercentage"
+                value={editData.discountPercentage}
+                onChange={handleChange}
+                min="0"
+                max="100"
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
+            </div>
+          </div>
+          <fieldset className="border p-4 rounded-md">
+            <legend className="text-md font-medium px-2">
+              Default Address
+            </legend>
+            <div className="space-y-2">
+              <input
+                type="text"
+                name="addressLine1"
+                placeholder="Address Line 1"
+                value={editData.address.addressLine1}
+                onChange={handleAddressChange}
+                className="w-full px-3 py-2 border rounded-md"
+              />
+              <div className="grid grid-cols-3 gap-2">
+                <input
+                  type="text"
+                  name="city"
+                  placeholder="City"
+                  value={editData.address.city}
+                  onChange={handleAddressChange}
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+                <input
+                  type="text"
+                  name="postalCode"
+                  placeholder="Postal Code"
+                  value={editData.address.postalCode}
+                  onChange={handleAddressChange}
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+                <input
+                  type="text"
+                  name="country"
+                  placeholder="Country"
+                  value={editData.address.country}
+                  onChange={handleAddressChange}
+                  className="w-full px-3 py-2 border rounded-md"
+                />
+              </div>
+            </div>
+          </fieldset>
+          <button
+            type="submit"
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-semibold py-2 px-4 rounded-md"
+          >
+            Save Changes
+          </button>
         </form>
       )}
     </div>
   );
 };
-
 
 function AdminUserManagement() {
   const [users, setUsers] = useState([]);
@@ -86,8 +208,13 @@ function AdminUserManagement() {
   const [error, setError] = useState("");
 
   const [newUser, setNewUser] = useState({
-      username: '', password: '', role: 'user', discountPercentage: 0,
-      fullName: '', email: '', phone: '',
+    username: "",
+    password: "",
+    role: "user",
+    discountPercentage: 0,
+    fullName: "",
+    email: "",
+    phone: "",
   });
 
   const fetchUsers = async () => {
@@ -109,8 +236,8 @@ function AdminUserManagement() {
   }, []);
 
   const handleNewUserChange = (e) => {
-      const { name, value } = e.target;
-      setNewUser(prev => ({...prev, [name]: value}));
+    const { name, value } = e.target;
+    setNewUser((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleAddUser = async (e) => {
@@ -131,11 +258,21 @@ function AdminUserManagement() {
     try {
       await client.create(userDoc);
       alert("User added successfully!");
-      setNewUser({ username: '', password: '', role: 'user', discountPercentage: 0, fullName: '', email: '', phone: '' });
+      setNewUser({
+        username: "",
+        password: "",
+        role: "user",
+        discountPercentage: 0,
+        fullName: "",
+        email: "",
+        phone: "",
+      });
       fetchUsers();
     } catch (error) {
       console.error("Failed to add user:", error);
-      alert("Failed to add user. The username or email might already be taken.");
+      alert(
+        "Failed to add user. The username or email might already be taken."
+      );
     }
   };
 
@@ -149,38 +286,90 @@ function AdminUserManagement() {
         <form onSubmit={handleAddUser} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium">Username:<span className="text-red-500">*</span></label>
-              <input type="text" name="username" value={newUser.username} onChange={handleNewUserChange} required className="mt-1 w-full px-3 py-2 border rounded-md"/>
+              <label className="block text-sm font-medium">
+                Username:<span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                name="username"
+                value={newUser.username}
+                onChange={handleNewUserChange}
+                required
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium">Password:<span className="text-red-500">*</span></label>
-              <input type="password" name="password" value={newUser.password} onChange={handleNewUserChange} required className="mt-1 w-full px-3 py-2 border rounded-md"/>
+              <label className="block text-sm font-medium">
+                Password:<span className="text-red-500">*</span>
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={newUser.password}
+                onChange={handleNewUserChange}
+                required
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
             </div>
-             <div>
+            <div>
               <label className="block text-sm font-medium">Full Name:</label>
-              <input type="text" name="fullName" value={newUser.fullName} onChange={handleNewUserChange} className="mt-1 w-full px-3 py-2 border rounded-md"/>
+              <input
+                type="text"
+                name="fullName"
+                value={newUser.fullName}
+                onChange={handleNewUserChange}
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
             </div>
-             <div>
+            <div>
               <label className="block text-sm font-medium">Email:</label>
-              <input type="email" name="email" value={newUser.email} onChange={handleNewUserChange} className="mt-1 w-full px-3 py-2 border rounded-md"/>
+              <input
+                type="email"
+                name="email"
+                value={newUser.email}
+                onChange={handleNewUserChange}
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
             </div>
-             <div>
+            <div>
               <label className="block text-sm font-medium">Phone:</label>
-              <input type="tel" name="phone" value={newUser.phone} onChange={handleNewUserChange} className="mt-1 w-full px-3 py-2 border rounded-md"/>
+              <input
+                type="tel"
+                name="phone"
+                value={newUser.phone}
+                onChange={handleNewUserChange}
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium">Role:</label>
-              <select name="role" value={newUser.role} onChange={handleNewUserChange} className="mt-1 w-full px-3 py-2 border rounded-md bg-white">
+              <select
+                name="role"
+                value={newUser.role}
+                onChange={handleNewUserChange}
+                className="mt-1 w-full px-3 py-2 border rounded-md bg-white"
+              >
                 <option value="user">User (Dealer)</option>
                 <option value="admin">Admin</option>
               </select>
             </div>
-             <div className="md:col-span-2">
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium">Discount (%):</label>
-              <input type="number" name="discountPercentage" value={newUser.discountPercentage} onChange={handleNewUserChange} min="0" max="100" className="mt-1 w-full px-3 py-2 border rounded-md"/>
+              <input
+                type="number"
+                name="discountPercentage"
+                value={newUser.discountPercentage}
+                onChange={handleNewUserChange}
+                min="0"
+                max="100"
+                className="mt-1 w-full px-3 py-2 border rounded-md"
+              />
             </div>
           </div>
-          <button type="submit" className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md">
+          <button
+            type="submit"
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md"
+          >
             Add User
           </button>
         </form>
