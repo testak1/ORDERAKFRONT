@@ -58,9 +58,9 @@ function CartPage() {
         _type: "reference",
       },
       items: cartItems.map((item) => ({
-        _key: item.productId,
+        _key: item._id, // Use product ID as key
         product: {
-          _ref: item.productId,
+          _ref: item._id, // Reference the product
           _type: "reference",
         },
         title: item.title,
@@ -79,7 +79,7 @@ function CartPage() {
       setOrderSuccess(true);
       clearCart();
       alert("Order placed successfully!");
-      navigate("/profile"); // Redirect to admin panel for order visibility
+      navigate("/profile");
     } catch (error) {
       console.error("Order placement error:", error);
       setOrderError("Failed to place order. Please try again.");
@@ -95,7 +95,7 @@ function CartPage() {
         <p>Your cart is empty.</p>
         <button
           onClick={() => navigate("/")}
-          className="mt-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
+          className="mt-4 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
         >
           Continue Shopping
         </button>
@@ -110,11 +110,10 @@ function CartPage() {
       </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Cart Items Section */}
         <div className="md:col-span-2 space-y-4">
           {cartItems.map((item) => (
             <div
-              key={item.productId}
+              key={item._id}
               className="flex items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm bg-white"
             >
               <div>
@@ -133,12 +132,12 @@ function CartPage() {
                   min="1"
                   value={item.quantity}
                   onChange={(e) =>
-                    updateQuantity(item.productId, parseInt(e.target.value))
+                    updateQuantity(item._id, parseInt(e.target.value))
                   }
-                  className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:ring-blue-500 focus:border-blue-500"
+                  className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center focus:ring-red-500 focus:border-red-500"
                 />
                 <button
-                  onClick={() => removeFromCart(item.productId)}
+                  onClick={() => removeFromCart(item._id)}
                   className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1.5 px-3 rounded-md text-sm transition-colors duration-200"
                 >
                   Remove
@@ -152,13 +151,12 @@ function CartPage() {
             </h2>
           </div>
         </div>
-
-        {/* Shipping Address Section */}
         <div className="md:col-span-1 p-6 border border-gray-200 rounded-lg shadow-sm bg-gray-50 h-fit">
           <h3 className="text-xl font-semibold text-gray-800 mb-4">
             Shipping Address
           </h3>
           <form className="space-y-4">
+            {/* Samma formulär som innan */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Full Name:
@@ -169,7 +167,7 @@ function CartPage() {
                 value={shippingAddress.fullName}
                 onChange={handleShippingChange}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
               />
             </div>
             <div>
@@ -182,7 +180,7 @@ function CartPage() {
                 value={shippingAddress.addressLine1}
                 onChange={handleShippingChange}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
               />
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -196,7 +194,7 @@ function CartPage() {
                   value={shippingAddress.city}
                   onChange={handleShippingChange}
                   required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
                 />
               </div>
               <div>
@@ -209,7 +207,7 @@ function CartPage() {
                   value={shippingAddress.postalCode}
                   onChange={handleShippingChange}
                   required
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
                 />
               </div>
             </div>
@@ -223,7 +221,7 @@ function CartPage() {
                 value={shippingAddress.country}
                 onChange={handleShippingChange}
                 required
-                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
               />
             </div>
           </form>
