@@ -5,11 +5,12 @@ import { useReactToPrint } from "react-to-print";
 
 export default function PdfExportModal({ order, onClose }) {
   const pdfRef = useRef();
-  const [isMounted, setIsMounted] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
+  // Ensure the component is mounted and ref is set
   useEffect(() => {
-    setIsMounted(true);
-    return () => setIsMounted(false);
+    setIsReady(true);
+    return () => setIsReady(false);
   }, []);
 
   const handlePrint = useReactToPrint({
@@ -17,6 +18,12 @@ export default function PdfExportModal({ order, onClose }) {
     documentTitle: `order-${order._id}`,
     onAfterPrint: onClose,
     removeAfterPrint: true,
+    pageStyle: `
+      @page { size: auto; margin: 10mm; }
+      @media print {
+        body { -webkit-print-color-adjust: exact; }
+      }
+    `,
   });
 
   if (!order || !order.items || !Array.isArray(order.items)) return null;
@@ -28,65 +35,79 @@ export default function PdfExportModal({ order, onClose }) {
           Orderdetaljer (#{order._id})
         </h2>
 
-        {/* Content to print - must be rendered even when hidden */}
-        <div className="hidden">
-          <div ref={pdfRef} className="p-4 bg-gray-50">
-            <p>
-              <strong>Kund:</strong> {order.user?.username}
-            </p>
-            <p>
-              <strong>Datum:</strong>{" "}
-              {new Date(order.createdAt).toLocaleString()}
-            </p>
-            <p>
-              <strong>Totalt:</strong> {order.totalAmount} kr
-            </p>
-            <p>
-              <strong>Status:</strong> {order.orderStatus}
-            </p>
+        {/* This is the actual content that will be printed */}
+        <div style={{ display: "none" }}>
+          <div ref={pdfRef} className="p-4">
+            <h1 className="text-xl font-bold mb-2">Order #{order._id}</h1>
+            <div className="mb-4">
+              <p>
+                <strong>Customer:</strong> {order.user?.username}
+              </p>
+              <p>
+                <strong>Date:</strong>{" "}
+                {new Date(order.createdAt).toLocaleString()}
+              </p>
+              <p>
+                <strong>Total:</strong> {order.totalAmount} kr
+              </p>
+              <p>
+                <strong>Status:</strong> {order.orderStatus}
+              </p>
+            </div>
 
-            <h3 className="font-bold mt-4">Produkter:</h3>
-            <ul className="list-disc pl-5">
+            <h2 className="text-lg font-semibold mb-2">Products:</h2>
+            <ul className="list-disc pl-5 mb-4">
               {order.items.map((item, index) => (
                 <li key={index}>
-                  {item.product?.title} – {item.quantity} st à{" "}
+                  {item.product?.title} - {item.quantity} x{" "}
                   {item.priceAtPurchase} kr
                 </li>
               ))}
             </ul>
 
-            <h3 className="font-bold mt-4">Adress:</h3>
-            <p>{order.shippingAddress?.fullName}</p>
-            <p>{order.shippingAddress?.addressLine1}</p>
-            <p>
-              {order.shippingAddress?.postalCode} {order.shippingAddress?.city}
-            </p>
-            <p>{order.shippingAddress?.country}</p>
+            <h2 className="text-lg font-semibold mb-2">Shipping Address:</h2>
+            <address className="not-italic">
+              <p>{order.shippingAddress?.fullName}</p>
+              <p>{order.shippingAddress?.addressLine1}</p>
+              <p>
+                {order.shippingAddress?.postalCode}{" "}
+                {order.shippingAddress?.city}
+              </p>
+              <p>{order.shippingAddress?.country}</p>
+            </address>
           </div>
         </div>
 
-        {/* Visible preview content */}
-        <div className="p-4 bg-gray-50 mb-4">
-          {/* Same content as above but for preview */}
+        {/* This is the preview content visible in the modal */}
+        <div className="p-4 border border-gray-200 rounded mb-4">
+          <h3 className="text-lg font-semibold mb-2">Order Preview</h3>
           <p>
-            <strong>Kund:</strong> {order.user?.username}
+            <strong>Customer:</strong> {order.user?.username}
           </p>
-          {/* ... rest of the preview content ... */}
+          <p>
+            <strong>Date:</strong> {new Date(order.createdAt).toLocaleString()}
+          </p>
+          <p>
+            <strong>Total:</strong> {order.totalAmount} kr
+          </p>
+          <p>
+            <strong>Status:</strong> {order.orderStatus}
+          </p>
         </div>
 
         <div className="flex justify-end space-x-4">
           <button
             onClick={handlePrint}
-            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            disabled={!isMounted}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 disabled:opacity-50"
+            disabled={!isReady}
           >
-            Exportera som PDF
+            Export to PDF
           </button>
           <button
             onClick={onClose}
             className="border border-gray-400 px-4 py-2 rounded hover:bg-gray-100"
           >
-            Stäng
+            Close
           </button>
         </div>
       </div>
