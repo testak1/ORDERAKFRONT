@@ -48,7 +48,7 @@ function AdminProductManagement() {
     setLoading(true);
     setError("");
     try {
-      [span_0](start_span)const query = `*[_type == "product"]{_id, title, description, sku, brand, price, "imageUrl": image.asset->url}`;[span_0](end_span)
+      [span_0](start_span)const query = *[_type == "product"]{_id, title, description, sku, brand, price, "imageUrl": image.asset->url};[span_0](end_span)
       [span_1](start_span)const fetchedProducts = await client.fetch(query);[span_1](end_span)
       setProducts(fetchedProducts);
     } catch (err) {
