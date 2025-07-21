@@ -11,7 +11,9 @@ function PdfExportModal({ order, onClose }) {
   useEffect(() => {
     const convertImageToBase64 = async () => {
       try {
-        const response = await fetch("https://tuning.aktuning.se/ak-logo2.png");
+        const response = await fetch(
+          "https://cdn.sanity.io/images/2toaqqka/production/fe195e2982641e4d117dd66c4c92768480c7aaaa-600x564.png"
+        );
         const blob = await response.blob();
         const reader = new FileReader();
         reader.onload = () => setLogoBase64(reader.result);
