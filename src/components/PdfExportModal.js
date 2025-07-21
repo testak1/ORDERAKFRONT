@@ -1,141 +1,150 @@
-import React, { useRef } from "react";
-import html2pdf from "html2pdf.js";
+// src/components/PdfExportModal.js
+import React, { useRef, useState } from "react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
-const PdfExportModal = ({ order, onClose }) => {
-  const pdfRef = useRef();
+function PdfExportModal({ order, onClose }) {
+  const contentRef = useRef();
+  const [isGenerating, setIsGenerating] = useState(false);
 
-  const handlePrint = () => {
-    const element = pdfRef.current;
-    const opt = {
-      margin: 0.5,
-      filename: `order-${order._id}.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { 
-        scale: 2,
-        useCORS: true,
-        scrollY: 0
-      },
-      jsPDF: { 
-        unit: 'mm', 
-        format: 'a4', 
-        orientation: 'portrait' 
+  const generatePdf = async () => {
+    if (!order) return;
+
+    setIsGenerating(true);
+
+    try {
+      const input = contentRef.current;
+      const canvas = await html2canvas(input, { scale: 2 }); // Scale up for better quality
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF("p", "mm", "a4");
+      const imgWidth = 210; // A4 width in mm
+      const pageHeight = 297; // A4 height in mm
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+
+      while (heightLeft >= 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, "PNG", 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
       }
-    };
 
-    // Show loading overlay
-    const overlay = document.createElement('div');
-    overlay.style.position = 'fixed';
-    overlay.style.top = '0';
-    overlay.style.left = '0';
-    overlay.style.width = '100%';
-    overlay.style.height = '100%';
-    overlay.style.backgroundColor = 'rgba(0,0,0,0.5)';
-    overlay.style.zIndex = '9999';
-    overlay.style.display = 'flex';
-    overlay.style.justifyContent = 'center';
-    overlay.style.alignItems = 'center';
-    
-    const spinner = document.createElement('div');
-    spinner.style.border = '4px solid rgba(255,255,255,0.3)';
-    spinner.style.borderRadius = '50%';
-    spinner.style.borderTop = '4px solid #fff';
-    spinner.style.width = '36px';
-    spinner.style.height = '36px';
-    spinner.style.animation = 'spin 1s linear infinite';
-    
-    overlay.appendChild(spinner);
-    document.body.appendChild(overlay);
-
-    html2pdf().from(element).set(opt).save()
-      .then(() => {
-        document.body.removeChild(overlay);
-        onClose();
-      })
-      .catch(err => {
-        document.body.removeChild(overlay);
-        console.error('PDF generation failed:', err);
-      });
+      pdf.save(`Order_${order._id}_${order.user?.username || 'user'}.pdf`);
+      onClose();
+    } catch (error) {
+      console.error("Error generating PDF:", error);
+      alert("Failed to generate PDF. Please try again.");
+    } finally {
+      setIsGenerating(false);
+    }
   };
 
-  if (!order) return null;
+  if (!order) {
+    return null; // Don't render if no order is provided
+  }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
-      <div className="bg-white p-6 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-auto">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-bold">Order #{order._id.slice(0, 8)}</h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
-            ✕
-          </button>
-        </div>
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50 p-4">
+      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 relative">
+        <button
+          onClick={onClose}
+          className="absolute top-3 right-3 text-gray-500 hover:text-gray-700 text-2xl font-bold"
+        >
+          &times;
+        </button>
 
-        {/* Printable content */}
-        <div ref={pdfRef} className="p-4" style={{ fontFamily: 'Arial, sans-serif' }}>
-          <h1 style={{ fontSize: '18pt', fontWeight: 'bold', marginBottom: '10px' }}>
-            Order #{order._id}
-          </h1>
-          <p><strong>Date:</strong> {new Date(order.createdAt).toLocaleDateString()}</p>
-          <p><strong>Status:</strong> {order.orderStatus}</p>
-          
-          <h2 style={{ fontSize: '14pt', fontWeight: 'bold', margin: '15px 0 5px 0' }}>Customer</h2>
-          <p>{order.user?.username || 'Guest'}</p>
-          
-          <h2 style={{ fontSize: '14pt', fontWeight: 'bold', margin: '15px 0 5px 0' }}>Order Items</h2>
-          <table style={{ width: '100%', borderCollapse: 'collapse', margin: '10px 0' }}>
-            <thead>
-              <tr>
-                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', backgroundColor: '#f2f2f2' }}>Product</th>
-                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', backgroundColor: '#f2f2f2' }}>SKU</th>
-                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', backgroundColor: '#f2f2f2' }}>Qty</th>
-                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', backgroundColor: '#f2f2f2' }}>Price</th>
-                <th style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'left', backgroundColor: '#f2f2f2' }}>Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {order.items.map((item, index) => (
-                <tr key={index}>
-                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.product?.title}</td>
-                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.product?.sku}</td>
-                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.quantity}</td>
-                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{item.priceAtPurchase.toFixed(2)} SEK</td>
-                  <td style={{ border: '1px solid #ddd', padding: '8px' }}>{(item.quantity * item.priceAtPurchase).toFixed(2)} SEK</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr style={{ fontWeight: 'bold' }}>
-                <td colSpan="4" style={{ border: '1px solid #ddd', padding: '8px' }}>Total</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px' }}>{order.totalAmount.toFixed(2)} SEK</td>
-              </tr>
-            </tfoot>
-          </table>
-          
-          <h2 style={{ fontSize: '14pt', fontWeight: 'bold', margin: '15px 0 5px 0' }}>Shipping Address</h2>
-          <address style={{ fontStyle: 'normal' }}>
+        <h2 className="text-2xl font-bold text-gray-800 mb-4 border-b pb-2">
+          Export Order to PDF
+        </h2>
+
+        <div ref={contentRef} className="p-4 border border-gray-200 rounded-lg bg-white">
+          <h3 className="text-xl font-semibold text-gray-900 mb-2">
+            Order Details:
+          </h3>
+          <p className="text-sm text-gray-600">
+            <strong>Order ID:</strong> {order._id}
+          </p>
+          <p className="text-sm text-gray-600">
+            <strong>Ordered by:</strong> {order.user?.username || "N/A"}
+          </p>
+          <p className="text-sm text-gray-600 mb-3">
+            <strong>Created At:</strong>{" "}
+            {new Date(order.createdAt).toLocaleString()}
+          </p>
+
+          <p className="text-md font-semibold text-gray-800 mb-2">Items:</p>
+          <ul className="list-disc list-inside text-sm text-gray-700 space-y-1 mb-3">
+            {order.items.map((item, index) => (
+              <li key={index}>
+                {item.product?.title || item.title} (SKU:{" "}
+                {item.product?.sku || item.sku}) - Qty: {item.quantity} @ SEK{" "}
+                {item.priceAtPurchase?.toFixed(2)} each
+              </li>
+            ))}
+          </ul>
+
+          <p className="text-md font-semibold text-gray-800 mb-2">
+            Shipping Address:
+          </p>
+          <address className="not-italic text-sm text-gray-700 mb-3">
             <p>{order.shippingAddress?.fullName}</p>
             <p>{order.shippingAddress?.addressLine1}</p>
-            <p>{order.shippingAddress?.postalCode} {order.shippingAddress?.city}</p>
+            {order.shippingAddress?.addressLine2 && (
+              <p>{order.shippingAddress.addressLine2}</p>
+            )}
+            <p>
+              {order.shippingAddress?.city},{" "}
+              {order.shippingAddress?.postalCode}
+            </p>
             <p>{order.shippingAddress?.country}</p>
           </address>
+
+          <p
+            className={`text-lg font-bold ${
+              order.orderStatus === "pending"
+                ? "text-yellow-600"
+                : order.orderStatus === "processing"
+                ? "text-blue-600"
+                : order.orderStatus === "shipped"
+                ? "text-purple-600"
+                : order.orderStatus === "completed"
+                ? "text-green-600"
+                : order.orderStatus === "cancelled"
+                ? "text-red-600"
+                : "text-gray-600"
+            } capitalize`}
+          >
+            Status: {order.orderStatus}
+          </p>
+          <p className="text-xl font-bold text-gray-800 mt-2">
+            Total: SEK {order.totalAmount?.toFixed(2) || "N/A"}
+          </p>
         </div>
 
-        <div className="flex justify-end space-x-4 mt-6">
-          <button
-            onClick={handlePrint}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded"
-          >
-            Export to PDF
-          </button>
+        <div className="mt-6 flex justify-end space-x-3">
           <button
             onClick={onClose}
-            className="border border-gray-300 hover:bg-gray-100 px-4 py-2 rounded"
+            className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md hover:bg-gray-400 transition-colors duration-200"
+            disabled={isGenerating}
           >
             Cancel
+          </button>
+          <button
+            onClick={generatePdf}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isGenerating}
+          >
+            {isGenerating ? "Generating..." : "Download PDF"}
           </button>
         </div>
       </div>
     </div>
   );
-};
+}
 
 export default PdfExportModal;
