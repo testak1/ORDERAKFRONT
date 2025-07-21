@@ -1,12 +1,14 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next"; // Importera useTranslation
 
 function Login() {
+  const { t } = useTranslation(); // Aktivera översättningsfunktionen
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
-  const { login, loading } = useAuth(); // Lägg till loading från context
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -16,14 +18,14 @@ function Login() {
     if (result.success) {
       navigate("/");
     } else {
-      setError(result.message);
+      // Använd översättningen för felmeddelandet
+      setError(t("login.invalidCredentials"));
     }
   };
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[70vh] bg-gray-50 px-4">
       <div className="w-full max-w-md">
-        {/* Logotyp */}
         <div className="text-center mb-8">
           <img
             src="https://cdn.sanity.io/images/2toaqqka/production/fe195e2982641e4d117dd66c4c92768480c7aaaa-600x564.png"
@@ -34,10 +36,10 @@ function Login() {
 
         <div className="bg-white p-8 rounded-xl shadow-2xl border-t-4 border-red-600">
           <h2 className="text-2xl font-bold text-gray-700 mb-1 text-center">
-            Welcome Back
+            {t("login.title")}
           </h2>
           <p className="text-gray-500 mb-6 text-center text-sm">
-            Please log in to access the dealer portal.
+            {t("login.subtitle")}
           </p>
           <form onSubmit={handleSubmit} className="space-y-5">
             {error && (
@@ -50,7 +52,7 @@ function Login() {
                 className="block text-sm font-medium text-gray-700 mb-1"
                 htmlFor="username"
               >
-                Username
+                {t("login.usernameLabel")}
               </label>
               <input
                 type="text"
@@ -58,7 +60,7 @@ function Login() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 required
-                className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-base transition"
+                className="mt-1 block w-full px-4 py-2 border rounded-md"
               />
             </div>
             <div>
@@ -66,7 +68,7 @@ function Login() {
                 className="block text-sm font-medium text-gray-700 mb-1"
                 htmlFor="password"
               >
-                Password
+                {t("login.passwordLabel")}
               </label>
               <input
                 type="password"
@@ -74,15 +76,15 @@ function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-base transition"
+                className="mt-1 block w-full px-4 py-2 border rounded-md"
               />
             </div>
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-md transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-md"
             >
-              {loading ? "Logging in..." : "Login"}
+              {loading ? t("login.buttonLoading") : t("login.buttonText")}
             </button>
           </form>
         </div>

@@ -1,0 +1,23 @@
+{
+  "login": {
+    "title": "Välkommen tillbaka",
+    "subtitle": "Vänligen logga in för att komma åt portalen.",
+    "usernameLabel": "Användarnamn",
+    "passwordLabel": "Lösenord",
+    "buttonText": "Logga in",
+    "buttonLoading": "Loggar in...",
+    "invalidCredentials": "Felaktiga inloggningsuppgifter"
+  },
+  "navbar": {
+    "products": "Produkter",
+    "cart": "Varukorg",
+    "admin": "Admin",
+    "profile": "Profil",
+    "logout": "Logga ut",
+    "welcome": "Välkommen"
+  },
+  "productList": {
+    "title": "Produkter",
+    "searchPlaceholder": "Sök på namn eller SKU..."
+  }
+}
