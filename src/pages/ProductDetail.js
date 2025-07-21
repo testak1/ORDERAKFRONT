@@ -18,6 +18,7 @@ function ProductDetail() {
           _id,
           title,
           description,
+          sku,
           price,
           "imageUrl": mainImage.asset->url
         }`;
@@ -42,8 +43,6 @@ function ProductDetail() {
 
   const handleAddToCart = () => {
     addToCart(product);
-    // Optional: Add some user feedback, e.g., a toast notification
-    alert(`${product.title} has been added to your cart!`);
   };
 
   return (
@@ -62,7 +61,7 @@ function ProductDetail() {
           </h1>
           <p className="text-gray-600 mb-6">{product.description}</p>
           <p className="text-3xl font-extrabold text-gray-800 mb-6">
-            ${product.price}
+            SEK {product.price}
           </p>
           <button
             onClick={handleAddToCart}

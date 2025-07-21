@@ -1,98 +1,111 @@
 // src/pages/Admin/OrderCard.js
-import React from "react";
+import React, { useState } from "react";
 import { client } from "../../sanityClient";
 
-// Add onExportPdf prop
-function OrderCard({
-  order,
-  onUpdateOrderStatus,
-  isAdminView = true,
-  onExportPdf,
-}) {
-  const handleUpdate = async (e) => {
-    if (isAdminView) {
-      await onUpdateOrderStatus(order._id, e.target.value);
+// Helper for status colors
+const statusColors = {
+  pending: "bg-yellow-200 text-yellow-800",
+  processing: "bg-blue-200 text-blue-800",
+  shipped: "bg-indigo-200 text-indigo-800",
+  completed: "bg-green-200 text-green-800",
+  cancelled: "bg-red-200 text-red-800",
+};
+
+function OrderCard({ order, refreshOrders }) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleStatusChange = async (newStatus) => {
+    setIsUpdating(true);
+    try {
+      await client.patch(order._id).set({ orderStatus: newStatus }).commit();
+      // Call the refresh function passed from the parent
+      if (typeof refreshOrders === "function") {
+        refreshOrders();
+      }
+    } catch (error) {
+      console.error("Failed to update order status:", error);
+      alert("Failed to update status.");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
   return (
-    <div className="p-6 border border-gray-200 rounded-lg shadow-sm bg-gray-50">
-      <div className="flex justify-between items-start mb-4 border-b pb-3">
+    <div className="border border-gray-200 rounded-lg shadow-sm overflow-hidden bg-white">
+      <div
+        className="p-4 flex justify-between items-center cursor-pointer"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
         <div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            Order ID: {order._id}
+          <h3 className="font-bold text-lg text-gray-800">
+            Order #{order._id.slice(-6)}
           </h3>
           <p className="text-sm text-gray-600">
-            Ordered by: {order.user?.username || "N/A"}
+            Customer: {order.user?.username || "N/A"}
           </p>
           <p className="text-sm text-gray-600">
-            Created At: {new Date(order.createdAt).toLocaleString()}
+            Date: {new Date(order.createdAt).toLocaleDateString()}
           </p>
         </div>
-        <div className="text-right">
-          <p
-            className={`text-lg font-bold ${
-              order.orderStatus === "pending"
-                ? "text-yellow-600"
-                : order.orderStatus === "processing"
-                ? "text-blue-600"
-                : order.orderStatus === "shipped"
-                ? "text-purple-600"
-                : order.orderStatus === "completed"
-                ? "text-green-600"
-                : order.orderStatus === "cancelled"
-                ? "text-red-600"
-                : "text-gray-600"
-            } capitalize`}
+        <div className="flex items-center space-x-4">
+          <span
+            className={`px-3 py-1 text-sm font-semibold rounded-full ${
+              statusColors[order.orderStatus] || "bg-gray-200"
+            }`}
           >
-            Status: {order.orderStatus}
-          </p>
-          <p className="text-xl font-bold text-gray-800">
-            Total: SEK {order.totalAmount?.toFixed(2) || "N/A"}
-          </p>
+            {order.orderStatus}
+          </span>
+          <i
+            className={`fa-solid fa-chevron-down transform transition-transform ${
+              isExpanded ? "rotate-180" : ""
+            }`}
+          ></i>
         </div>
       </div>
 
-      <div className="mb-4">
-        <h4 className="text-md font-semibold text-gray-800 mb-2">Items:</h4>
-        <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-          {order.items.map((item, index) => (
-            <li key={index}>
-              {item.product?.title || item.title} (SKU:{" "}
-              {item.product?.sku || item.sku}) - Qty: {item.quantity} @ SEK{" "}
-              {item.priceAtPurchase?.toFixed(2)} each
-            </li>
-          ))}
-        </ul>
-      </div>
+      {isExpanded && (
+        <div className="p-4 border-t border-gray-200 bg-gray-50">
+          <h4 className="font-semibold mb-2">Order Details</h4>
+          <div className="mb-4">
+            <strong>Shipping to:</strong>
+            <p className="text-sm text-gray-700">
+              {order.shippingAddress.fullName},{" "}
+              {order.shippingAddress.addressLine1}, {order.shippingAddress.city}
+              , {order.shippingAddress.postalCode}
+            </p>
+          </div>
 
-      <div className="mb-4">
-        <h4 className="text-md font-semibold text-gray-800 mb-2">
-          Shipping Address:
-        </h4>
-        <address className="not-italic text-sm text-gray-700">
-          <p>{order.shippingAddress?.fullName}</p>
-          <p>{order.shippingAddress?.addressLine1}</p>
-          {order.shippingAddress?.addressLine2 && ( // Keep this for display even if schema is removed
-            <p>{order.shippingAddress.addressLine2}</p>
-          )}
-          <p>
-            {order.shippingAddress?.city}, {order.shippingAddress?.postalCode}
-          </p>
-          <p>{order.shippingAddress?.country}</p>
-        </address>
-      </div>
+          <ul className="space-y-2 mb-4">
+            {order.items.map((item) => (
+              <li key={item._key} className="flex justify-between text-sm">
+                <span>
+                  {item.title} (x{item.quantity})
+                </span>
+                <span>
+                  SEK {(item.priceAtPurchase * item.quantity).toFixed(2)}
+                </span>
+              </li>
+            ))}
+          </ul>
 
-      <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-        {isAdminView && (
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+          <div className="font-bold text-right mb-4">
+            Total: SEK {order.totalAmount.toFixed(2)}
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <label
+              htmlFor={`status-${order._id}`}
+              className="text-sm font-medium"
+            >
               Update Status:
             </label>
             <select
+              id={`status-${order._id}`}
               value={order.orderStatus}
-              onChange={handleUpdate}
-              className="mt-1 block px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white"
+              disabled={isUpdating}
+              onChange={(e) => handleStatusChange(e.target.value)}
+              className="px-3 py-1.5 border border-gray-300 rounded-md bg-white focus:outline-none focus:ring-red-500 disabled:opacity-50"
             >
               <option value="pending">Pending</option>
               <option value="processing">Processing</option>
@@ -101,18 +114,8 @@ function OrderCard({
               <option value="cancelled">Cancelled</option>
             </select>
           </div>
-        )}
-
-        {/* This button now triggers the modal */}
-        <button
-          onClick={() => onExportPdf && onExportPdf(order)}
-          className={`bg-purple-600 hover:bg-purple-700 text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200 ${
-            !isAdminView ? "ml-auto" : ""
-          }`}
-        >
-          Export to PDF
-        </button>
-      </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -16,7 +16,7 @@ function ProductList() {
         const query = `*[_type == "product"]{
           _id,
           title,
-          description,
+          sku,
           price,
           "imageUrl": mainImage.asset->url
         }`;
@@ -56,7 +56,9 @@ function ProductList() {
                 <h2 className="text-xl font-semibold text-gray-900 truncate">
                   {product.title}
                 </h2>
-                <p className="text-gray-700 font-bold mt-2">${product.price}</p>
+                <p className="text-gray-700 font-bold mt-2">
+                  SEK {product.price}
+                </p>
               </div>
             </Link>
             <div className="p-4 mt-auto">
