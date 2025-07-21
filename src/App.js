@@ -9,7 +9,7 @@ import CartPage from "./pages/CartPage";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import UserProfile from "./pages/UserProfile";
 import Unauthorized from "./pages/Unauthorized";
-import ProtectedRoute from "./components/ProtectedRoute"; // Your existing protection component
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -19,10 +19,7 @@ function App() {
           <NavBar />
           <div className="container mx-auto p-4 md:p-6 lg:p-8 min-h-screen bg-gray-50">
             <Routes>
-              {/* Login page is public */}
               <Route path="/login" element={<Login />} />
-
-              {/* --- THESE ROUTES ARE NOW PROTECTED --- */}
               <Route
                 path="/"
                 element={
@@ -47,8 +44,6 @@ function App() {
                   </ProtectedRoute>
                 }
               />
-              {/* ------------------------------------ */}
-
               <Route
                 path="/admin/*"
                 element={
@@ -74,61 +69,34 @@ function App() {
   );
 }
 
-// NavBar component remains the same
 function NavBar() {
   const { user, logout } = useAuth();
   return (
     <nav className="bg-gradient-to-r from-red-600 to-red-800 text-white p-4 shadow-lg">
-      <div className="container mx-auto flex justify-between items-center">
-        <div className="flex space-x-6">
-          <Link
-            to="/"
-            className="text-lg font-semibold hover:text-red-200 transition duration-200"
-          >
-            Products
-          </Link>
-          <Link
-            to="/cart"
-            className="text-lg font-semibold hover:text-red-200 transition duration-200"
-          >
-            Cart
-          </Link>
-          {user && user.role === "admin" && (
-            <Link
-              to="/admin"
-              className="text-lg font-semibold hover:text-red-200 transition duration-200"
-            >
-              Admin
-            </Link>
+      {/* Uppdaterad för mobil: flex-wrap och centrerad på små skärmar */}
+      <div className="container mx-auto flex flex-wrap justify-between items-center gap-y-2">
+        <div className="flex items-center space-x-4">
+          <Link to="/" className="text-lg font-semibold hover:text-red-200">Products</Link>
+          <Link to="/cart" className="text-lg font-semibold hover:text-red-200">Cart</Link>
+          {user?.role === "admin" && (
+            <Link to="/admin" className="text-lg font-semibold hover:text-red-200">Admin</Link>
           )}
           {user && (
-            <Link
-              to="/profile"
-              className="text-lg font-semibold hover:text-red-200 transition duration-200"
-            >
-              Profile
-            </Link>
+            <Link to="/profile" className="text-lg font-semibold hover:text-red-200">Profile</Link>
           )}
         </div>
-        <div>
+        <div className="flex items-center space-x-4">
           {user ? (
-            <div className="flex items-center space-x-4">
-              <span className="text-sm">
-                Welcome, <span className="font-medium">{user.username}</span> (
-                <span className="capitalize">{user.role}</span>)
+            <>
+              <span className="text-sm text-center">
+                Welcome, <span className="font-medium">{user.username}</span> (<span className="capitalize">{user.role}</span>)
               </span>
-              <button
-                onClick={logout}
-                className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-1 rounded-md text-sm transition duration-200"
-              >
+              <button onClick={logout} className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-1 rounded-md text-sm">
                 Logout
               </button>
-            </div>
+            </>
           ) : (
-            <Link
-              to="/login"
-              className="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded-md text-sm transition duration-200"
-            >
+            <Link to="/login" className="bg-green-500 hover:bg-green-600 text-white px-4 py-1 rounded-md text-sm">
               Login
             </Link>
           )}
