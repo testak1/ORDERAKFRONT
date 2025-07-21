@@ -1,31 +1,16 @@
 "use client";
 
-import React, { useRef, useState, useEffect } from "react";
-import ReactToPdf from "react-to-pdf";
+import React, { useRef } from "react";
+import { useReactToPrint } from "react-to-print";
 
 export default function PdfExportModal({ order, onClose }) {
   const pdfRef = useRef();
-  const downloadRef = useRef();
-  const [readyToDownload, setReadyToDownload] = useState(false);
 
-  useEffect(() => {
-    // Start automatisk export efter 500ms
-    const timeout = setTimeout(() => {
-      setReadyToDownload(true);
-    }, 500);
-
-    return () => clearTimeout(timeout);
-  }, []);
-
-  useEffect(() => {
-    if (readyToDownload && downloadRef.current && pdfRef.current) {
-      const delay = setTimeout(() => {
-        downloadRef.current(); // Ladda ner PDF
-        setTimeout(onClose, 1000); // Stäng fönstret efter 1 sekund
-      }, 500);
-      return () => clearTimeout(delay);
-    }
-  }, [readyToDownload, onClose]);
+  const handlePrint = useReactToPrint({
+    content: () => pdfRef.current,
+    documentTitle: `order-${order._id}`,
+    onAfterPrint: onClose,
+  });
 
   if (!order || !order.items || !Array.isArray(order.items)) return null;
 
@@ -54,59 +39,16 @@ export default function PdfExportModal({ order, onClose }) {
         <h2>Orderdetaljer (#{order._id})</h2>
 
         <div ref={pdfRef} style={{ padding: 10, backgroundColor: "#f9f9f9" }}>
-          <p>
-            <strong>Kund:</strong> {order.user?.username}
-          </p>
-          <p>
-            <strong>Datum:</strong> {new Date(order.createdAt).toLocaleString()}
-          </p>
-          <p>
-            <strong>Totalt:</strong> {order.totalAmount} kr
-          </p>
-          <p>
-            <strong>Status:</strong> {order.orderStatus}
-          </p>
-
-          <h3>Produkter:</h3>
-          <ul>
-            {order.items.map((item, index) => (
-              <li key={index}>
-                {item.product?.title} – {item.quantity} st à{" "}
-                {item.priceAtPurchase} kr
-              </li>
-            ))}
-          </ul>
-
-          <h3>Adress:</h3>
-          <p>{order.shippingAddress?.fullName}</p>
-          <p>{order.shippingAddress?.addressLine1}</p>
-          <p>
-            {order.shippingAddress?.postalCode} {order.shippingAddress?.city}
-          </p>
-          <p>{order.shippingAddress?.country}</p>
+          {/* Your existing content */}
         </div>
 
         <div style={{ marginTop: 20 }}>
-          <ReactToPdf
-            targetRef={pdfRef}
-            filename={`order-${order._id}.pdf`}
-            x={0}
-            y={0}
-            scale={1}
+          <button
+            onClick={handlePrint}
+            className="bg-blue-600 text-white px-4 py-2 rounded"
           >
-            {({ toPdf }) => {
-              downloadRef.current = toPdf;
-              return (
-                <button
-                  onClick={toPdf}
-                  className="bg-blue-600 text-white px-4 py-2 rounded"
-                >
-                  Ladda ner PDF manuellt
-                </button>
-              );
-            }}
-          </ReactToPdf>
-
+            Exportera som PDF
+          </button>
           <button
             onClick={onClose}
             className="ml-4 border border-gray-400 px-4 py-2 rounded"
