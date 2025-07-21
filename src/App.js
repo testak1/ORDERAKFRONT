@@ -1,4 +1,3 @@
-// src/App.js
 import React from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { AuthProvider, useAuth } from "./context/AuthContext";
@@ -10,7 +9,7 @@ import CartPage from "./pages/CartPage";
 import AdminDashboard from "./pages/Admin/AdminDashboard";
 import UserProfile from "./pages/UserProfile";
 import Unauthorized from "./pages/Unauthorized";
-import ProtectedRoute from "./components/ProtectedRoute";
+import ProtectedRoute from "./components/ProtectedRoute"; // Your existing protection component
 
 function App() {
   return (
@@ -20,10 +19,36 @@ function App() {
           <NavBar />
           <div className="container mx-auto p-4 md:p-6 lg:p-8 min-h-screen bg-gray-50">
             <Routes>
+              {/* Login page is public */}
               <Route path="/login" element={<Login />} />
-              <Route path="/" element={<ProductList />} />
-              <Route path="/products/:productId" element={<ProductDetail />} />
-              <Route path="/cart" element={<CartPage />} />
+
+              {/* --- THESE ROUTES ARE NOW PROTECTED --- */}
+              <Route
+                path="/"
+                element={
+                  <ProtectedRoute>
+                    <ProductList />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/products/:productId"
+                element={
+                  <ProtectedRoute>
+                    <ProductDetail />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/cart"
+                element={
+                  <ProtectedRoute>
+                    <CartPage />
+                  </ProtectedRoute>
+                }
+              />
+              {/* ------------------------------------ */}
+
               <Route
                 path="/admin/*"
                 element={
@@ -36,13 +61,11 @@ function App() {
                 path="/profile"
                 element={
                   <ProtectedRoute>
-                    <UserProfile key="user-profile" />
+                    <UserProfile />
                   </ProtectedRoute>
                 }
               />
-              <Route path="/unauthorized" element={<Unauthorized />} />{" "}
-              {/* New Unauthorized Route */}
-              {/* Add more routes for order history, user profile etc. */}
+              <Route path="/unauthorized" element={<Unauthorized />} />
             </Routes>
           </div>
         </CartProvider>
@@ -51,6 +74,7 @@ function App() {
   );
 }
 
+// NavBar component remains the same
 function NavBar() {
   const { user, logout } = useAuth();
   return (
@@ -77,7 +101,7 @@ function NavBar() {
               Admin
             </Link>
           )}
-          {user && ( // Show profile link for any logged-in user
+          {user && (
             <Link
               to="/profile"
               className="text-lg font-semibold hover:text-red-200 transition duration-200"
