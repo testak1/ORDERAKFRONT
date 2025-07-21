@@ -1,17 +1,16 @@
-import React, { useRef, useEffect, useState } from "react";
-import ReactToPdf from "react-to-pdf";
-import { Button } from "@mui/material"; // Du kan ersätta med vanlig <button> vid behov
+"use client";
 
-const PdfExportModal = ({ order, onClose }) => {
+import React, { useRef, useState, useEffect } from "react";
+import ReactToPdf from "react-to-pdf";
+
+export default function PdfExportModal({ order, onClose }) {
   const pdfRef = useRef();
   const [isClient, setIsClient] = useState(false);
 
-  // För att undvika SSR/render-fel
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Skydd om order-data är ofullständig
   if (!order || !order.items || !Array.isArray(order.items)) return null;
 
   return (
@@ -34,12 +33,10 @@ const PdfExportModal = ({ order, onClose }) => {
           width: "80%",
           maxHeight: "90vh",
           overflowY: "auto",
-          position: "relative",
         }}
       >
         <h2>Orderdetaljer (#{order._id})</h2>
 
-        {/* Ref: det här exporteras */}
         <div ref={pdfRef} style={{ padding: 10, backgroundColor: "#f9f9f9" }}>
           <p>
             <strong>Kund:</strong> {order.user?.username}
@@ -73,29 +70,27 @@ const PdfExportModal = ({ order, onClose }) => {
           <p>{order.shippingAddress?.country}</p>
         </div>
 
-        {/* PDF-export & stäng-knapp */}
         <div style={{ marginTop: 20 }}>
           {isClient && pdfRef.current && (
             <ReactToPdf targetRef={pdfRef} filename={`order-${order._id}.pdf`}>
               {({ toPdf }) => (
-                <Button variant="contained" color="primary" onClick={toPdf}>
+                <button
+                  onClick={toPdf}
+                  className="bg-blue-600 text-white px-4 py-2 rounded"
+                >
                   Exportera som PDF
-                </Button>
+                </button>
               )}
             </ReactToPdf>
           )}
-          <Button
-            variant="outlined"
-            color="secondary"
+          <button
             onClick={onClose}
-            style={{ marginLeft: 10 }}
+            className="ml-4 border border-gray-400 px-4 py-2 rounded"
           >
             Stäng
-          </Button>
+          </button>
         </div>
       </div>
     </div>
   );
-};
-
-export default PdfExportModal;
+}
