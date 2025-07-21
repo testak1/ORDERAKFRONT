@@ -3,8 +3,10 @@ import React, { useState, useEffect } from "react";
 import { client } from "../../sanityClient";
 import OrderCard from "./OrderCard";
 import PdfExportModal from "../../components/PdfExportModal"; // Import the modal
+import { useTranslation } from "react-i18next";
 
 function AdminOrderManagement() {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -45,10 +47,10 @@ function AdminOrderManagement() {
           order._id === orderId ? { ...order, orderStatus: newStatus } : order
         )
       );
-      alert("Order status updated!");
+      alert(t("adminOrderManagement.statusUpdatedSuccess"));
     } catch (error) {
       console.error("Failed to update order status:", error);
-      alert("Failed to update order status.");
+      alert(t("adminOrderManagement.statusUpdatedError"));
     }
   };
 
@@ -63,16 +65,16 @@ function AdminOrderManagement() {
     setSelectedOrderForPdf(null);
   };
 
-  if (loading) return <div className="text-center py-8">Loading orders...</div>;
+  if (loading) return <div className="text-center py-8">{t("adminOrderManagement.loading")}</div>;
   if (error)
-    return <div className="text-center text-red-500 py-8">Error: {error}</div>;
+    return <div className="text-center text-red-500 py-8">{t("adminOrderManagement.error", { error })}</div>;
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
       <h2 className="text-2xl font-bold text-gray-800 mb-6">
-        Order Management
+        {t("adminOrderManagement.title")}
       </h2>
-      {orders.length === 0 && <p className="text-gray-500">No orders found.</p>}
+      {orders.length === 0 && <p className="text-gray-500">{t("adminOrderManagement.noOrders")}</p>}
       <div className="space-y-6">
         {orders.map((order) => (
           <OrderCard
