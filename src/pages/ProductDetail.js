@@ -50,7 +50,10 @@ function ProductDetail() {
       <div className="bg-white shadow-xl rounded-lg overflow-hidden md:flex">
         <div className="md:w-1/2">
           <img
-            src={product.imageUrl || "https://via.placeholder.com/500"}
+            src={
+              product.imageUrl ||
+              "https://placehold.co/400x300?text=IMAGE%20COOMING%20SOON"
+            }
             alt={product.title}
             className="w-full h-full object-cover"
           />
