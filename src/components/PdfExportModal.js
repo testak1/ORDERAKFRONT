@@ -17,10 +17,12 @@ export default function PdfExportModal({ order, onClose }) {
       body {
         font-family: Arial, sans-serif;
         font-size: 12pt;
+        padding: 20px;
       }
       h1 {
         color: #333;
         font-size: 18pt;
+        margin-bottom: 10px;
       }
       table {
         width: 100%;
@@ -37,6 +39,9 @@ export default function PdfExportModal({ order, onClose }) {
       }
       .total-row {
         font-weight: bold;
+      }
+      address {
+        font-style: normal;
       }
     `,
     onAfterPrint: onClose,
@@ -60,6 +65,7 @@ export default function PdfExportModal({ order, onClose }) {
           <button
             onClick={onClose}
             className="text-gray-500 hover:text-gray-700 text-2xl"
+            aria-label="Close"
           >
             &times;
           </button>
@@ -69,8 +75,13 @@ export default function PdfExportModal({ order, onClose }) {
         <div style={{ position: "absolute", left: "-10000px", top: 0 }}>
           <div ref={pdfRef} className="p-4">
             <h1>Order #{order._id.slice(0, 8)}</h1>
-            <p>Date: {new Date(order.createdAt).toLocaleDateString("sv-SE")}</p>
-            <p>Status: {order.orderStatus}</p>
+            <p>
+              <strong>Date:</strong>{" "}
+              {new Date(order.createdAt).toLocaleDateString("sv-SE")}
+            </p>
+            <p>
+              <strong>Status:</strong> {order.orderStatus}
+            </p>
 
             <h2>Customer</h2>
             <p>{order.user?.username || "Guest"}</p>
@@ -89,12 +100,12 @@ export default function PdfExportModal({ order, onClose }) {
               <tbody>
                 {order.items.map((item, index) => (
                   <tr key={index}>
-                    <td>{item.title || item.product?.title}</td>
-                    <td>{item.sku || item.product?.sku}</td>
+                    <td>{item.product?.title || item.title}</td>
+                    <td>{item.product?.sku || item.sku}</td>
                     <td>{item.quantity}</td>
-                    <td>{item.priceAtPurchase.toFixed(2)} kr</td>
+                    <td>{item.priceAtPurchase?.toFixed(2)} SEK</td>
                     <td>
-                      {(item.quantity * item.priceAtPurchase).toFixed(2)} kr
+                      {(item.quantity * item.priceAtPurchase).toFixed(2)} SEK
                     </td>
                   </tr>
                 ))}
@@ -104,29 +115,23 @@ export default function PdfExportModal({ order, onClose }) {
                   <td colSpan="2">Total</td>
                   <td>{totalQuantity}</td>
                   <td></td>
-                  <td>{order.totalAmount.toFixed(2)} kr</td>
+                  <td>{order.totalAmount?.toFixed(2)} SEK</td>
                 </tr>
               </tfoot>
             </table>
 
             <h2>Shipping Address</h2>
-            <address className="not-italic">
-              {order.shippingAddress?.fullName && (
-                <p>{order.shippingAddress.fullName}</p>
+            <address>
+              <p>{order.shippingAddress?.fullName}</p>
+              <p>{order.shippingAddress?.addressLine1}</p>
+              {order.shippingAddress?.addressLine2 && (
+                <p>{order.shippingAddress.addressLine2}</p>
               )}
-              {order.shippingAddress?.addressLine1 && (
-                <p>{order.shippingAddress.addressLine1}</p>
-              )}
-              {order.shippingAddress?.postalCode &&
-                order.shippingAddress?.city && (
-                  <p>
-                    {order.shippingAddress.postalCode}{" "}
-                    {order.shippingAddress.city}
-                  </p>
-                )}
-              {order.shippingAddress?.country && (
-                <p>{order.shippingAddress.country}</p>
-              )}
+              <p>
+                {order.shippingAddress?.postalCode}{" "}
+                {order.shippingAddress?.city}
+              </p>
+              <p>{order.shippingAddress?.country}</p>
             </address>
           </div>
         </div>
@@ -136,34 +141,51 @@ export default function PdfExportModal({ order, onClose }) {
           <h3 className="text-lg font-semibold mb-2">Order Preview</h3>
           <div className="space-y-2">
             <p>
+              <strong>Order ID:</strong> {order._id}
+            </p>
+            <p>
               <strong>Customer:</strong> {order.user?.username || "Guest"}
             </p>
             <p>
               <strong>Date:</strong>{" "}
-              {new Date(order.createdAt).toLocaleDateString("sv-SE")}
+              {new Date(order.createdAt).toLocaleString()}
             </p>
             <p>
-              <strong>Total:</strong> {order.totalAmount.toFixed(2)} kr
+              <strong>Total:</strong> {order.totalAmount?.toFixed(2)} SEK
             </p>
             <p>
-              <strong>Status:</strong> {order.orderStatus}
+              <strong>Status:</strong>{" "}
+              <span className="capitalize">{order.orderStatus}</span>
             </p>
           </div>
 
           <h3 className="text-lg font-semibold mt-4 mb-2">Products</h3>
-          <div className="space-y-2">
+          <ul className="space-y-2">
             {order.items.map((item, index) => (
-              <div key={index} className="flex justify-between">
+              <li key={index} className="flex justify-between">
                 <span>
-                  {item.title || item.product?.title} (SKU:{" "}
-                  {item.sku || item.product?.sku})
+                  {item.product?.title || item.title} (SKU:{" "}
+                  {item.product?.sku || item.sku})
                 </span>
                 <span>
-                  {item.quantity} × {item.priceAtPurchase.toFixed(2)} kr
+                  {item.quantity} × {item.priceAtPurchase?.toFixed(2)} SEK
                 </span>
-              </div>
+              </li>
             ))}
-          </div>
+          </ul>
+
+          <h3 className="text-lg font-semibold mt-4 mb-2">Shipping Address</h3>
+          <address className="not-italic">
+            <p>{order.shippingAddress?.fullName}</p>
+            <p>{order.shippingAddress?.addressLine1}</p>
+            {order.shippingAddress?.addressLine2 && (
+              <p>{order.shippingAddress.addressLine2}</p>
+            )}
+            <p>
+              {order.shippingAddress?.postalCode} {order.shippingAddress?.city}
+            </p>
+            <p>{order.shippingAddress?.country}</p>
+          </address>
         </div>
 
         <div className="flex justify-end space-x-4">
