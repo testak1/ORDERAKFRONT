@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { client } from "../sanityClient";
 import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 
 function ProductDetail() {
   const { productId } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -36,11 +37,11 @@ function ProductDetail() {
       const discountedPrice =
         product.price * (1 - user.discountPercentage / 100);
       return {
-        original: Math.round(product.price), // Avrundar
-        discounted: Math.round(discountedPrice), // Avrundar
+        original: Math.round(product.price),
+        discounted: Math.round(discountedPrice),
       };
     }
-    return product ? { original: Math.round(product.price) } : {}; // Avrundar
+    return product ? { original: Math.round(product.price) } : {};
   };
 
   if (loading) return <div className="text-center py-10">Loading...</div>;
@@ -52,7 +53,10 @@ function ProductDetail() {
   const descriptionPreview = product.description?.substring(0, 250) + "...";
 
   return (
-    <div className="container mx-auto p-8">
+    <div className="container mx-auto p-4 md:p-8 max-w-7xl"> {/* Bredare container */}
+      <button onClick={() => navigate(-1)} className="mb-4 text-red-600 hover:text-red-800 font-semibold">
+        &larr; Back to Products
+      </button>
       <div className="bg-white shadow-xl rounded-lg overflow-hidden md:flex">
         <div className="md:w-1/2">
           <img
@@ -65,29 +69,22 @@ function ProductDetail() {
           />
         </div>
         <div className="md:w-1/2 p-8 flex flex-col justify-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-2">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
             {product.title}
           </h1>
           <p className="text-sm text-gray-500 mb-4">SKU: {product.sku}</p>
 
           <div className="text-gray-600 mb-6">
             <div
-              dangerouslySetInnerHTML={{
-                __html: isDescriptionExpanded
-                  ? product.description
-                  : descriptionPreview,
-              }}
+              dangerouslySetInnerHTML={{ __html: isDescriptionExpanded ? product.description : descriptionPreview }}
             />
             {product.description?.length > 250 && (
-              <button
-                onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
-                className="text-red-600 font-semibold hover:underline mt-2"
-              >
-                {isDescriptionExpanded ? "Read less" : "Read more..."}
-              </button>
+                 <button onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className="text-red-600 font-semibold hover:underline mt-2">
+                    {isDescriptionExpanded ? "Read less" : "Read more..."}
+                 </button>
             )}
           </div>
-
+          
           <div className="mb-6">
             {displayPrice.discounted ? (
               <>
