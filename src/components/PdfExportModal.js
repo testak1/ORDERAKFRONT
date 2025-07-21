@@ -99,14 +99,6 @@ export default function PdfExportModal({ order, onClose }) {
                   </tr>
                 ))}
               </tbody>
-              <tfoot>
-                <tr className="total-row">
-                  <td colSpan="2">Total</td>
-                  <td>{totalQuantity}</td>
-                  <td></td>
-                  <td>{order.totalAmount?.toFixed(2)} SEK</td>
-                </tr>
-              </tfoot>
             </table>
 
             <h2>Shipping Address</h2>
