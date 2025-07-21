@@ -104,12 +104,14 @@ function AdminUserManagement() {
     return <div className="text-center text-red-500 py-8">Error: {error}</div>;
 
   return (
-    <div className="p-4 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">User Management</h2>
+    <div className="p-4 bg-white rounded-lg shadow-xl">
+      <h2 className="text-3xl font-extrabold text-gray-900 mb-8 text-center border-b-2 border-red-200 pb-4">
+        User Management
+      </h2>
 
       {/* Add New User */}
-      <div className="mb-8 p-6 border border-gray-200 rounded-lg bg-gray-50">
-        <h3 className="text-xl font-semibold text-gray-700 mb-4">
+      <div className="mb-10 p-8 border border-red-200 rounded-xl bg-red-50/20 shadow-lg">
+        <h3 className="text-2xl font-bold text-red-800 mb-6 border-b border-red-300 pb-3">
           Add New User
         </h3>
         <form onSubmit={handleAddUser} className="space-y-4">
@@ -122,7 +124,7 @@ function AdminUserManagement() {
               value={newUsername}
               onChange={(e) => setNewUsername(e.target.value)}
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
             />
           </div>
           <div>
@@ -134,7 +136,7 @@ function AdminUserManagement() {
               value={newUserPassword}
               onChange={(e) => setNewUserPassword(e.target.value)}
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
             />
           </div>
           <div>
@@ -144,7 +146,7 @@ function AdminUserManagement() {
             <select
               value={newUserRole}
               onChange={(e) => setNewUserRole(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm bg-white"
+              className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm bg-white"
             >
               <option value="user">User (Dealer)</option>
               <option value="admin">Admin</option>
@@ -160,12 +162,12 @@ function AdminUserManagement() {
               onChange={(e) => setNewUserDiscount(parseFloat(e.target.value))}
               min="0"
               max="100"
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+              className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500 sm:text-sm"
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md transition-colors duration-200"
           >
             Add User
           </button>
@@ -173,8 +175,8 @@ function AdminUserManagement() {
       </div>
 
       {/* Manage Existing Users */}
-      <div className="p-6 border border-gray-200 rounded-lg bg-gray-50">
-        <h3 className="text-xl font-semibold text-gray-700 mb-4">
+      <div className="p-8 border border-red-200 rounded-xl bg-red-50/20 shadow-lg">
+        <h3 className="text-2xl font-bold text-red-800 mb-6 border-b border-red-300 pb-3">
           Existing Users
         </h3>
         {users.length === 0 && <p className="text-gray-500">No users found.</p>}
@@ -182,7 +184,7 @@ function AdminUserManagement() {
           {users.map((user) => (
             <div
               key={user._id}
-              className="flex justify-between items-center bg-white p-4 rounded-md shadow-sm border border-gray-100"
+              className="flex justify-between items-center bg-white p-4 rounded-md shadow-sm border border-red-100"
             >
               <div>
                 <h4 className="text-lg font-medium text-gray-900">
@@ -193,23 +195,21 @@ function AdminUserManagement() {
                   <span className="text-sm text-gray-600 mr-2">
                     Current Discount: {user.discountPercentage}%
                   </span>
-                  <label className="sr-only">Update Discount (%):</label>{" "}
-                  {/* Screen reader only label */}
                   <input
                     type="number"
-                    value={user.discountPercentage}
-                    onChange={(e) =>
+                    defaultValue={user.discountPercentage}
+                    onBlur={(e) =>
                       handleUpdateUserDiscount(user._id, e.target.value)
                     }
                     min="0"
                     max="100"
-                    className="w-20 px-2 py-1 border border-gray-300 rounded-md text-sm focus:ring-blue-500 focus:border-blue-500"
+                    className="w-20 px-2 py-1 border border-red-300 rounded-md text-sm focus:ring-red-500 focus:border-red-500"
                   />
                 </div>
               </div>
               <button
                 onClick={() => handleDeleteUser(user._id)}
-                className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200"
+                className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md text-sm transition-colors duration-200"
               >
                 Delete User
               </button>

@@ -23,7 +23,7 @@ function Login() {
 
   return (
     <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md">
+      <div className="bg-white p-8 rounded-lg shadow-xl w-full max-w-md border-t-4 border-red-600">
         <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">
           Login
         </h2>
@@ -44,7 +44,7 @@ function Login() {
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-base"
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-base"
             />
           </div>
           <div>
@@ -60,12 +60,12 @@ function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-base"
+              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-red-500 focus:border-red-500 sm:text-base"
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-4 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            className="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-4 rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
           >
             Login
           </button>

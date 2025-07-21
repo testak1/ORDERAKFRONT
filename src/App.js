@@ -54,25 +54,25 @@ function App() {
 function NavBar() {
   const { user, logout } = useAuth();
   return (
-    <nav className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-4 shadow-lg">
+    <nav className="bg-gradient-to-r from-red-600 to-red-800 text-white p-4 shadow-lg">
       <div className="container mx-auto flex justify-between items-center">
         <div className="flex space-x-6">
           <Link
             to="/"
-            className="text-lg font-semibold hover:text-blue-200 transition duration-200"
+            className="text-lg font-semibold hover:text-red-200 transition duration-200"
           >
             Products
           </Link>
           <Link
             to="/cart"
-            className="text-lg font-semibold hover:text-blue-200 transition duration-200"
+            className="text-lg font-semibold hover:text-red-200 transition duration-200"
           >
             Cart
           </Link>
           {user && user.role === "admin" && (
             <Link
               to="/admin"
-              className="text-lg font-semibold hover:text-blue-200 transition duration-200"
+              className="text-lg font-semibold hover:text-red-200 transition duration-200"
             >
               Admin
             </Link>
@@ -80,7 +80,7 @@ function NavBar() {
           {user && ( // Show profile link for any logged-in user
             <Link
               to="/profile"
-              className="text-lg font-semibold hover:text-blue-200 transition duration-200"
+              className="text-lg font-semibold hover:text-red-200 transition duration-200"
             >
               Profile
             </Link>
@@ -95,7 +95,7 @@ function NavBar() {
               </span>
               <button
                 onClick={logout}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-1 rounded-md text-sm transition duration-200"
+                className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-1 rounded-md text-sm transition duration-200"
               >
                 Logout
               </button>
