@@ -64,13 +64,117 @@ export default function PdfExportModal({ order, onClose }) {
         <div ref={pdfRef} style={{ display: "none" }} data-print-content>
           <div className="p-4">
             <h1>Order #{order._id.slice(0, 8)}</h1>
-            {/* Your order content here */}
+            <p>
+              <strong>Date:</strong>{" "}
+              {new Date(order.createdAt).toLocaleDateString("sv-SE")}
+            </p>
+            <p>
+              <strong>Status:</strong> {order.orderStatus}
+            </p>
+
+            <h2>Customer</h2>
+            <p>{order.user?.username || "Guest"}</p>
+
+            <h2>Order Items</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>Product</th>
+                  <th>SKU</th>
+                  <th>Qty</th>
+                  <th>Price</th>
+                  <th>Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {order.items.map((item, index) => (
+                  <tr key={index}>
+                    <td>{item.product?.title || item.title}</td>
+                    <td>{item.product?.sku || item.sku}</td>
+                    <td>{item.quantity}</td>
+                    <td>{item.priceAtPurchase?.toFixed(2)} SEK</td>
+                    <td>
+                      {(item.quantity * item.priceAtPurchase).toFixed(2)} SEK
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="total-row">
+                  <td colSpan="2">Total</td>
+                  <td>{totalQuantity}</td>
+                  <td></td>
+                  <td>{order.totalAmount?.toFixed(2)} SEK</td>
+                </tr>
+              </tfoot>
+            </table>
+
+            <h2>Shipping Address</h2>
+            <address>
+              <p>{order.shippingAddress?.fullName}</p>
+              <p>{order.shippingAddress?.addressLine1}</p>
+              {order.shippingAddress?.addressLine2 && (
+                <p>{order.shippingAddress.addressLine2}</p>
+              )}
+              <p>
+                {order.shippingAddress?.postalCode}{" "}
+                {order.shippingAddress?.city}
+              </p>
+              <p>{order.shippingAddress?.country}</p>
+            </address>
           </div>
         </div>
 
-        {/* Preview content */}
-        <div className="border rounded p-4 mb-6">
-          {/* Preview version of the content */}
+        {/* Preview */}
+        <div className="border rounded p-4 mb-6 bg-gray-50">
+          <h3 className="text-lg font-semibold mb-2">Order Preview</h3>
+          <div className="space-y-2">
+            <p>
+              <strong>Order ID:</strong> {order._id}
+            </p>
+            <p>
+              <strong>Customer:</strong> {order.user?.username || "Guest"}
+            </p>
+            <p>
+              <strong>Date:</strong>{" "}
+              {new Date(order.createdAt).toLocaleString()}
+            </p>
+            <p>
+              <strong>Total:</strong> {order.totalAmount?.toFixed(2)} SEK
+            </p>
+            <p>
+              <strong>Status:</strong>{" "}
+              <span className="capitalize">{order.orderStatus}</span>
+            </p>
+          </div>
+
+          <h3 className="text-lg font-semibold mt-4 mb-2">Products</h3>
+          <ul className="space-y-2">
+            {order.items.map((item, index) => (
+              <li key={index} className="flex justify-between">
+                <span>
+                  {item.product?.title || item.title} (SKU:{" "}
+                  {item.product?.sku || item.sku})
+                </span>
+                <span>
+                  {item.quantity} × {item.priceAtPurchase?.toFixed(2)} SEK
+                </span>
+              </li>
+            ))}
+          </ul>
+
+          <h3 className="text-lg font-semibold mt-4 mb-2">Shipping Address</h3>
+          <address className="not-italic">
+            <p>{order.shippingAddress?.fullName}</p>
+            <p>{order.shippingAddress?.addressLine1}</p>
+            {order.shippingAddress?.addressLine2 && (
+              <p>{order.shippingAddress.addressLine2}</p>
+            )}
+            <p>
+              {order.shippingAddress?.postalCode} {order.shippingAddress?.city}
+            </p>
+            <p>{order.shippingAddress?.country}</p>
+          </address>
         </div>
 
         <div className="flex justify-end space-x-4">

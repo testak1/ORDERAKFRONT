@@ -36,7 +36,7 @@ function App() {
                 path="/profile"
                 element={
                   <ProtectedRoute>
-                    <UserProfile />
+                    <UserProfile key="user-profile" />
                   </ProtectedRoute>
                 }
               />
