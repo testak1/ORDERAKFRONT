@@ -5,23 +5,23 @@ import ReactToPdf from "react-to-pdf";
 
 export default function PdfExportModal({ order, onClose }) {
   const pdfRef = useRef();
+  const downloadRef = useRef(); // for holding the toPdf() trigger
   const [isClient, setIsClient] = useState(false);
-  const [triggerPdf, setTriggerPdf] = useState(false);
+  const [readyToDownload, setReadyToDownload] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
-
-    const observer = new MutationObserver(() => {
-      if (pdfRef.current) {
-        setTriggerPdf(true);
-        observer.disconnect();
-      }
-    });
-
-    observer.observe(document.body, { childList: true, subtree: true });
-
-    return () => observer.disconnect();
+    const timer = setTimeout(() => setReadyToDownload(true), 500); // short delay to allow render
+    return () => clearTimeout(timer);
   }, []);
+
+  useEffect(() => {
+    if (readyToDownload && downloadRef.current) {
+      downloadRef.current();
+      // Optionally auto-close the modal after download
+      // setTimeout(onClose, 1000);
+    }
+  }, [readyToDownload]);
 
   if (!order || !order.items || !Array.isArray(order.items)) return null;
 
@@ -72,17 +72,11 @@ export default function PdfExportModal({ order, onClose }) {
         </div>
 
         <div style={{ marginTop: 20 }}>
-          {isClient && pdfRef.current && (
+          {isClient && (
             <ReactToPdf targetRef={pdfRef} filename={`order-${order._id}.pdf`}>
               {({ toPdf }) => {
-                // Trigger automatic download when ready
-                useEffect(() => {
-                  if (triggerPdf) {
-                    toPdf();
-                  }
-                }, [triggerPdf]);
-
-                return null; // No button needed
+                downloadRef.current = toPdf; // Save the function to trigger later
+                return null; // Don't render a button
               }}
             </ReactToPdf>
           )}
