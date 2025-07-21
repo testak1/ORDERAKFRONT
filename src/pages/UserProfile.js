@@ -41,7 +41,7 @@ function UserProfile() {
   };
 
   if (!user) {
-    return <div>{t('profile.pleaseLogIn', "Vänligen logga in för att se din profil.")}</div>;
+    return <div>{t("profile.loginPrompt")}</div>;
   }
 
   return (
@@ -55,22 +55,24 @@ function UserProfile() {
       <div className="p-6 bg-white rounded-lg shadow-xl">
         <div className="flex justify-between items-start mb-6 border-b pb-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800">{t('profile.myProfile')}</h1>
+            <h1 className="text-3xl font-bold text-gray-800">{t("profile.myProfile")}</h1>
             <p className="text-lg text-gray-600">
-              {t('navbar.welcome')}, {user.fullName || user.username}!
+              {t("profile.welcome", { name: user.fullName || user.username })}
             </p>
           </div>
           <button
             onClick={logout}
             className="bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md"
           >
-            {t('navbar.logout')}
+            {t("navbar.logout")}
           </button>
         </div>
+
+        {/* --- NEW USER STATS SECTION --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8 text-center">
           <div className="p-4 bg-gray-100 rounded-lg">
             <p className="text-sm text-gray-600 font-semibold">
-              {t('profile.totalOrders')}
+              {t("profile.totalOrders")}
             </p>
             <p className="text-2xl font-bold text-red-600">
               {loading ? "..." : orders.length}
@@ -78,17 +80,18 @@ function UserProfile() {
           </div>
           <div className="p-4 bg-gray-100 rounded-lg">
             <p className="text-sm text-gray-600 font-semibold">
-              {t('profile.dealerDiscount')}
+              {t("profile.dealerDiscount")}
             </p>
             <p className="text-2xl font-bold text-green-600">
               {user.discountPercentage || 0}%
             </p>
           </div>
         </div>
+
         <div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">{t('profile.myOrders')}</h2>
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">{t("profile.myOrders")}</h2>
           {loading ? (
-            <p>{t('common.loading')}...</p>
+            <p>{t("profile.loadingOrders")}</p>
           ) : orders.length > 0 ? (
             <div className="space-y-6">
               {orders.map((order) => (
@@ -101,7 +104,7 @@ function UserProfile() {
               ))}
             </div>
           ) : (
-            <p>{t('profile.noOrders', "Du har inte lagt några beställningar än.")}</p>
+            <p>{t("profile.noOrders")}</p>
           )}
         </div>
       </div>
