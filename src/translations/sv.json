@@ -8,7 +8,10 @@
     "loading": "Laddar...",
     "error": "Ett fel uppstod",
     "price": "Pris",
-    "sku": "Artikelnummer"
+    "sku": "Artikelnummer",
+    "skuLabel": "Art.nr: {{sku}}",
+    "priceFormatted": "{{price}} kr",
+    "optional": "(Valfritt)"
   },
   "navbar": {
     "products": "Produkter",
@@ -16,7 +19,9 @@
     "admin": "Admin",
     "profile": "Min Profil",
     "logout": "Logga ut",
-    "welcome": "Välkommen"
+    "login": "Logga in",
+    "welcome": "Välkommen",
+    "welcomeUser": "Välkommen, {{user}} ({{role}})"
   },
   "login": {
     "title": "Välkommen tillbaka",
@@ -31,22 +36,26 @@
     "title": "Produkter",
     "searchPlaceholder": "Sök på namn eller artikelnummer...",
     "addToCart": "Lägg i varukorg",
-    "noProductsFound": "Inga produkter matchade din sökning."
+    "noProductsFound": "Inga produkter matchade din sökning.",
+    "loadError": "Kunde inte ladda produkter."
   },
   "productDetail": {
     "backToProducts": "Tillbaka till produkter",
     "description": "Beskrivning",
     "readMore": "Läs mer...",
     "readLess": "Läs mindre",
-    "regularPrice": "ORD PRIS",
-    "yourPrice": "DITT PRIS",
-    "addToCart": "Lägg i varukorg"
+    "regularPrice": "ORD PRIS: {{price}} kr",
+    "yourPrice": "DITT PRIS: {{price}} kr",
+    "addToCart": "Lägg i varukorg",
+    "loadError": "Kunde inte ladda produktinformation.",
+    "notFound": "Produkten hittades inte."
   },
   "cart": {
     "title": "Din Varukorg",
     "emptyCart": "Din varukorg är tom.",
     "continueShopping": "Fortsätt handla",
-    "total": "Totalt",
+    "total": "Totalt: {{total}} kr",
+    "remove": "Ta bort",
     "shippingAddress": "Leveransadress",
     "useDefaultAddress": "Använd min standardadress",
     "fullName": "Fullständigt namn",
@@ -54,23 +63,151 @@
     "city": "Stad",
     "postalCode": "Postnummer",
     "country": "Land",
-    "buyNow": "Köp nu",
-    "placingOrder": "Slutför beställning..."
+    "buyNow": "Köp nu ({{total}} kr)",
+    "placingOrder": "Slutför beställning...",
+    "alerts": {
+      "loginRequired": "Vänligen logga in för att slutföra din beställning.",
+      "emptyCart": "Din varukorg är tom.",
+      "fillAddress": "Vänligen fyll i alla fält för leveransadress.",
+      "orderSuccess": "Beställning slutförd!",
+      "orderFailure": "Kunde inte slutföra beställningen."
+    }
   },
   "profile": {
     "myProfile": "Min Profil",
-    "myDetails": "Mina uppgifter",
-    "editProfile": "Redigera profil",
+    "welcome": "Välkommen, {{name}}!",
     "totalOrders": "Totalt antal ordrar",
     "dealerDiscount": "Din återförsäljarrabatt",
-    "myOrders": "Mina Ordrar"
+    "myOrders": "Mina Ordrar",
+    "loadingOrders": "Laddar ordrar...",
+    "noOrders": "Du har inte lagt några ordrar än.",
+    "loginPrompt": "Vänligen logga in för att se din profil."
   },
   "admin": {
     "dashboard": "Admin Dashboard",
     "productManagement": "Produkthantering",
     "userManagement": "Användarhantering",
-    "orderManagement": "Orderhantering",
-    "addNewUser": "Lägg till ny användare",
-    "existingUsers": "Befintliga användare"
+    "orderManagement": "Orderhantering"
+  },
+  "adminOrderManagement": {
+    "title": "Orderhantering",
+    "loading": "Laddar ordrar...",
+    "error": "Fel: {{error}}",
+    "noOrders": "Inga ordrar hittades.",
+    "statusUpdatedSuccess": "Orderstatus uppdaterad!",
+    "statusUpdatedError": "Kunde inte uppdatera orderstatus."
+  },
+  "adminProductManagement": {
+    "title": "Produkthantering",
+    "addProductTitle": "Lägg till ny produkt",
+    "bulkUploadTitle": "Massuppladdning (CSV)",
+    "bulkPriceAdjustTitle": "Massjustering av priser",
+    "dangerZoneTitle": "Farlig zon",
+    "activeProductsTitle": "Aktiva produkter ({{count}})",
+    "filterPlaceholder": "Filtrera produkter på titel...",
+    "form": {
+      "title": "Titel",
+      "sku": "Artikelnummer",
+      "brand": "Märke",
+      "description": "Beskrivning",
+      "price": "Pris (SEK)",
+      "category": "Kategori",
+      "image": "Produktbild",
+      "required": "Titel, Pris, Artikelnummer och Bild är obligatoriska.",
+      "addSuccess": "Produkten har lagts till!",
+      "addError": "Kunde inte lägga till produkten. Kontrollera att artikelnumret är unikt.",
+      "archiveConfirm": "Är du säker på att du vill arkivera denna produkt? Den kommer att döljas från butiken.",
+      "archiveSuccess": "Produkten har arkiverats!",
+      "archiveError": "Kunde inte arkivera produkten."
+    },
+    "bulkUpload": {
+      "selectFile": "Välj CSV-fil:",
+      "mapTitle": "Mappa CSV-kolumner till produktfält:",
+      "selectColumn": "-- Välj CSV-kolumn --",
+      "confirmButton": "Bekräfta uppladdning",
+      "errorEmptyFile": "CSV-filen är tom eller saknar datarader.",
+      "errorMappingRequired": "Fälten för Artikelnummer, Titel och Pris måste mappas.",
+      "uploadSuccess": "Massuppladdning slutförd!",
+      "uploadError": "Massuppladdning misslyckades. Kontrollera konsolen för detaljer. Artikelnummer kanske inte är unika."
+    },
+    "bulkPrice": {
+      "adjustValue": "Justeringsvärde:",
+      "percentage": "Procent (%)",
+      "fixedAmount": "Fast belopp (kr)",
+      "filterBrand": "Filtrera på märke:",
+      "filterTerm": "Filtrera på sökterm (Titel/Art.nr):",
+      "applyButton": "Tillämpa justering",
+      "alertValueMissing": "Vänligen ange ett värde för prisjusteringen.",
+      "alertNoMatch": "Inga produkter matchade dina kriterier.",
+      "alertSuccess": "{{count}} produkter har uppdaterats.",
+      "alertError": "Kunde inte genomföra massjusteringen av priser."
+    },
+    "dangerZone": {
+      "description": "Detta kommer permanent att ta bort alla produkter som INTE är en del av en befintlig order. Detta kan inte ångras.",
+      "button": "Ta bort orefereade produkter",
+      "confirm": "FARA: Detta kommer att ta bort ALLA produkter som inte är en del av en order. Detta kan inte ångras. Fortsätta?",
+      "noProductsToDelete": "Inga produkter att ta bort. Alla produkter är refererade i befintliga ordrar.",
+      "deleteSuccess": "{{count}} orefereade produkter har tagits bort.",
+      "deleteError": "Ett fel uppstod vid borttagningen."
+    },
+    "productCard": {
+      "archive": "Arkivera"
+    }
+  },
+  "adminUserManagement": {
+    "title": "Användarhantering",
+    "addUserTitle": "Lägg till ny användare",
+    "existingUsersTitle": "Befintliga användare",
+    "form": {
+      "username": "Användarnamn",
+      "password": "Lösenord",
+      "fullName": "Fullständigt namn",
+      "email": "E-post",
+      "phone": "Telefon",
+      "role": "Roll",
+      "userRole": "Användare (Återförsäljare)",
+      "adminRole": "Admin",
+      "discount": "Rabatt (%)",
+      "addUserButton": "Lägg till användare",
+      "saveChangesButton": "Spara ändringar",
+      "alertRequired": "Användarnamn och Lösenord är obligatoriska.",
+      "addSuccess": "Användare tillagd!",
+      "addError": "Kunde inte lägga till användare. Användarnamnet eller e-posten kan redan vara upptagen."
+    },
+    "userEditor": {
+      "noEmail": "Ingen e-post angiven",
+      "edit": "Redigera",
+      "cancel": "Avbryt",
+      "delete": "Ta bort",
+      "updateSuccess": "Användare uppdaterad!",
+      "updateError": "Kunde inte uppdatera användare.",
+      "deleteConfirm": "Är du säker på att du vill ta bort denna användare? Detta kan påverka hens tidigare ordrar.",
+      "deleteSuccess": "Användare borttagen!",
+      "deleteError": "Kunde inte ta bort användaren. Hen kan ha befintliga ordrar kopplade till sig.",
+      "defaultAddress": "Standardadress",
+      "addressLine1": "Adressrad 1",
+      "city": "Stad",
+      "postalCode": "Postnummer",
+      "country": "Land"
+    }
+  },
+  "orderCard": {
+    "orderId": "Order-ID: {{id}}",
+    "orderedBy": "Beställd av: {{username}}",
+    "createdAt": "Skapad: {{date}}",
+    "statusLabel": "Status: ",
+    "total": "Totalt: {{total}} kr",
+    "items": "Artiklar:",
+    "itemLine": "{{title}} (Art.nr: {{sku}}) - Antal: {{quantity}} @ {{price}} kr st",
+    "shippingAddress": "Leveransadress:",
+    "updateStatus": "Uppdatera Status:",
+    "exportPdf": "Exportera till PDF"
+  },
+  "orderStatus": {
+    "pending": "Väntande",
+    "processing": "Behandlas",
+    "shipped": "Skickad",
+    "completed": "Slutförd",
+    "cancelled": "Avbruten"
   }
 }
