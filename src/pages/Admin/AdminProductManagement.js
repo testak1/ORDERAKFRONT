@@ -2,9 +2,9 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { client } from "../../sanityClient";
 import CollapsibleSection from "../../components/CollapsibleSection";
-import * as XLSX from "xlsx"; 
+import * as XLSX from "xlsx"; // For CSV import
 import { useTranslation } from "react-i18next";
-import { toast } from 'react-toastify'; 
+import { toast } from 'react-toastify'; // Import toast for notifications
 
 function AdminProductManagement() {
   const { t } = useTranslation();
@@ -34,23 +34,30 @@ function AdminProductManagement() {
   const [priceAdjustmentSearchTerm, setPriceAdjustmentSearchTerm] =
     useState("");
 
-  // For CSV Upload and Field Mapping - Updated for custom fields
+  // For CSV Upload and Field Mapping - Updated for custom fields and combined fields
   const [csvFile, setCsvFile] = useState(null);
   const [csvHeaders, setCsvHeaders] = useState([]);
   const [csvData, setCsvData] = useState([]);
   const [fieldMapping, setFieldMapping] = useState({
-    title: "",
     description: "",
     sku: "",
     brand: "",
     price: "",
     category: "",
     additionalDescription: "", // Added new custom field to mapping (example)
-    // Add other standard fields you expect from CSV here and in your Sanity schema
+    // 'title' is handled separately by titleMappingType and titleCombination
   });
   const [showCsvMapping, setShowCsvMapping] = useState(false);
   const [csvUploadError, setCsvUploadError] = useState("");
   const [customCsvFields, setCustomCsvFields] = useState({}); // State to hold dynamically added custom fields from CSV
+
+  // NEW: State for title mapping type (single column or combined)
+  const [titleMappingType, setTitleMappingType] = useState('single'); // 'single' or 'combined'
+  // NEW: State for title combination details
+  const [titleCombination, setTitleCombination] = useState({
+    headers: ['', '', ''], // Up to 3 parts for now
+    separator: ' ',
+  });
 
   // --- Data Fetching ---
 
@@ -207,6 +214,7 @@ function AdminProductManagement() {
     reader.readAsArrayBuffer(file);
   };
 
+  // Generic handler for single field mapping (not title)
   const handleMappingChange = (field, csvHeader) => {
     setFieldMapping((prev) => ({ ...prev, [field]: csvHeader }));
   };
@@ -214,6 +222,15 @@ function AdminProductManagement() {
   // Handler for custom field mapping
   const handleCustomFieldMappingChange = (fieldKey, csvHeader) => {
     setCustomCsvFields((prev) => ({ ...prev, [fieldKey]: csvHeader }));
+  };
+
+  // Handler for title combination mapping
+  const handleTitleCombinationChange = (index, value) => {
+    setTitleCombination((prev) => {
+      const newHeaders = [...prev.headers];
+      newHeaders[index] = value;
+      return { ...prev, headers: newHeaders };
+    });
   };
 
   const handleAddCustomFieldForMapping = () => {
@@ -233,7 +250,15 @@ function AdminProductManagement() {
 
 
   const handleConfirmBulkUpload = async () => {
-    if (!fieldMapping.sku || !fieldMapping.title || !fieldMapping.price) {
+    // Validate title mapping based on its type
+    let isTitleMapped = false;
+    if (titleMappingType === 'single') {
+      isTitleMapped = titleCombination.headers[0] !== ''; // If single, first header must be selected
+    } else if (titleMappingType === 'combined') {
+      isTitleMapped = titleCombination.headers.some(h => h !== ''); // If combined, at least one part must be selected
+    }
+
+    if (!fieldMapping.sku || !fieldMapping.price || !isTitleMapped) {
       setCsvUploadError(
         t("adminProductManagement.bulkUpload.errorMappingRequired")
       );
@@ -248,12 +273,29 @@ function AdminProductManagement() {
       csvData.forEach((row) => {
         const product = { _type: "product", isArchived: false };
 
-        // Map standard fields
+        // Process Title based on mapping type
+        if (titleMappingType === 'single') {
+          const header = titleCombination.headers[0]; // For single, use the first selected header
+          const index = csvHeaders.indexOf(header);
+          if (index !== -1 && row[index] !== undefined) {
+            product.title = row[index];
+          }
+        } else if (titleMappingType === 'combined') {
+          const combinedTitleParts = titleCombination.headers
+            .map(header => {
+              const index = csvHeaders.indexOf(header);
+              return index !== -1 && row[index] !== undefined ? String(row[index]) : '';
+            })
+            .filter(part => part !== ''); // Remove empty parts
+          product.title = combinedTitleParts.join(titleCombination.separator);
+        }
+
+        // Map other standard fields (excluding title)
         for (const field in fieldMapping) {
           const header = fieldMapping[field];
           if (header) {
             const index = csvHeaders.indexOf(header);
-            if (index !== -1) {
+            if (index !== -1 && row[index] !== undefined) {
               let value = row[index];
               if (field === "price") value = parseFloat(value);
               product[field] = value;
@@ -266,7 +308,7 @@ function AdminProductManagement() {
           const header = customCsvFields[customFieldKey];
           if (header) {
             const index = csvHeaders.indexOf(header);
-            if (index !== -1) {
+            if (index !== -1 && row[index] !== undefined) {
               product[customFieldKey] = row[index];
             }
           }
@@ -290,7 +332,6 @@ function AdminProductManagement() {
       setCsvHeaders([]);
       setCsvData([]);
       setFieldMapping({ // Reset mapping
-        title: "",
         description: "",
         sku: "",
         brand: "",
@@ -299,6 +340,8 @@ function AdminProductManagement() {
         additionalDescription: "",
       });
       setCustomCsvFields({}); // Reset custom fields
+      setTitleMappingType('single'); // Reset title mapping
+      setTitleCombination({ headers: ['', '', ''], separator: ' ' }); // Reset title combination
       fetchProducts();
     } catch (error) {
       console.error("Bulk upload failed:", error);
@@ -485,7 +528,7 @@ function AdminProductManagement() {
               />
             </div>
           </div>
-         
+          {/* Updated image input for multiple files to match galleryImages */}
           <div>
             <label className="block text-sm font-medium text-gray-700">
               {t("adminProductManagement.form.images")}:
@@ -540,12 +583,80 @@ function AdminProductManagement() {
               <p className="text-red-500 text-sm mb-4">{csvUploadError}</p>
             )}
             <div className="space-y-4 mb-6">
-              {/* Standard fields mapping */}
+              {/* Title field mapping (with single/combined option) */}
+              <div className="flex items-center gap-4">
+                <label className="w-32 text-gray-700 font-medium capitalize">
+                  {t("adminProductManagement.form.title")}:
+                  <span className="text-red-500">*</span> :
+                </label>
+                <div className="flex-1">
+                  <select
+                    value={titleMappingType}
+                    onChange={(e) => setTitleMappingType(e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white mb-2"
+                  >
+                    <option value="single">
+                      {t("adminProductManagement.bulkUpload.singleColumn")}
+                    </option>
+                    <option value="combined">
+                      {t("adminProductManagement.bulkUpload.combineColumns")}
+                    </option>
+                  </select>
+
+                  {titleMappingType === 'single' && (
+                    <select
+                      value={titleCombination.headers[0]}
+                      onChange={(e) => handleTitleCombinationChange(0, e.target.value)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                    >
+                      <option value="">
+                        {t("adminProductManagement.bulkUpload.selectColumn")}
+                      </option>
+                      {csvHeaders.map((header) => (
+                        <option key={header} value={header}>
+                          {header}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  {titleMappingType === 'combined' && (
+                    <div className="space-y-2">
+                      {[0, 1, 2].map((index) => (
+                        <select
+                          key={`title-part-${index}`}
+                          value={titleCombination.headers[index]}
+                          onChange={(e) => handleTitleCombinationChange(index, e.target.value)}
+                          className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white"
+                        >
+                          <option value="">
+                            {t("adminProductManagement.bulkUpload.selectColumnPart", { part: index + 1 })}
+                          </option>
+                          {csvHeaders.map((header) => (
+                            <option key={header} value={header}>
+                              {header}
+                            </option>
+                          ))}
+                        </select>
+                      ))}
+                      <input
+                        type="text"
+                        placeholder={t("adminProductManagement.bulkUpload.separatorPlaceholder")}
+                        value={titleCombination.separator}
+                        onChange={(e) => setTitleCombination((prev) => ({ ...prev, separator: e.target.value }))}
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm"
+                      />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Other Standard fields mapping (excluding title) */}
               {Object.keys(fieldMapping).map((field) => (
                 <div key={field} className="flex items-center gap-4">
                   <label className="w-32 text-gray-700 font-medium capitalize">
                     {t(`adminProductManagement.form.${field}`)}{" "}
-                    {["title", "sku", "price"].includes(field) && (
+                    {["sku", "price"].includes(field) && ( // title moved out
                       <span className="text-red-500">*</span>
                     )}{" "}
                     :
@@ -612,12 +723,15 @@ function AdminProductManagement() {
                 <table className="min-w-full table-auto text-sm text-left text-gray-700 border-t border-gray-200">
                   <thead className="bg-gray-100 border-b">
                     <tr>
-                      {Object.keys(fieldMapping).map((field) => (
+                      <th className="px-4 py-2 font-medium">
+                        {t("adminProductManagement.form.title")} {/* Always show title */}
+                      </th>
+                      {Object.keys(fieldMapping).filter(field => field !== 'title').map((field) => (
                         <th key={field} className="px-4 py-2 font-medium">
                           {t(`adminProductManagement.form.${field}`)}
                         </th>
                       ))}
-                  
+                      {/* Display headers for custom fields */}
                       {Object.keys(customCsvFields).map((field) => (
                         <th key={`custom-header-${field}`} className="px-4 py-2 font-medium">
                           {field}
@@ -626,29 +740,47 @@ function AdminProductManagement() {
                     </tr>
                   </thead>
                   <tbody>
-                    {csvData.slice(0, 5).map((row, rowIndex) => (
-                      <tr key={rowIndex} className="border-b">
-                        {Object.keys(fieldMapping).map((field) => {
-                          const header = fieldMapping[field];
-                          const index = csvHeaders.indexOf(header);
-                          return (
-                            <td key={field} className="px-4 py-2">
-                              {row[index] ?? ""}
-                            </td>
-                          );
-                        })}
-                     
-                        {Object.keys(customCsvFields).map((field) => {
-                          const header = customCsvFields[field];
-                          const index = csvHeaders.indexOf(header);
-                          return (
-                            <td key={`custom-data-${field}`} className="px-4 py-2">
-                              {row[index] ?? ""}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
+                    {csvData.slice(0, 5).map((row, rowIndex) => {
+                      let previewTitle = '';
+                      if (titleMappingType === 'single') {
+                        const header = titleCombination.headers[0];
+                        const index = csvHeaders.indexOf(header);
+                        previewTitle = index !== -1 ? row[index] : '';
+                      } else if (titleMappingType === 'combined') {
+                        const combinedParts = titleCombination.headers
+                          .map(header => {
+                            const index = csvHeaders.indexOf(header);
+                            return index !== -1 ? String(row[index]) : '';
+                          })
+                          .filter(part => part !== '');
+                        previewTitle = combinedParts.join(titleCombination.separator);
+                      }
+
+                      return (
+                        <tr key={rowIndex} className="border-b">
+                          <td className="px-4 py-2">{previewTitle}</td> {/* Display preview title */}
+                          {Object.keys(fieldMapping).filter(field => field !== 'title').map((field) => {
+                            const header = fieldMapping[field];
+                            const index = csvHeaders.indexOf(header);
+                            return (
+                              <td key={field} className="px-4 py-2">
+                                {row[index] ?? ""}
+                              </td>
+                            );
+                          })}
+                          {/* Display data for custom fields */}
+                          {Object.keys(customCsvFields).map((field) => {
+                            const header = customCsvFields[field];
+                            const index = csvHeaders.indexOf(header);
+                            return (
+                              <td key={`custom-data-${field}`} className="px-4 py-2">
+                                {row[index] ?? ""}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
                 <p className="text-xs text-gray-500 italic px-4 pb-4">
@@ -659,14 +791,13 @@ function AdminProductManagement() {
 
             <div className="flex justify-end space-x-4 mt-6">
               <button
-                type="button" 
+                type="button" // Added type="button" to prevent form submission
                 onClick={() => {
                   setShowCsvMapping(false);
                   setCsvFile(null);
                   setCsvHeaders([]);
                   setCsvData([]);
-                  setFieldMapping({ 
-                    title: "",
+                  setFieldMapping({ // Reset mapping
                     description: "",
                     sku: "",
                     brand: "",
@@ -674,7 +805,9 @@ function AdminProductManagement() {
                     category: "",
                     additionalDescription: "",
                   });
-                  setCustomCsvFields({}); 
+                  setCustomCsvFields({}); // Reset custom fields
+                  setTitleMappingType('single'); // Reset title mapping
+                  setTitleCombination({ headers: ['', '', ''], separator: ' ' }); // Reset title combination
                   setCsvUploadError("");
                 }}
                 className="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
@@ -682,7 +815,7 @@ function AdminProductManagement() {
                 {t("common.cancel")}
               </button>
               <button
-                type="button" 
+                type="button" // Added type="button" to prevent form submission
                 onClick={handleConfirmBulkUpload}
                 className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md"
               >
@@ -794,7 +927,7 @@ function AdminProductManagement() {
                 key={product._id}
                 className="bg-white p-4 rounded-md shadow-sm border border-red-100 flex flex-col"
               >
-             
+                {/* Display the first image from galleryImages if available, or a placeholder */}
                 <img
                   src={
                     product.galleryImageUrls && product.galleryImageUrls.length > 0
@@ -814,7 +947,7 @@ function AdminProductManagement() {
                   <p className="text-gray-600 font-semibold">
                     {t("common.priceFormatted", { price: product.price })}
                   </p>
-                
+                  {/* Display additionalDescription if it exists */}
                   {product.additionalDescription && (
                     <p className="text-sm text-gray-600 mt-2">
                       {product.additionalDescription}
