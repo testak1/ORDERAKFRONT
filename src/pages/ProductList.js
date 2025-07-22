@@ -15,33 +15,44 @@ function ProductList() {
   const { addToCart } = useCart();
   const { user } = useAuth();
 
-  // State for paginering, sökning och sortering
+  // --- STATE ---
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("_createdAt desc"); // UPDATED: "Newest" is now the default
+  const [sortBy, setSortBy] = useState("_createdAt desc");
   
-  // State for vehicle filters
+  // Fordonsfilter
   const [makes, setMakes] = useState([]);
   const [models, setModels] = useState([]);
   const [selectedMake, setSelectedMake] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
 
-  // Hämta alla bilmärken för den första dropdown-menyn
+  // NYTT: State för tillverkar-filter
+  const [brands, setBrands] = useState([]);
+  const [selectedBrand, setSelectedBrand] = useState("");
+
+  // Hämta listor för filter-menyerna
   useEffect(() => {
-    const fetchMakes = async () => {
+    const fetchFilterData = async () => {
       try {
-        const query = `*[_type == "vehicleMake"] | order(name asc)`;
-        const result = await client.fetch(query);
-        setMakes(result);
+        // Hämta bilmärken
+        const makesQuery = `*[_type == "vehicleMake"] | order(name asc)`;
+        const makesResult = await client.fetch(makesQuery);
+        setMakes(makesResult);
+
+        // NYTT: Hämta alla unika produkttillverkare (brand)
+        const brandsQuery = `*[_type == "product" && defined(brand)].brand`;
+        const brandsResult = await client.fetch(brandsQuery);
+        setBrands([...new Set(brandsResult)].sort());
+
       } catch (err) {
-        console.error("Failed to fetch vehicle makes:", err);
+        console.error("Failed to fetch filter data:", err);
       }
     };
-    fetchMakes();
+    fetchFilterData();
   }, []);
 
-  // Hämta modeller baserat på valt märke
+  // Hämta modeller baserat på valt bilmärke
   useEffect(() => {
     if (!selectedMake) {
       setModels([]);
@@ -83,6 +94,12 @@ function ProductList() {
         conditions.push(`_id in *[_type == "product" && references(*[_type=="vehicleModel" && references($makeId)]._id)]._id`);
         params.makeId = selectedMake;
       }
+
+      // NYTT: Lägg till filtervillkor för tillverkare
+      if (selectedBrand) {
+        conditions.push(`brand == $brand`);
+        params.brand = selectedBrand;
+      }
       
       const query = `
         *[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {
@@ -99,7 +116,7 @@ function ProductList() {
     } finally {
       setLoading(false);
     }
-  }, [page, searchTerm, sortBy, selectedMake, selectedModel, t]);
+  }, [page, searchTerm, sortBy, selectedMake, selectedModel, selectedBrand, t]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -110,7 +127,7 @@ function ProductList() {
 
   useEffect(() => {
     setPage(0);
-  }, [searchTerm, sortBy, selectedMake, selectedModel]);
+  }, [searchTerm, sortBy, selectedMake, selectedModel, selectedBrand]);
 
   const getDisplayPrice = (productPrice) => {
     if (user && user.discountPercentage > 0) {
@@ -123,17 +140,26 @@ function ProductList() {
   return (
     <div className="p-4">
       <div className="mb-8 p-4 bg-gray-100 rounded-lg">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+        {/* NYTT: Gridden har nu 5 kolumner */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
           {/* Sökfält */}
           <div>
             <label htmlFor="search" className="block text-sm font-medium text-gray-700">Fritextsök</label>
             <input id="search" type="text" placeholder="Namn eller art.nr..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md" />
           </div>
+          {/* NYTT: Tillverkare-filter */}
+          <div>
+            <label htmlFor="brand" className="block text-sm font-medium text-gray-700">Tillverkare</label>
+            <select id="brand" value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
+              <option value="">Alla tillverkare</option>
+              {brands.map(brand => <option key={brand} value={brand}>{brand}</option>)}
+            </select>
+          </div>
           {/* Bilmärke */}
           <div>
-            <label htmlFor="make" className="block text-sm font-medium text-gray-700">Välj märke</label>
+            <label htmlFor="make" className="block text-sm font-medium text-gray-700">Välj bilmärke</label>
             <select id="make" value={selectedMake} onChange={(e) => setSelectedMake(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
-              <option value="">Alla märken</option>
+              <option value="">Alla bilmärken</option>
               {makes.map(make => <option key={make._id} value={make._id}>{make.name}</option>)}
             </select>
           </div>
@@ -148,9 +174,8 @@ function ProductList() {
           {/* Sortering */}
           <div>
             <label htmlFor="sort" className="block text-sm font-medium text-gray-700">Sortera efter</label>
-            {/* UPDATED: Added "Newest Products" option */}
             <select id="sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
-              <option value="_createdAt desc">Newest Products</option>
+              <option value="_createdAt desc">Nyast</option>
               <option value="title asc">Namn (A-Ö)</option>
               <option value="title desc">Namn (Ö-A)</option>
               <option value="price asc">Pris (Lågt till Högt)</option>
