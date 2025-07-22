@@ -5,14 +5,10 @@ const initialSupplierState = {
   name: "",
   sourceType: "xml",
   sourceUrl: "",
-  fieldMapping: {
-    sku: "",
-    title: "",
-    description: "",
-    price: "",
-    brand: "",
-  },
-  categoryKeywords: [], // Fältet finns nu med från start
+  exchangeRate: 1,
+  pricingTiers: [{ priceThreshold: 0, margin: 1.5 }], // Startar med en basnivå
+  fieldMapping: { sku: "", title: "", description: "", price: "", brand: "" },
+  categoryKeywords: [],
 };
 
 function AdminSupplierManagement() {
@@ -39,26 +35,34 @@ function AdminSupplierManagement() {
   };
 
   const handleEdit = (supplier) => {
-    // Se till att categoryKeywords är en array när vi börjar redigera
-    setCurrentSupplier({ ...initialSupplierState, ...supplier, categoryKeywords: supplier.categoryKeywords || [] });
+    // Säkerställ att fälten är i rätt format när vi börjar redigera
+    const supplierToEdit = {
+      ...initialSupplierState,
+      ...supplier,
+      categoryKeywords: supplier.categoryKeywords || [],
+      pricingTiers: supplier.pricingTiers && supplier.pricingTiers.length > 0 ? supplier.pricingTiers : [{ priceThreshold: 0, margin: 1.5 }],
+    };
+    setCurrentSupplier(supplierToEdit);
     setIsEditing(true);
   };
-
+  
   const handleDelete = async (supplierId) => {
     if (window.confirm("Är du säker på att du vill ta bort denna leverantörs-konfiguration?")) {
-      await client.delete(supplierId).then(() => {
+      try {
+        await client.delete(supplierId);
         alert("Konfigurationen borttagen!");
         fetchSuppliers();
-      }).catch(err => {
+      } catch (error) {
         alert("Kunde inte ta bort konfigurationen.");
-        console.error("Delete failed:", err);
-      });
+        console.error("Delete failed:", error);
+      }
     }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setCurrentSupplier(prev => ({ ...prev, [name]: value }));
+    const parsedValue = name === 'exchangeRate' ? parseFloat(value) : value;
+    setCurrentSupplier(prev => ({ ...prev, [name]: parsedValue }));
   };
 
   const handleMappingChange = (e) => {
@@ -69,7 +73,6 @@ function AdminSupplierManagement() {
     }));
   };
 
-  // NY: Hanterar ändringar i textarean för nyckelord
   const handleKeywordsChange = (e) => {
     const keywords = e.target.value.split(',').map(kw => kw.trim()).filter(Boolean);
     setCurrentSupplier(prev => ({ ...prev, categoryKeywords: keywords }));
@@ -94,6 +97,22 @@ function AdminSupplierManagement() {
     }
   };
 
+  const handleTierChange = (index, field, value) => {
+    const updatedTiers = [...currentSupplier.pricingTiers];
+    updatedTiers[index][field] = parseFloat(value) || 0;
+    setCurrentSupplier(prev => ({ ...prev, pricingTiers: updatedTiers }));
+  };
+
+  const addTier = () => {
+    const newTiers = [...(currentSupplier.pricingTiers || []), { priceThreshold: 1000, margin: 1.35 }];
+    setCurrentSupplier(prev => ({ ...prev, pricingTiers: newTiers }));
+  };
+
+  const removeTier = (index) => {
+    const newTiers = currentSupplier.pricingTiers.filter((_, i) => i !== index);
+    setCurrentSupplier(prev => ({ ...prev, pricingTiers: newTiers }));
+  };
+
   if (loading) return <p>Laddar leverantörer...</p>;
   
   if (isEditing) {
@@ -101,13 +120,40 @@ function AdminSupplierManagement() {
       <div className="p-4 bg-white rounded-lg shadow-xl">
         <h2 className="text-2xl font-bold mb-4">{currentSupplier._id ? "Redigera" : "Lägg till"} leverantör</h2>
         <form onSubmit={handleSave} className="space-y-6">
-          {/* ... befintliga input-fält ... */}
           <input type="text" name="name" placeholder="Namn (t.ex. RM Motors)" value={currentSupplier.name} onChange={handleChange} required className="w-full px-3 py-2 border rounded-md"/>
           <input type="url" name="sourceUrl" placeholder="URL till XML/XLSX" value={currentSupplier.sourceUrl} onChange={handleChange} required className="w-full px-3 py-2 border rounded-md"/>
           <div className="flex gap-4">
             <label><input type="radio" name="sourceType" value="xml" checked={currentSupplier.sourceType === 'xml'} onChange={handleChange} /> XML</label>
             <label><input type="radio" name="sourceType" value="xlsx" checked={currentSupplier.sourceType === 'xlsx'} onChange={handleChange} /> XLSX/CSV</label>
           </div>
+          <input type="number" step="0.01" name="exchangeRate" placeholder="Växelkurs till SEK" value={currentSupplier.exchangeRate} onChange={handleChange} required className="w-full px-3 py-2 border rounded-md"/>
+
+          <fieldset className="border p-4 rounded-md">
+            <legend className="text-lg font-semibold px-2">Prisnivåer & Marginaler</legend>
+            <div className="space-y-2">
+              {(currentSupplier.pricingTiers || []).map((tier, index) => (
+                <div key={index} className="flex flex-wrap items-center gap-2">
+                  <span className="text-gray-600">Om pris är över:</span>
+                  <input
+                    type="number"
+                    value={tier.priceThreshold}
+                    onChange={(e) => handleTierChange(index, 'priceThreshold', e.target.value)}
+                    className="w-24 px-2 py-1 border rounded-md"
+                  />
+                  <span className="text-gray-600">använd marginal:</span>
+                  <input
+                    type="number"
+                    step="0.01"
+                    value={tier.margin}
+                    onChange={(e) => handleTierChange(index, 'margin', e.target.value)}
+                    className="w-24 px-2 py-1 border rounded-md"
+                  />
+                  <button type="button" onClick={() => removeTier(index)} className="px-2 py-1 bg-red-500 text-white rounded-md text-xs">Ta bort</button>
+                </div>
+              ))}
+            </div>
+            <button type="button" onClick={addTier} className="mt-4 px-3 py-1 bg-blue-500 text-white rounded-md text-sm">Lägg till nivå</button>
+          </fieldset>
 
           <fieldset className="border p-4 rounded-md">
             <legend className="text-lg font-semibold px-2">Mappning & Transformation</legend>
@@ -120,7 +166,6 @@ function AdminSupplierManagement() {
             </div>
           </fieldset>
 
-          {/* NYTT FÄLT FÖR KATEGORI-NYCKELORD */}
           <fieldset className="border p-4 rounded-md">
             <legend className="text-lg font-semibold px-2">Kategori-nyckelord</legend>
             <p className="text-sm text-gray-500 mb-2">Ange bilmärken separerade med kommatecken, t.ex. BMW, Audi, VW</p>
