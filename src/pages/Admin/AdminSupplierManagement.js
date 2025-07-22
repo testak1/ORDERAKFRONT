@@ -14,16 +14,24 @@ const initialSupplierState = {
   categoryKeywords: [],
 };
 
-// Denna funktion körs bara lokalt i din adminpanel för förhandsgranskning.
+// KORRIGERAD funktion för förhandsgranskning
 function transformProductForPreview(sourceProduct, mapping, config) {
   const langData = sourceProduct.language?.lang || {};
   const supplierPrice = sourceProduct.price?.price ? parseFloat(String(sourceProduct.price.price).replace(',', '.')) : 0;
+  
+  // FIX: Använder samma korrekta prislogik som i huvudskriptet
   let margin = 1.0;
   if (config.pricingTiers && config.pricingTiers.length > 0) {
-    const sortedTiers = [...config.pricingTiers].sort((a, b) => b.priceThreshold - a.priceThreshold);
-    const applicableTier = sortedTiers.find(tier => supplierPrice >= tier.priceThreshold);
-    if (applicableTier) margin = applicableTier.margin;
+    const applicableTier = config.pricingTiers.find(tier => {
+      const priceFrom = tier.priceFrom ?? 0;
+      const priceTo = tier.priceTo ?? Infinity;
+      return supplierPrice >= priceFrom && supplierPrice < priceTo;
+    });
+    if (applicableTier) {
+      margin = applicableTier.margin;
+    }
   }
+
   const exchangeRate = config.exchangeRate || 1;
   const priceExcludingVAT = supplierPrice * exchangeRate * margin;
   const finalPriceSEK = priceExcludingVAT * 1.25;
@@ -92,7 +100,7 @@ function AdminSupplierManagement() {
       ...tier,
       _key: tier._key || generateKey(), 
     }));
-    
+   
     const supplierToEdit = {
       ...initialSupplierState,
       ...supplier,
@@ -157,13 +165,12 @@ function AdminSupplierManagement() {
   };
 
   const handleTierChange = (index, field, value) => {
-    const updatedTiers = [...currentSupplier.pricingTiers];
+    const updatedTiers = [...(currentSupplier.pricingTiers || [])];
     updatedTiers[index][field] = value === '' ? null : parseFloat(value) || 0;
     setCurrentSupplier(prev => ({ ...prev, pricingTiers: updatedTiers }));
   };
 
   const addTier = () => {
-    // FIX: Lägger till en _key när en ny nivå skapas
     const newTiers = [...(currentSupplier.pricingTiers || []), { _key: generateKey(), priceFrom: 1000, priceTo: null, margin: 1.35 }];
     setCurrentSupplier(prev => ({ ...prev, pricingTiers: newTiers }));
   };
@@ -213,7 +220,7 @@ function AdminSupplierManagement() {
             <legend className="text-lg font-semibold px-2">Prisnivåer & Marginaler</legend>
             <div className="space-y-2">
               {(currentSupplier.pricingTiers || []).map((tier, index) => (
-                <div key={index} className="flex flex-wrap items-center gap-2 p-2 bg-gray-50 rounded-md">
+                <div key={tier._key} className="flex flex-wrap items-center gap-2 p-2 bg-gray-50 rounded-md">
                   <span className="font-medium">Från:</span>
                   <input type="number" value={tier.priceFrom ?? ''} onChange={(e) => handleTierChange(index, 'priceFrom', e.target.value)} className="w-24 px-2 py-1 border rounded-md" />
                   <span className="font-medium">Till:</span>
