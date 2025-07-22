@@ -72,7 +72,6 @@
       "orderSuccessTitle": "Beställning mottagen!",
       "orderSuccessMessage": "Tack för din beställning!",
       "orderFailure": "Kunde inte slutföra beställningen. Vänligen försök igen."
-      
     }
   },
   "profile": {
@@ -213,7 +212,7 @@
     "completed": "Slutförd",
     "cancelled": "Avbruten"
   },
-    "pdfExport": {
+  "pdfExport": {
     "modalTitle": "Skapa PDF",
     "modalDescription": "En högkvalitativ PDF-faktura kommer att skapas för order #{{id}}.",
     "buttonCancel": "Avbryt",
@@ -230,18 +229,16 @@
       "product": "Produkt",
       "sku": "Art.nr",
       "quantity": "Antal",
-      "price": "Pris", 
+      "price": "Pris",
       "total": "Totalt",
-      "priceExclVat": "Pris (exkl. moms)", 
-      "priceInclVat": "Pris (inkl. moms)"  
+      "priceExclVat": "Pris (exkl. moms)",
+      "priceInclVat": "Pris (inkl. moms)"
     },
-    
-    "totalAmount": "Totalbelopp:", 
-    "totalAmountExclVat": "Totalbelopp (exkl. moms):", 
+
+    "totalAmount": "Totalbelopp:",
+    "totalAmountExclVat": "Totalbelopp (exkl. moms):",
     "totalAmountInclVat": "Totalbelopp (inkl. moms):",
     "footerThanks": "Tack för din beställning!",
     "footerCompany": "AK-TUNING"
   }
-
 }
-                       
