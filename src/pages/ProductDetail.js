@@ -15,16 +15,35 @@ function ProductDetail() {
   const { addToCart } = useCart();
   const { user } = useAuth();
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  
+  // --- NY STATE FÖR ATT HANTERA VILKEN BILD SOM VISAS ---
+  const [activeImageUrl, setActiveImageUrl] = useState('');
+  const [allImages, setAllImages] = useState([]);
 
   useEffect(() => {
     const fetchProduct = async () => {
       setLoading(true);
       try {
+        // --- UPPDATERAD QUERY FÖR ATT HÄMTA ALLA BILDER ---
         const query = `*[_type == "product" && _id == $productId][0]{
-          _id, title, description, sku, price, "imageUrl": mainImage.asset->url
+          _id, 
+          title, 
+          description, 
+          sku, 
+          price,
+          "mainImageUrl": mainImage.asset->url,
+          "galleryImageUrls": galleryImages[].asset->url
         }`;
         const data = await client.fetch(query, { productId });
         setProduct(data);
+        
+        // Sätt ihop en lista med alla bilder och välj den första som aktiv
+        if (data) {
+          const images = [data.mainImageUrl, ...(data.galleryImageUrls || [])].filter(Boolean);
+          setAllImages(images);
+          setActiveImageUrl(images[0] || '');
+        }
+
       } catch (err) {
         setError(t("productDetail.loadError"));
       } finally {
@@ -36,8 +55,7 @@ function ProductDetail() {
 
   const getDisplayPrice = () => {
     if (product && user && user.discountPercentage > 0) {
-      const discountedPrice =
-        product.price * (1 - user.discountPercentage / 100);
+      const discountedPrice = product.price * (1 - user.discountPercentage / 100);
       return {
         original: Math.round(product.price),
         discounted: Math.round(discountedPrice),
@@ -47,29 +65,48 @@ function ProductDetail() {
   };
 
   if (loading) return <div className="text-center py-10">{t("common.loading")}</div>;
-  if (error)
-    return <div className="text-red-500 text-center py-10">{error}</div>;
+  if (error) return <div className="text-red-500 text-center py-10">{error}</div>;
   if (!product) return <div>{t("productDetail.notFound")}</div>;
 
   const displayPrice = getDisplayPrice();
   const descriptionPreview = product.description?.substring(0, 250) + "...";
 
   return (
-    <div className="container mx-auto p-4 md:p-8 max-w-7xl"> {/* Bredare container */}
+    <div className="container mx-auto p-4 md:p-8 max-w-7xl">
       <button onClick={() => navigate(-1)} className="mb-4 text-red-600 hover:text-red-800 font-semibold">
         &larr; {t("productDetail.backToProducts")}
       </button>
       <div className="bg-white shadow-xl rounded-lg overflow-hidden md:flex">
-        <div className="md:w-1/2">
-          <img
-            src={
-              product.imageUrl ||
-              "https://placehold.co/400x300?text=BILD%20KOMMER%20INKOM%20KORT"
-            }
-            alt={product.title}
-            className="w-full h-full object-cover"
-          />
+        {/* --- BILDGALLERI (VÄNSTER SIDA) --- */}
+        <div className="md:w-1/2 p-4">
+          <div className="mb-4 bg-gray-200 rounded-lg overflow-hidden">
+            <img
+              src={activeImageUrl || "https://placehold.co/600x450?text=BILD%20SAKNAS"}
+              alt={product.title}
+              className="w-full h-96 object-cover" // Högre bild
+            />
+          </div>
+          {/* Tumnaglar visas bara om det finns fler än en bild */}
+          {allImages.length > 1 && (
+            <div className="grid grid-cols-5 gap-2">
+              {allImages.map((imageUrl, index) => (
+                <button
+                  key={index}
+                  onClick={() => setActiveImageUrl(imageUrl)}
+                  className={`rounded-md overflow-hidden border-2 ${activeImageUrl === imageUrl ? 'border-red-600' : 'border-transparent hover:border-red-300'}`}
+                >
+                  <img
+                    src={imageUrl}
+                    alt={`${product.title} thumbnail ${index + 1}`}
+                    className="w-full h-20 object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+        
+        {/* --- PRODUKTINFO (HÖGER SIDA) --- */}
         <div className="md:w-1/2 p-8 flex flex-col justify-center">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
             {product.title}
@@ -81,9 +118,9 @@ function ProductDetail() {
               dangerouslySetInnerHTML={{ __html: isDescriptionExpanded ? product.description : descriptionPreview }}
             />
             {product.description?.length > 250 && (
-                 <button onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className="text-red-600 font-semibold hover:underline mt-2">
-                    {isDescriptionExpanded ? t("productDetail.readLess") : t("productDetail.readMore")}
-                 </button>
+              <button onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className="text-red-600 font-semibold hover:underline mt-2">
+                {isDescriptionExpanded ? t("productDetail.readLess") : t("productDetail.readMore")}
+              </button>
             )}
           </div>
           
