@@ -4,6 +4,7 @@ import AdminProductManagement from "./AdminProductManagement";
 import AdminUserManagement from "./AdminUserManagement";
 import AdminOrderManagement from "./AdminOrderManagement";
 import { useTranslation } from "react-i18next";
+import AdminSupplierManagement from "./AdminSupplierManagement";
 
 function AdminDashboard() {
   const { t } = useTranslation();
@@ -41,12 +42,19 @@ function AdminDashboard() {
         >
           {t("admin.orderManagement")}
         </button>
+        <button
+          onClick={() => setActiveTab("suppliers")}
+          className={tabClasses("suppliers")}
+        >
+          {t("admin.supplierManagement")}
+        </button>
       </nav>
 
       <div className="bg-red-50/20 p-2 md:p-6 rounded-lg border border-red-200 min-h-[500px]">
         {activeTab === "products" && <AdminProductManagement />}
         {activeTab === "users" && <AdminUserManagement />}
         {activeTab === "orders" && <AdminOrderManagement />}
+        {activeTab === "suppliers" && <AdminSupplierManagement />}
       </div>
     </div>
   );
