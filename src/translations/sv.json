@@ -72,6 +72,7 @@
       "orderSuccessTitle": "Beställning mottagen!",
       "orderSuccessMessage": "Tack för din beställning!",
       "orderFailure": "Kunde inte slutföra beställningen. Vänligen försök igen."
+      
     }
   },
   "profile": {
@@ -243,3 +244,4 @@
   }
 
 }
+                       

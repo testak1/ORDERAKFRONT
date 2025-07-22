@@ -121,7 +121,7 @@ function ProductDetail() {
                   {t("productDetail.yourPrice", { price: displayPrice.discounted })}
                 </p>
                 <p className="text-md text-gray-600 mt-1">
-                  (Exkl. moms: {Math.round(displayPrice.discounted / 1.20)} kr)
+                  (Exkl. moms: {Math.round(displayPrice.discounted / 1.25)} kr)
                 </p>
               </>
             ) : (
@@ -130,7 +130,7 @@ function ProductDetail() {
                   {t("common.priceFormatted", { price: displayPrice.original })}
                 </p>
                 <p className="text-md text-gray-600 mt-1">
-                  (Exkl. moms: {Math.round(displayPrice.original / 1.20)} kr)
+                  (Exkl. moms: {Math.round(displayPrice.original / 1.25)} kr)
                 </p>
               </>
             )}
