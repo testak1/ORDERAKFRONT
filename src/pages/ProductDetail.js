@@ -15,8 +15,6 @@ function ProductDetail() {
   const { addToCart } = useCart();
   const { user } = useAuth();
   const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-  
-  // --- NY STATE FÖR ATT HANTERA VILKEN BILD SOM VISAS ---
   const [activeImageUrl, setActiveImageUrl] = useState('');
   const [allImages, setAllImages] = useState([]);
 
@@ -24,7 +22,6 @@ function ProductDetail() {
     const fetchProduct = async () => {
       setLoading(true);
       try {
-        // --- UPPDATERAD QUERY FÖR ATT HÄMTA ALLA BILDER ---
         const query = `*[_type == "product" && _id == $productId][0]{
           _id, 
           title, 
@@ -37,7 +34,6 @@ function ProductDetail() {
         const data = await client.fetch(query, { productId });
         setProduct(data);
         
-        // Sätt ihop en lista med alla bilder och välj den första som aktiv
         if (data) {
           const images = [data.mainImageUrl, ...(data.galleryImageUrls || [])].filter(Boolean);
           setAllImages(images);
@@ -77,16 +73,14 @@ function ProductDetail() {
         &larr; {t("productDetail.backToProducts")}
       </button>
       <div className="bg-white shadow-xl rounded-lg overflow-hidden md:flex">
-        {/* --- BILDGALLERI (VÄNSTER SIDA) --- */}
         <div className="md:w-1/2 p-4">
           <div className="mb-4 bg-gray-200 rounded-lg overflow-hidden">
             <img
               src={activeImageUrl || "https://placehold.co/600x450?text=BILD%20SAKNAS"}
               alt={product.title}
-              className="w-full h-96 object-cover" // Högre bild
+              className="w-full h-96 object-cover"
             />
           </div>
-          {/* Tumnaglar visas bara om det finns fler än en bild */}
           {allImages.length > 1 && (
             <div className="grid grid-cols-5 gap-2">
               {allImages.map((imageUrl, index) => (
@@ -95,18 +89,13 @@ function ProductDetail() {
                   onClick={() => setActiveImageUrl(imageUrl)}
                   className={`rounded-md overflow-hidden border-2 ${activeImageUrl === imageUrl ? 'border-red-600' : 'border-transparent hover:border-red-300'}`}
                 >
-                  <img
-                    src={imageUrl}
-                    alt={`${product.title} thumbnail ${index + 1}`}
-                    className="w-full h-20 object-cover"
-                  />
+                  <img src={imageUrl} alt={`${product.title} thumbnail ${index + 1}`} className="w-full h-20 object-cover" />
                 </button>
               ))}
             </div>
           )}
         </div>
         
-        {/* --- PRODUKTINFO (HÖGER SIDA) --- */}
         <div className="md:w-1/2 p-8 flex flex-col justify-center">
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
             {product.title}
@@ -114,9 +103,7 @@ function ProductDetail() {
           <p className="text-sm text-gray-500 mb-4">{t("common.skuLabel", { sku: product.sku })}</p>
 
           <div className="text-gray-600 mb-6">
-            <div
-              dangerouslySetInnerHTML={{ __html: isDescriptionExpanded ? product.description : descriptionPreview }}
-            />
+            <div dangerouslySetInnerHTML={{ __html: isDescriptionExpanded ? product.description : descriptionPreview }} />
             {product.description?.length > 250 && (
               <button onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)} className="text-red-600 font-semibold hover:underline mt-2">
                 {isDescriptionExpanded ? t("productDetail.readLess") : t("productDetail.readMore")}
@@ -124,7 +111,7 @@ function ProductDetail() {
             )}
           </div>
           
-          <div className="mb-6">
+          <div className="mb-6 bg-gray-50 p-4 rounded-lg">
             {displayPrice.discounted ? (
               <>
                 <p className="text-2xl text-gray-500 line-through">
@@ -133,11 +120,19 @@ function ProductDetail() {
                 <p className="text-4xl font-extrabold text-green-600">
                   {t("productDetail.yourPrice", { price: displayPrice.discounted })}
                 </p>
+                <p className="text-md text-gray-600 mt-1">
+                  (Exkl. moms: {Math.round(displayPrice.discounted / 1.25)} kr)
+                </p>
               </>
             ) : (
-              <p className="text-3xl font-extrabold text-gray-800">
-                {t("common.priceFormatted", { price: displayPrice.original })}
-              </p>
+              <>
+                <p className="text-3xl font-extrabold text-gray-800">
+                  {t("common.priceFormatted", { price: displayPrice.original })}
+                </p>
+                <p className="text-md text-gray-600 mt-1">
+                  (Exkl. moms: {Math.round(displayPrice.original / 1.25)} kr)
+                </p>
+              </>
             )}
           </div>
 

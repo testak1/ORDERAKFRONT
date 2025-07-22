@@ -8,8 +8,6 @@ function OrderCard({
   onExportPdf,
 }) {
   const { t } = useTranslation();
-  // Använder 'isAdminView' för att avgöra om kortet ska vara öppet från start.
-  // Admin-vyn är öppen som standard, användarens profil är stängd.
   const [isOpen, setIsOpen] = useState(false);
 
   const handleUpdate = async (e) => {
@@ -28,15 +26,13 @@ function OrderCard({
   
   const orderStatusText = t(`orderStatus.${order.orderStatus}`, order.orderStatus);
 
-  return (
+    // NY: Beräkna total exkl. moms
+  const totalAmountExclVat = Math.round((order.totalAmount || 0) / 1.25);
+
+   return (
     <div className="border border-gray-200 rounded-lg shadow-sm bg-white overflow-hidden">
-      {/* Klickbar header som växlar state */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full text-left p-4 md:p-6 bg-gray-50 hover:bg-gray-100 transition-colors duration-200"
-      >
+      <button onClick={() => setIsOpen(!isOpen)} className="w-full text-left p-4 md:p-6 bg-gray-50 hover:bg-gray-100 transition-colors duration-200">
         <div className="flex justify-between items-start gap-4">
-          {/* Vänster del av headern */}
           <div className="flex flex-col md:flex-row justify-between items-start flex-grow">
             <div>
               <h3 className="text-lg font-semibold text-gray-900">
@@ -50,12 +46,15 @@ function OrderCard({
               <span className={`px-3 py-1 text-sm font-medium rounded-full ${statusColorClass}`}>
                 {orderStatusText}
               </span>
-              <p className="text-xl font-bold text-gray-800 mt-2">
+              {/* NY: Visa total exkl. moms */}
+              <p className="text-md text-gray-600 mt-2">
+                Totalt (exkl. moms): {totalAmountExclVat} kr
+              </p>
+              <p className="text-xl font-bold text-gray-800">
                 {t("orderCard.total", { total: Math.round(order.totalAmount || 0) })}
               </p>
             </div>
           </div>
-          {/* +/- Indikator */}
           <div className="flex-shrink-0 ml-4 pt-1">
             <span className="text-2xl font-semibold text-gray-500">
               {isOpen ? "−" : "+"}
@@ -64,28 +63,20 @@ function OrderCard({
         </div>
       </button>
 
-      {/* Kollapsbart innehåll med animation */}
-      <div
-        className={`overflow-hidden transition-all duration-500 ease-in-out ${
-          isOpen ? "max-h-[2000px]" : "max-h-0"
-        }`}
-      >
+      <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isOpen ? "max-h-[2000px]" : "max-h-0"}`}>
         <div className="p-4 md:p-6 border-t border-gray-200">
-            <div className="mb-4">
-                <h4 className="text-md font-semibold text-gray-800 mb-2">{t("orderCard.items")}</h4>
-                <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
-                {order.items.map((item, index) => (
-                    <li key={index}>
-                        {t("orderCard.itemLine", {
-                            title: item.product?.title || item.title,
-                            sku: item.product?.sku || item.sku,
-                            quantity: item.quantity,
-                            price: Math.round(item.priceAtPurchase)
-                        })}
-                    </li>
-                ))}
-                </ul>
-            </div>
+          <div className="mb-4">
+            <h4 className="text-md font-semibold text-gray-800 mb-2">{t("orderCard.items")}</h4>
+            <ul className="list-disc list-inside text-sm text-gray-700 space-y-1">
+              {order.items.map((item, index) => (
+                <li key={index}>
+                  {/* NY: Uppdatera itemLine-översättningen för att inkludera exkl. moms */}
+                  {item.title} (Art.nr: {item.sku}) - Antal: {item.quantity} @ {Math.round(item.priceAtPurchase)} kr st
+                  <span className="text-gray-500"> (exkl. moms: {Math.round(item.priceAtPurchase / 1.25)} kr)</span>
+                </li>
+              ))}
+            </ul>
+          </div>
 
             <div className="mb-4">
                 <h4 className="text-md font-semibold text-gray-800 mb-2">

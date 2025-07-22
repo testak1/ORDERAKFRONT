@@ -123,7 +123,9 @@ function CartPage() {
   }
 };
   
-  const total = getTotalPrice();
+   const total = getTotalPrice();
+  // NY: Beräkna totalpriset exklusive moms
+  const totalExclVat = Math.round(total / 1.25);
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
@@ -131,51 +133,41 @@ function CartPage() {
         {t("cart.title")}
       </h1>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* --- THIS SECTION IS NOW RESTORED --- */}
         <div className="md:col-span-2 space-y-4">
           {cartItems.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <p>{t("cart.emptyCart")}</p>
-              <button
-                onClick={() => navigate("/")}
-                className="mt-4 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md"
-              >
+              <button onClick={() => navigate("/")} className="mt-4 bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-md">
                 {t("cart.continueShopping")}
               </button>
             </div>
           ) : (
             <>
               {cartItems.map((item) => (
-                <div
-                  key={item._id}
-                  className="flex items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm"
-                >
+                <div key={item._id} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg shadow-sm">
                   <div>
                     <h3 className="text-lg font-semibold">{item.title}</h3>
+                    {/* NY: Lägg till pris exkl. moms här */}
                     <p className="text-md font-medium text-green-700">
                       {t("common.priceFormatted", { price: item.priceAtPurchase })}
+                      <span className="text-sm text-gray-500 font-normal ml-2">
+                        (exkl. moms: {Math.round(item.priceAtPurchase / 1.25)} kr)
+                      </span>
                     </p>
                   </div>
                   <div className="flex items-center space-x-4">
-                    <input
-                      type="number"
-                      min="1"
-                      value={item.quantity}
-                      onChange={(e) =>
-                        updateQuantity(item._id, parseInt(e.target.value))
-                      }
-                      className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center"
-                    />
-                    <button
-                      onClick={() => removeFromCart(item._id)}
-                      className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1.5 px-3 rounded-md text-sm"
-                    >
+                    <input type="number" min="1" value={item.quantity} onChange={(e) => updateQuantity(item._id, parseInt(e.target.value))} className="w-16 px-2 py-1 border border-gray-300 rounded-md text-center" />
+                    <button onClick={() => removeFromCart(item._id)} className="bg-red-500 hover:bg-red-600 text-white font-semibold py-1.5 px-3 rounded-md text-sm">
                       {t("cart.remove")}
                     </button>
                   </div>
                 </div>
               ))}
-              <div className="flex justify-end pt-4 border-t mt-4">
+              <div className="flex flex-col items-end pt-4 border-t mt-4">
+                {/* NY: Visa total exkl. moms */}
+                <h3 className="text-lg font-semibold text-gray-600">
+                  Totalt (exkl. moms): {totalExclVat} kr
+                </h3>
                 <h2 className="text-2xl font-bold text-gray-800">
                   {t("cart.total", { total })}
                 </h2>
@@ -183,7 +175,6 @@ function CartPage() {
             </>
           )}
         </div>
-        {/* --- END OF RESTORED SECTION --- */}
 
         <div className="md:col-span-1 p-6 border rounded-lg bg-gray-50 h-fit">
           <h3 className="text-xl font-semibold mb-4">{t("cart.shippingAddress")}</h3>
