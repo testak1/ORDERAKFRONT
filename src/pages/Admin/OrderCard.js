@@ -27,7 +27,7 @@ function OrderCard({
   const orderStatusText = t(`orderStatus.${order.orderStatus}`, order.orderStatus);
 
     // NY: Beräkna total exkl. moms
-  const totalAmountExclVat = Math.round((order.totalAmount || 0) / 1.20);
+  const totalAmountExclVat = Math.round((order.totalAmount || 0) / 1.25);
 
    return (
     <div className="border border-gray-200 rounded-lg shadow-sm bg-white overflow-hidden">
@@ -72,7 +72,7 @@ function OrderCard({
                 <li key={index}>
                   {/* NY: Uppdatera itemLine-översättningen för att inkludera exkl. moms */}
                   {item.title} (Art.nr: {item.sku}) - Antal: {item.quantity} @ {Math.round(item.priceAtPurchase)} kr st
-                  <span className="text-gray-500"> (exkl. moms: {Math.round(item.priceAtPurchase / 1.20)} kr)</span>
+                  <span className="text-gray-500"> (exkl. moms: {Math.round(item.priceAtPurchase / 1.25)} kr)</span>
                 </li>
               ))}
             </ul>
