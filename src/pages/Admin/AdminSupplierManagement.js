@@ -34,7 +34,7 @@ function transformProductForPreview(sourceProduct, mapping, config) {
 
   const exchangeRate = config.exchangeRate || 1;
   const priceExcludingVAT = supplierPrice * exchangeRate * margin;
-  const finalPriceSEK = priceExcludingVAT * 1.25;
+  const finalPriceSEK = priceExcludingVAT * 1.20;
 
   let finalDescription = mapping.description || '';
   finalDescription = finalDescription.replace(/{([^{}]+)}/g, (match, placeholder) => {
