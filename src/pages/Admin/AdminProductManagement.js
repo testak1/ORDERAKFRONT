@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { client } from "../../sanityClient";
 import CollapsibleSection from "../../components/CollapsibleSection";
-import XLSX from "xlsx";
+import * as XLSX from "xlsx";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-toastify";
 import { v4 as uuidv4 } from "uuid";
