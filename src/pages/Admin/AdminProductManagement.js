@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+// ORDERAKFRONT/src/pages/Admin/AdminProductManagement.js
+import React, { useState, useEffect, useCallback } from "react";
 import { client } from "../../sanityClient";
 import CollapsibleSection from "../../components/CollapsibleSection";
-import * as XLSX from "xlsx"; // For CSV import
+import * as XLSX from "xlsx"; 
 import { useTranslation } from "react-i18next";
+import { toast } from 'react-toastify'; 
 
 function AdminProductManagement() {
   const { t } = useTranslation();
@@ -13,7 +15,7 @@ function AdminProductManagement() {
 
   // --- State for various features ---
 
-  // For adding a single product
+  // For adding a single product - Updated for multiple images
   const [newProduct, setNewProduct] = useState({
     title: "",
     sku: "",
@@ -21,7 +23,8 @@ function AdminProductManagement() {
     description: "",
     price: "",
     category: "",
-    mainImage: null,
+    galleryImages: [], // Using galleryImages to match Sanity schema
+    additionalDescription: "", // New custom field example (ensure this is in Sanity schema if used)
   });
 
   // For bulk price adjustments
@@ -31,7 +34,7 @@ function AdminProductManagement() {
   const [priceAdjustmentSearchTerm, setPriceAdjustmentSearchTerm] =
     useState("");
 
-  // For CSV Upload and Field Mapping
+  // For CSV Upload and Field Mapping - Updated for custom fields
   const [csvFile, setCsvFile] = useState(null);
   const [csvHeaders, setCsvHeaders] = useState([]);
   const [csvData, setCsvData] = useState([]);
@@ -42,81 +45,101 @@ function AdminProductManagement() {
     brand: "",
     price: "",
     category: "",
+    additionalDescription: "", // Added new custom field to mapping (example)
+    // Add other standard fields you expect from CSV here and in your Sanity schema
   });
   const [showCsvMapping, setShowCsvMapping] = useState(false);
   const [csvUploadError, setCsvUploadError] = useState("");
+  const [customCsvFields, setCustomCsvFields] = useState({}); // State to hold dynamically added custom fields from CSV
 
   // --- Data Fetching ---
 
-  const fetchProducts = async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     try {
-      // This query now fetches ONLY non-archived products for the main list
+      // Updated query to fetch all image URLs from galleryImages
       const query = `*[_type == "product" && (!defined(isArchived) || isArchived == false)] | order(title asc){
-        _id, title, price, category, brand, sku, "imageUrl": mainImage.asset->url
+        _id, title, price, category, brand, sku, description, additionalDescription,
+        "galleryImageUrls": galleryImages[].asset->url // Fetch URLs for all images in galleryImages
       }`;
       const data = await client.fetch(query);
       setProducts(data);
     } catch (err) {
       console.error("Failed to fetch products:", err);
       setError(t("productList.loadError"));
+      toast.error(t("productList.loadError"));
     } finally {
       setLoading(false);
     }
-  };
+  }, [t]);
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [fetchProducts]);
 
   // --- Handlers for Product Actions ---
 
   const handleNewProductChange = (e) => {
     const { name, value, files } = e.target;
-    setNewProduct((prev) => ({ ...prev, [name]: files ? files[0] : value }));
+    if (name === "galleryImages" && files) {
+      // Handle multiple files for image upload
+      setNewProduct((prev) => ({ ...prev, galleryImages: Array.from(files) }));
+    } else {
+      setNewProduct((prev) => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleAddProduct = async (e) => {
     e.preventDefault();
-    const { title, price, mainImage, sku } = newProduct;
-    if (!title || !price || !mainImage || !sku) {
-      alert(t("adminProductManagement.form.required"));
+    const { title, price, sku, galleryImages, ...otherFields } = newProduct; // Destructure galleryImages and other fields
+    if (!title || !price || !sku || galleryImages.length === 0) { // Check if at least one image is selected
+      toast.error(t("adminProductManagement.form.required"));
       return;
     }
     try {
-      const imageAsset = await client.assets.upload("image", mainImage, {
-        contentType: mainImage.type,
-        filename: mainImage.name,
-      });
+      // Upload all selected images
+      const imageAssets = await Promise.all(
+        galleryImages.map(imageFile =>
+          client.assets.upload("image", imageFile, {
+            contentType: imageFile.type,
+            filename: imageFile.name,
+          })
+        )
+      );
+
+      // Create references to the uploaded image assets for Sanity's galleryImages array
+      const imageReferences = imageAssets.map(asset => ({
+        _type: "image",
+        asset: { _type: "reference", _ref: asset._id },
+      }));
+
       const productDoc = {
         _type: "product",
-        ...newProduct,
-        price: parseFloat(newProduct.price),
-        isArchived: false, // Ensure it's not archived on creation
-        mainImage: {
-          _type: "image",
-          asset: { _type: "reference", _ref: imageAsset._id },
-        },
+        ...otherFields, // Includes brand, description, category, additionalDescription, etc.
+        title: title,
+        sku: sku,
+        price: parseFloat(price),
+        isArchived: false,
+        galleryImages: imageReferences, // Store array of image references in galleryImages
       };
-      // Remove mainImage from doc before creation to avoid sending file object
-      delete productDoc.mainImageFile;
 
       await client.create(productDoc);
-      alert(t("adminProductManagement.form.addSuccess"));
-      document.getElementById("newProductForm").reset();
-      setNewProduct({
+      toast.success(t("adminProductManagement.form.addSuccess"));
+      document.getElementById("newProductForm").reset(); // Clear form
+      setNewProduct({ // Reset state
         title: "",
         sku: "",
         brand: "",
         description: "",
         price: "",
         category: "",
-        mainImage: null,
+        galleryImages: [], // Reset galleryImages array
+        additionalDescription: "", // Reset new custom field
       });
       fetchProducts();
     } catch (error) {
       console.error("Failed to add product:", error);
-      alert(t("adminProductManagement.form.addError"));
+      toast.error(t("adminProductManagement.form.addError"));
     }
   };
 
@@ -124,11 +147,11 @@ function AdminProductManagement() {
     if (window.confirm(t("adminProductManagement.form.archiveConfirm"))) {
       try {
         await client.patch(productId).set({ isArchived: true }).commit();
-        alert(t("adminProductManagement.form.archiveSuccess"));
+        toast.success(t("adminProductManagement.form.archiveSuccess"));
         fetchProducts(); // Refresh list
       } catch (err) {
         console.error("Failed to archive product:", err);
-        alert(t("adminProductManagement.form.archiveError"));
+        toast.error(t("adminProductManagement.form.archiveError"));
       }
     }
   };
@@ -156,12 +179,29 @@ function AdminProductManagement() {
             t("adminProductManagement.bulkUpload.errorEmptyFile")
           );
         }
-        setCsvHeaders(json[0]);
+        const headers = json[0];
+        setCsvHeaders(headers);
         setCsvData(json.slice(1));
         setShowCsvMapping(true);
+
+        // Initialize customCsvFields based on headers that are not in default mapping
+        // This is a basic guess; user will manually map
+        const defaultMappedFields = Object.keys(fieldMapping);
+        const newCustomFields = {};
+        headers.forEach(header => {
+          // Normalize header to be compared with fieldMapping keys
+          const normalizedHeader = header.toLowerCase().replace(/\s/g, '');
+          if (!defaultMappedFields.includes(normalizedHeader)) {
+            newCustomFields[normalizedHeader] = ''; // Initially unmapped, use normalized as key
+          }
+        });
+        setCustomCsvFields(newCustomFields);
+
+
       } catch (err) {
         setCsvUploadError(err.message);
         setCsvFile(null);
+        setShowCsvMapping(false); // Hide mapping section on error
       }
     };
     reader.readAsArrayBuffer(file);
@@ -171,63 +211,108 @@ function AdminProductManagement() {
     setFieldMapping((prev) => ({ ...prev, [field]: csvHeader }));
   };
 
-  const handleConfirmBulkUpload = async () => {
-  if (!fieldMapping.sku || !fieldMapping.title || !fieldMapping.price) {
-    setCsvUploadError(
-      t("adminProductManagement.bulkUpload.errorMappingRequired")
-    );
-    return;
-  }
+  // Handler for custom field mapping
+  const handleCustomFieldMappingChange = (fieldKey, csvHeader) => {
+    setCustomCsvFields((prev) => ({ ...prev, [fieldKey]: csvHeader }));
+  };
 
-  setCsvUploadError("");
-
-  try {
-    const existingProducts = await client.fetch(`*[_type == "product"]{_id, sku}`);
-    const transaction = client.transaction();
-
-    csvData.forEach((row) => {
-  const product = { _type: "product", isArchived: false };
-
-  for (const field in fieldMapping) {
-    const header = fieldMapping[field];
-    if (header) {
-      const index = csvHeaders.indexOf(header);
-      if (index !== -1) {
-        let value = row[index];
-        if (field === "price") value = parseFloat(value);
-        product[field] = value;
+  const handleAddCustomFieldForMapping = () => {
+    const fieldName = prompt(t("adminProductManagement.bulkUpload.promptCustomFieldName"));
+    if (fieldName) {
+      // Normalize field name to be used as a Sanity field key (camelCase, no spaces)
+      const normalizedFieldName = fieldName.toLowerCase().replace(/\s(.)/g, (match, group) => group.toUpperCase());
+      if (Object.keys(fieldMapping).includes(normalizedFieldName) || Object.keys(customCsvFields).includes(normalizedFieldName)) {
+        alert(t("adminProductManagement.bulkUpload.fieldNameExists"));
+        return;
       }
+      setCustomCsvFields((prev) => ({ ...prev, [normalizedFieldName]: "" }));
+      // Remind user to update Sanity schema for this new field
+      toast.info(t("adminProductManagement.bulkUpload.customFieldSchemaReminder", { fieldName: normalizedFieldName }));
     }
-  }
+  };
 
-  // ❌ Om SKU eller pris eller titel saknas – hoppa över raden
-  if (!product.sku || !product.title || isNaN(product.price)) return;
 
-  // ✅ Skapa ID från SKU
-  const safeSku = String(product.sku).trim().replace(/\s+/g, "-"); // tar bort mellanslag
-  product._id = `product-${safeSku}`;
+  const handleConfirmBulkUpload = async () => {
+    if (!fieldMapping.sku || !fieldMapping.title || !fieldMapping.price) {
+      setCsvUploadError(
+        t("adminProductManagement.bulkUpload.errorMappingRequired")
+      );
+      return;
+    }
 
-  // Skapa eller ersätt
-  transaction.createOrReplace(product);
-});
+    setCsvUploadError("");
 
-    await transaction.commit();
-    alert(t("adminProductManagement.bulkUpload.uploadSuccess"));
-    setShowCsvMapping(false);
-    setCsvFile(null);
-    fetchProducts();
-  } catch (error) {
-    console.error("Bulk upload failed:", error);
-    setCsvUploadError(t("adminProductManagement.bulkUpload.uploadError"));
-  }
-};
+    try {
+      const transaction = client.transaction();
+
+      csvData.forEach((row) => {
+        const product = { _type: "product", isArchived: false };
+
+        // Map standard fields
+        for (const field in fieldMapping) {
+          const header = fieldMapping[field];
+          if (header) {
+            const index = csvHeaders.indexOf(header);
+            if (index !== -1) {
+              let value = row[index];
+              if (field === "price") value = parseFloat(value);
+              product[field] = value;
+            }
+          }
+        }
+
+        // Map custom fields
+        for (const customFieldKey in customCsvFields) {
+          const header = customCsvFields[customFieldKey];
+          if (header) {
+            const index = csvHeaders.indexOf(header);
+            if (index !== -1) {
+              product[customFieldKey] = row[index];
+            }
+          }
+        }
+
+        // ❌ Om SKU eller pris eller titel saknas – hoppa över raden
+        if (!product.sku || !product.title || isNaN(product.price)) return;
+
+        // ✅ Skapa ID från SKU
+        const safeSku = String(product.sku).trim().replace(/\s+/g, "-"); // tar bort mellanslag
+        product._id = `product-${safeSku}`;
+
+        // Skapa eller ersätt
+        transaction.createOrReplace(product);
+      });
+
+      await transaction.commit();
+      toast.success(t("adminProductManagement.bulkUpload.uploadSuccess"));
+      setShowCsvMapping(false);
+      setCsvFile(null);
+      setCsvHeaders([]);
+      setCsvData([]);
+      setFieldMapping({ // Reset mapping
+        title: "",
+        description: "",
+        sku: "",
+        brand: "",
+        price: "",
+        category: "",
+        additionalDescription: "",
+      });
+      setCustomCsvFields({}); // Reset custom fields
+      fetchProducts();
+    } catch (error) {
+      console.error("Bulk upload failed:", error);
+      setCsvUploadError(t("adminProductManagement.bulkUpload.uploadError"));
+      toast.error(t("adminProductManagement.bulkUpload.uploadError"));
+    }
+  };
 
   const handleBulkPriceAdjustment = async () => {
     if (!priceAdjustmentValue) {
-      alert(t("adminProductManagement.bulkPrice.alertValueMissing"));
+      toast.warn(t("adminProductManagement.bulkPrice.alertValueMissing"));
       return;
     }
-    const query = `*[_type == "product" && (!defined(isArchived) || isArchived == false) 
+    const query = `*[_type == "product" && (!defined(isArchived) || isArchived == false)
       ${priceAdjustmentBrand ? `&& brand match "${priceAdjustmentBrand}*"` : ""}
       ${
         priceAdjustmentSearchTerm
@@ -238,7 +323,7 @@ function AdminProductManagement() {
     try {
       const productsToAdjust = await client.fetch(query + "{_id, price}");
       if (productsToAdjust.length === 0) {
-        alert(t("adminProductManagement.bulkPrice.alertNoMatch"));
+        toast.info(t("adminProductManagement.bulkPrice.alertNoMatch"));
         return;
       }
       const transaction = client.transaction();
@@ -250,7 +335,7 @@ function AdminProductManagement() {
         transaction.patch(product._id).set({ price: Math.max(0, newPrice) }); // Ensure price doesn't go below 0
       });
       await transaction.commit();
-      alert(
+      toast.success(
         t("adminProductManagement.bulkPrice.alertSuccess", {
           count: productsToAdjust.length,
         })
@@ -258,7 +343,7 @@ function AdminProductManagement() {
       fetchProducts();
     } catch (error) {
       console.error("Bulk price adjustment failed:", error);
-      alert(t("adminProductManagement.bulkPrice.alertError"));
+      toast.error(t("adminProductManagement.bulkPrice.alertError"));
     }
   };
 
@@ -268,14 +353,14 @@ function AdminProductManagement() {
         const query = `*[_type == "product" && !(_id in *[_type == "order"].items[].product._ref)]`;
         const unreferencedProducts = await client.fetch(query + "{_id}");
         if (unreferencedProducts.length === 0) {
-          alert(t("adminProductManagement.dangerZone.noProductsToDelete"));
+          toast.info(t("adminProductManagement.dangerZone.noProductsToDelete"));
           return;
         }
         await client.delete({
           query: `*[_id in $ids]`,
           params: { ids: unreferencedProducts.map((p) => p._id) },
         });
-        alert(
+        toast.success(
           t("adminProductManagement.dangerZone.deleteSuccess", {
             count: unreferencedProducts.length,
           })
@@ -283,7 +368,7 @@ function AdminProductManagement() {
         fetchProducts();
       } catch (error) {
         console.error("Failed to delete products:", error);
-        alert(t("adminProductManagement.dangerZone.deleteError"));
+        toast.error(t("adminProductManagement.dangerZone.deleteError"));
       }
     }
   };
@@ -361,6 +446,18 @@ function AdminProductManagement() {
               className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
             />
           </div>
+          {/* New custom field input for `additionalDescription` */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">
+              {t("adminProductManagement.form.additionalDescription")}:
+            </label>
+            <textarea
+              name="additionalDescription"
+              onChange={handleNewProductChange}
+              rows="3"
+              className="mt-1 block w-full px-3 py-2 border border-red-300 rounded-md shadow-sm focus:outline-none focus:ring-red-500 focus:border-red-500"
+            />
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700">
@@ -388,15 +485,17 @@ function AdminProductManagement() {
               />
             </div>
           </div>
+         
           <div>
             <label className="block text-sm font-medium text-gray-700">
-              {t("adminProductManagement.form.image")}:
+              {t("adminProductManagement.form.images")}:
               <span className="text-red-500">*</span>
             </label>
             <input
               type="file"
-              name="mainImage"
+              name="galleryImages" // Changed name to galleryImages to match Sanity schema
               accept="image/*"
+              multiple // Allow multiple file selection
               onChange={handleNewProductChange}
               required
               className="mt-1 block w-full text-sm text-red-600 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-100 file:text-red-700 hover:file:bg-red-200"
@@ -441,6 +540,7 @@ function AdminProductManagement() {
               <p className="text-red-500 text-sm mb-4">{csvUploadError}</p>
             )}
             <div className="space-y-4 mb-6">
+              {/* Standard fields mapping */}
               {Object.keys(fieldMapping).map((field) => (
                 <div key={field} className="flex items-center gap-4">
                   <label className="w-32 text-gray-700 font-medium capitalize">
@@ -466,53 +566,123 @@ function AdminProductManagement() {
                   </select>
                 </div>
               ))}
+
+              {/* Custom fields mapping */}
+              {Object.keys(customCsvFields).length > 0 && (
+                <h5 className="text-lg font-semibold text-gray-800 mt-6 mb-2">
+                  {t("adminProductManagement.bulkUpload.customFieldsTitle")}
+                </h5>
+              )}
+              {Object.keys(customCsvFields).map((field) => (
+                <div key={`custom-${field}`} className="flex items-center gap-4">
+                  <label className="w-32 text-gray-700 font-medium">
+                    {field} : {/* Display normalized field name */}
+                  </label>
+                  <select
+                    value={customCsvFields[field]}
+                    onChange={(e) => handleCustomFieldMappingChange(field, e.target.value)}
+                    className="flex-1 px-3 py-2 border border-gray-300 rounded-md bg-white"
+                  >
+                    <option value="">
+                      {t("adminProductManagement.bulkUpload.selectColumn")}
+                    </option>
+                    {csvHeaders.map((header) => (
+                      <option key={header} value={header}>
+                        {header}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ))}
+
+              <button
+                type="button"
+                onClick={handleAddCustomFieldForMapping}
+                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                {t("adminProductManagement.bulkUpload.addCustomFieldButton")}
+              </button>
             </div>
 
             {csvData.length > 0 && (
-  <div className="overflow-x-auto mt-6 border rounded-lg">
-    <h5 className="text-lg font-semibold text-gray-800 mb-2 px-4 pt-4">
-      {t("adminProductManagement.bulkUpload.previewTitle", "Förhandsgranskning")}
-    </h5>
-    <table className="min-w-full table-auto text-sm text-left text-gray-700 border-t border-gray-200">
-      <thead className="bg-gray-100 border-b">
-        <tr>
-          {Object.keys(fieldMapping).map((field) => (
-            <th key={field} className="px-4 py-2 font-medium">
-              {t(`adminProductManagement.form.${field}`)}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {csvData.slice(0, 5).map((row, rowIndex) => (
-          <tr key={rowIndex} className="border-b">
-            {Object.keys(fieldMapping).map((field) => {
-              const header = fieldMapping[field];
-              const index = csvHeaders.indexOf(header);
-              return (
-                <td key={field} className="px-4 py-2">
-                  {row[index] ?? ""}
-                </td>
-              );
-            })}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-    <p className="text-xs text-gray-500 italic px-4 pb-4">
-      {t("adminProductManagement.bulkUpload.previewNote", "Visar max 5 rader")}
-    </p>
-  </div>
-)}
+              <div className="overflow-x-auto mt-6 border rounded-lg">
+                <h5 className="text-lg font-semibold text-gray-800 mb-2 px-4 pt-4">
+                  {t("adminProductManagement.bulkUpload.previewTitle", "Förhandsgranskning")}
+                </h5>
+                <table className="min-w-full table-auto text-sm text-left text-gray-700 border-t border-gray-200">
+                  <thead className="bg-gray-100 border-b">
+                    <tr>
+                      {Object.keys(fieldMapping).map((field) => (
+                        <th key={field} className="px-4 py-2 font-medium">
+                          {t(`adminProductManagement.form.${field}`)}
+                        </th>
+                      ))}
+                  
+                      {Object.keys(customCsvFields).map((field) => (
+                        <th key={`custom-header-${field}`} className="px-4 py-2 font-medium">
+                          {field}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {csvData.slice(0, 5).map((row, rowIndex) => (
+                      <tr key={rowIndex} className="border-b">
+                        {Object.keys(fieldMapping).map((field) => {
+                          const header = fieldMapping[field];
+                          const index = csvHeaders.indexOf(header);
+                          return (
+                            <td key={field} className="px-4 py-2">
+                              {row[index] ?? ""}
+                            </td>
+                          );
+                        })}
+                     
+                        {Object.keys(customCsvFields).map((field) => {
+                          const header = customCsvFields[field];
+                          const index = csvHeaders.indexOf(header);
+                          return (
+                            <td key={`custom-data-${field}`} className="px-4 py-2">
+                              {row[index] ?? ""}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <p className="text-xs text-gray-500 italic px-4 pb-4">
+                  {t("adminProductManagement.bulkUpload.previewNote", "Visar max 5 rader")}
+                </p>
+              </div>
+            )}
 
-            <div className="flex justify-end space-x-4">
+            <div className="flex justify-end space-x-4 mt-6">
               <button
-                onClick={() => setShowCsvMapping(false)}
+                type="button" 
+                onClick={() => {
+                  setShowCsvMapping(false);
+                  setCsvFile(null);
+                  setCsvHeaders([]);
+                  setCsvData([]);
+                  setFieldMapping({ 
+                    title: "",
+                    description: "",
+                    sku: "",
+                    brand: "",
+                    price: "",
+                    category: "",
+                    additionalDescription: "",
+                  });
+                  setCustomCsvFields({}); 
+                  setCsvUploadError("");
+                }}
                 className="px-6 py-2 bg-gray-300 text-gray-800 rounded-lg hover:bg-gray-400"
               >
                 {t("common.cancel")}
               </button>
               <button
+                type="button" 
                 onClick={handleConfirmBulkUpload}
                 className="px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 shadow-md"
               >
@@ -624,10 +794,12 @@ function AdminProductManagement() {
                 key={product._id}
                 className="bg-white p-4 rounded-md shadow-sm border border-red-100 flex flex-col"
               >
+             
                 <img
                   src={
-                    product.imageUrl ||
-                    "https://placehold.co/400x300?text=BILD%20KOMMER%20INKOM%20KORT"
+                    product.galleryImageUrls && product.galleryImageUrls.length > 0
+                      ? product.galleryImageUrls[0]
+                      : "https://placehold.co/400x300?text=BILD%20KOMMER%20INKOM%20KORT"
                   }
                   alt={product.title}
                   className="w-full h-48 object-cover rounded-md mb-4 bg-gray-200"
@@ -642,6 +814,12 @@ function AdminProductManagement() {
                   <p className="text-gray-600 font-semibold">
                     {t("common.priceFormatted", { price: product.price })}
                   </p>
+                
+                  {product.additionalDescription && (
+                    <p className="text-sm text-gray-600 mt-2">
+                      {product.additionalDescription}
+                    </p>
+                  )}
                 </div>
                 <div className="mt-4 pt-4 border-t">
                   <button
