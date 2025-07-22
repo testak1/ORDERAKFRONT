@@ -2,12 +2,14 @@ import React, { useState, useEffect } from "react";
 import { client } from "../../sanityClient";
 import { XMLParser } from "fast-xml-parser";
 
+const generateKey = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
+
 const initialSupplierState = {
   name: "",
   sourceType: "xml",
   sourceUrl: "",
   exchangeRate: 1,
-  pricingTiers: [{ priceFrom: 0, priceTo: 1000, margin: 1.5 }], 
+  pricingTiers: [{ _key: generateKey(), priceFrom: 0, priceTo: 1000, margin: 1.5 }], 
   fieldMapping: { sku: "", title: "", description: "", price: "", brand: "" },
   categoryKeywords: [],
 };
@@ -86,11 +88,16 @@ function AdminSupplierManagement() {
   };
 
   const handleEdit = (supplier) => {
+    const tiersWithKeys = (supplier.pricingTiers || []).map(tier => ({
+      ...tier,
+      _key: tier._key || generateKey(), 
+    }));
+    
     const supplierToEdit = {
       ...initialSupplierState,
       ...supplier,
       categoryKeywords: supplier.categoryKeywords || [],
-      pricingTiers: supplier.pricingTiers && supplier.pricingTiers.length > 0 ? supplier.pricingTiers : [{ priceFrom: 0, priceTo: 1000, margin: 1.5 }],
+      pricingTiers: tiersWithKeys.length > 0 ? tiersWithKeys : [{ _key: generateKey(), priceFrom: 0, priceTo: 1000, margin: 1.5 }],
     };
     setCurrentSupplier(supplierToEdit);
     setSampleData('');
@@ -156,7 +163,8 @@ function AdminSupplierManagement() {
   };
 
   const addTier = () => {
-    const newTiers = [...(currentSupplier.pricingTiers || []), { priceFrom: 1000, priceTo: null, margin: 1.35 }];
+    // FIX: Lägger till en _key när en ny nivå skapas
+    const newTiers = [...(currentSupplier.pricingTiers || []), { _key: generateKey(), priceFrom: 1000, priceTo: null, margin: 1.35 }];
     setCurrentSupplier(prev => ({ ...prev, pricingTiers: newTiers }));
   };
 
