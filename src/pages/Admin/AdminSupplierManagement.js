@@ -6,7 +6,8 @@ const initialSupplierState = {
   sourceType: "xml",
   sourceUrl: "",
   exchangeRate: 1,
-  pricingTiers: [{ priceThreshold: 0, margin: 1.5 }], // Startar med en basnivå
+  // Starta med ett exempelintervall
+  pricingTiers: [{ priceFrom: 0, priceTo: 1000, margin: 1.5 }], 
   fieldMapping: { sku: "", title: "", description: "", price: "", brand: "" },
   categoryKeywords: [],
 };
@@ -40,7 +41,7 @@ function AdminSupplierManagement() {
       ...initialSupplierState,
       ...supplier,
       categoryKeywords: supplier.categoryKeywords || [],
-      pricingTiers: supplier.pricingTiers && supplier.pricingTiers.length > 0 ? supplier.pricingTiers : [{ priceThreshold: 0, margin: 1.5 }],
+      pricingTiers: supplier.pricingTiers && supplier.pricingTiers.length > 0 ? supplier.pricingTiers : [{ priceFrom: 0, priceTo: 1000, margin: 1.5 }],
     };
     setCurrentSupplier(supplierToEdit);
     setIsEditing(true);
@@ -99,12 +100,12 @@ function AdminSupplierManagement() {
 
   const handleTierChange = (index, field, value) => {
     const updatedTiers = [...currentSupplier.pricingTiers];
-    updatedTiers[index][field] = parseFloat(value) || 0;
+    updatedTiers[index][field] = value === '' ? null : parseFloat(value) || 0;
     setCurrentSupplier(prev => ({ ...prev, pricingTiers: updatedTiers }));
   };
 
   const addTier = () => {
-    const newTiers = [...(currentSupplier.pricingTiers || []), { priceThreshold: 1000, margin: 1.35 }];
+    const newTiers = [...(currentSupplier.pricingTiers || []), { priceFrom: 1000, priceTo: null, margin: 1.35 }];
     setCurrentSupplier(prev => ({ ...prev, pricingTiers: newTiers }));
   };
 
@@ -132,23 +133,14 @@ function AdminSupplierManagement() {
             <legend className="text-lg font-semibold px-2">Prisnivåer & Marginaler</legend>
             <div className="space-y-2">
               {(currentSupplier.pricingTiers || []).map((tier, index) => (
-                <div key={index} className="flex flex-wrap items-center gap-2">
-                  <span className="text-gray-600">Om pris är över:</span>
-                  <input
-                    type="number"
-                    value={tier.priceThreshold}
-                    onChange={(e) => handleTierChange(index, 'priceThreshold', e.target.value)}
-                    className="w-24 px-2 py-1 border rounded-md"
-                  />
-                  <span className="text-gray-600">använd marginal:</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={tier.margin}
-                    onChange={(e) => handleTierChange(index, 'margin', e.target.value)}
-                    className="w-24 px-2 py-1 border rounded-md"
-                  />
-                  <button type="button" onClick={() => removeTier(index)} className="px-2 py-1 bg-red-500 text-white rounded-md text-xs">Ta bort</button>
+                <div key={index} className="flex flex-wrap items-center gap-2 p-2 bg-gray-50 rounded-md">
+                  <span className="font-medium">Från:</span>
+                  <input type="number" value={tier.priceFrom ?? ''} onChange={(e) => handleTierChange(index, 'priceFrom', e.target.value)} className="w-24 px-2 py-1 border rounded-md" />
+                  <span className="font-medium">Till:</span>
+                  <input type="number" placeholder="(och uppåt)" value={tier.priceTo ?? ''} onChange={(e) => handleTierChange(index, 'priceTo', e.target.value)} className="w-24 px-2 py-1 border rounded-md" />
+                  <span className="font-medium">Marginal:</span>
+                  <input type="number" step="0.01" value={tier.margin ?? ''} onChange={(e) => handleTierChange(index, 'margin', e.target.value)} className="w-24 px-2 py-1 border rounded-md" />
+                  <button type="button" onClick={() => removeTier(index)} className="px-2 py-1 bg-red-500 text-white rounded-md text-xs ml-auto">Ta bort</button>
                 </div>
               ))}
             </div>
