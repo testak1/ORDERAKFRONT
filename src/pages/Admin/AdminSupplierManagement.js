@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { client } from "../../sanityClient";
-import { XMLParser } from "fast-xml-parser"; // Importeras för preview-funktionen
+import { XMLParser } from "fast-xml-parser";
 
 const initialSupplierState = {
   name: "",
