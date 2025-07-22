@@ -76,7 +76,7 @@ function PdfExportModal({ order, onClose }) {
 
     order.items.forEach((item) => {
       const priceInclVat = Math.round(item.priceAtPurchase);
-      const priceExclVat = Math.round(priceInclVat / 1.20);
+      const priceExclVat = Math.round(priceInclVat / 1.25);
       const totalForRow = Math.round(item.quantity * priceInclVat);
 
       const itemData = [
@@ -103,7 +103,7 @@ function PdfExportModal({ order, onClose }) {
     // --- UPPDATERADE TOTALBELOPP ---
     const finalY = doc.lastAutoTable.finalY || 120;
     const totalAmountInclVat = Math.round(order.totalAmount || 0);
-    const totalAmountExclVat = Math.round(totalAmountInclVat / 1.20);
+    const totalAmountExclVat = Math.round(totalAmountInclVat / 1.25);
 
     doc.setFontSize(10);
     doc.setFont(undefined, "normal");

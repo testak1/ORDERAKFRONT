@@ -125,7 +125,7 @@ function CartPage() {
   
    const total = getTotalPrice();
   // NY: Beräkna totalpriset exklusive moms
-  const totalExclVat = Math.round(total / 1.20);
+  const totalExclVat = Math.round(total / 1.25);
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-md">
@@ -151,7 +151,7 @@ function CartPage() {
                     <p className="text-md font-medium text-green-700">
                       {t("common.priceFormatted", { price: item.priceAtPurchase })}
                       <span className="text-sm text-gray-500 font-normal ml-2">
-                        (exkl. moms: {Math.round(item.priceAtPurchase / 1.20)} kr)
+                        (exkl. moms: {Math.round(item.priceAtPurchase / 1.25)} kr)
                       </span>
                     </p>
                   </div>
