@@ -5,7 +5,7 @@ import { useCart } from "../context/CartContext";
 import { useAuth } from "../context/AuthContext";
 import { useTranslation } from "react-i18next";
 
-const PRODUCTS_PER_PAGE = 20; // Bestäm hur många produkter som ska visas per sida
+const PRODUCTS_PER_PAGE = 20;
 
 function ProductList() {
   const { t } = useTranslation();
@@ -15,20 +15,19 @@ function ProductList() {
   const { addToCart } = useCart();
   const { user } = useAuth();
 
-  // --- NY STATE FÖR FILTRERING OCH PAGINERING ---
-  const [page, setPage] = useState(0); // Håller koll på vilken sida vi är på
-  const [hasMore, setHasMore] = useState(true); // Kollar om det finns fler sidor
-  const [searchTerm, setSearchTerm] = useState(""); // Omdöpt från 'filter' för tydlighet
-  const [selectedCategory, setSelectedCategory] = useState(""); // För kategorifiltret
-  const [categories, setCategories] = useState([]); // Lista med alla tillgängliga kategorier
+  // --- STATE FÖR FILTRERING, PAGINERING OCH SORTERING ---
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [categories, setCategories] = useState([]);
+  const [sortBy, setSortBy] = useState("title asc"); // NY: State för sortering, "Namn (A-Ö)" är standard
 
-  // --- Effekt för att hämta alla unika produktkategorier en gång ---
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const query = `*[_type == "product" && defined(category)].category`;
         const uniqueCategories = await client.fetch(query);
-        // Skapa en unik, sorterad lista av kategorier
         setCategories([...new Set(uniqueCategories)].sort());
       } catch (err) {
         console.error("Failed to fetch categories:", err);
@@ -37,7 +36,6 @@ function ProductList() {
     fetchCategories();
   }, []);
 
-  // --- Omarbetad funktion för att hämta produkter med filter och paginering ---
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -45,10 +43,7 @@ function ProductList() {
       const start = page * PRODUCTS_PER_PAGE;
       const end = start + PRODUCTS_PER_PAGE;
       
-      // Bygg upp query-villkor dynamiskt
-      const conditions = [
-        `!defined(isArchived) || isArchived == false`
-      ];
+      const conditions = [`!defined(isArchived) || isArchived == false`];
       const params = {};
 
       if (searchTerm) {
@@ -60,15 +55,15 @@ function ProductList() {
         params.category = selectedCategory;
       }
 
+      // NY: Sorterings-parametern läggs till i queryn
       const query = `
-        *[_type == "product" && ${conditions.join(' && ')}] | order(title asc) [${start}...${end}] {
+        *[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {
           _id, title, sku, price, "imageUrl": mainImage.asset->url
         }`;
         
       const data = await client.fetch(query, params);
       setProducts(data);
       
-      // Om vi fick tillbaka färre produkter än vi bad om, finns det inga fler sidor
       setHasMore(data.length === PRODUCTS_PER_PAGE);
 
     } catch (err) {
@@ -76,23 +71,23 @@ function ProductList() {
     } finally {
       setLoading(false);
     }
-  }, [page, searchTerm, selectedCategory, t]);
+    // NY: sortBy läggs till i dependency array
+  }, [page, searchTerm, selectedCategory, sortBy, t]);
 
   useEffect(() => {
-    // Använd en debounce för söktermen för att inte skicka för många anrop
     const handler = setTimeout(() => {
       fetchProducts();
-    }, 300); // Väntar 300ms efter senaste knapptryckningen
+    }, 300);
 
     return () => {
       clearTimeout(handler);
     };
   }, [fetchProducts]);
 
-  // Nollställ sidan när filter ändras
+  // NY: sortBy läggs till så att sidan nollställs vid ny sortering
   useEffect(() => {
     setPage(0);
-  }, [searchTerm, selectedCategory]);
+  }, [searchTerm, selectedCategory, sortBy]);
 
   const getDisplayPrice = (productPrice) => {
     if (user && user.discountPercentage > 0) {
@@ -107,9 +102,9 @@ function ProductList() {
 
   return (
     <div className="p-4">
-      {/* --- NYA FILTRERINGS-KONTROLLER --- */}
       <div className="mb-8 p-4 bg-gray-100 rounded-lg">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+        {/* NY: Gridden har nu 3 kolumner för att få plats med sortering */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
           <div>
             <label htmlFor="search" className="block text-sm font-medium text-gray-700">Sök på namn eller artikelnummer</label>
             <input
@@ -131,6 +126,21 @@ function ProductList() {
             >
               <option value="">Alla kategorier</option>
               {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            </select>
+          </div>
+          {/* NY: Dropdown för sortering */}
+          <div>
+            <label htmlFor="sort" className="block text-sm font-medium text-gray-700">Sortera efter</label>
+            <select
+              id="sort"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md bg-white"
+            >
+              <option value="title asc">Namn (A-Ö)</option>
+              <option value="title desc">Namn (Ö-A)</option>
+              <option value="price asc">Pris (Lågt till Högt)</option>
+              <option value="price desc">Pris (Högt till Lågt)</option>
             </select>
           </div>
         </div>
@@ -188,7 +198,6 @@ function ProductList() {
             })}
           </div>
 
-          {/* --- NYA PAGINERINGS-KNAPPAR --- */}
           <div className="flex justify-between items-center mt-12">
             <button
               onClick={() => setPage(p => p - 1)}
