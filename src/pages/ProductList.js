@@ -15,13 +15,13 @@ function ProductList() {
   const { addToCart } = useCart();
   const { user } = useAuth();
 
-  // State för paginering, sökning och sortering
+  // State for paginering, sökning och sortering
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [sortBy, setSortBy] = useState("title asc");
+  const [sortBy, setSortBy] = useState("_createdAt desc"); // UPDATED: "Newest" is now the default
   
-  // --- NY STATE FÖR FORDONSFILTER ---
+  // State for vehicle filters
   const [makes, setMakes] = useState([]);
   const [models, setModels] = useState([]);
   const [selectedMake, setSelectedMake] = useState("");
@@ -75,14 +75,11 @@ function ProductList() {
         conditions.push(`(title match $searchTerm + "*" || sku match $searchTerm + "*")`);
         params.searchTerm = searchTerm;
       }
-      // NYTT FILTERVILLKOR FÖR FORDON
+      
       if (selectedModel) {
-        // Detta är en avancerad query som letar efter produkter som är kopplade
-        // till en vehicleVersion vars modell matchar den valda modellen.
         conditions.push(`_id in *[_type == "product" && references(*[_type=="vehicleVersion" && references($modelId)]._id)]._id`);
         params.modelId = selectedModel;
       } else if (selectedMake) {
-        // Om bara ett märke är valt, visa alla produkter för det märket
         conditions.push(`_id in *[_type == "product" && references(*[_type=="vehicleModel" && references($makeId)]._id)]._id`);
         params.makeId = selectedMake;
       }
@@ -151,7 +148,9 @@ function ProductList() {
           {/* Sortering */}
           <div>
             <label htmlFor="sort" className="block text-sm font-medium text-gray-700">Sortera efter</label>
+            {/* UPDATED: Added "Newest Products" option */}
             <select id="sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
+              <option value="_createdAt desc">Newest Products</option>
               <option value="title asc">Namn (A-Ö)</option>
               <option value="title desc">Namn (Ö-A)</option>
               <option value="price asc">Pris (Lågt till Högt)</option>
