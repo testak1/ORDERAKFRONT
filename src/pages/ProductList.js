@@ -15,26 +15,51 @@ function ProductList() {
   const { addToCart } = useCart();
   const { user } = useAuth();
 
-  // --- STATE FÖR FILTRERING, PAGINERING OCH SORTERING ---
+  // State för paginering, sökning och sortering
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [categories, setCategories] = useState([]);
-  const [sortBy, setSortBy] = useState("title asc"); // NY: State för sortering, "Namn (A-Ö)" är standard
+  const [sortBy, setSortBy] = useState("title asc");
+  
+  // --- NY STATE FÖR FORDONSFILTER ---
+  const [makes, setMakes] = useState([]);
+  const [models, setModels] = useState([]);
+  const [selectedMake, setSelectedMake] = useState("");
+  const [selectedModel, setSelectedModel] = useState("");
 
+  // Hämta alla bilmärken för den första dropdown-menyn
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchMakes = async () => {
       try {
-        const query = `*[_type == "product" && defined(category)].category`;
-        const uniqueCategories = await client.fetch(query);
-        setCategories([...new Set(uniqueCategories)].sort());
+        const query = `*[_type == "vehicleMake"] | order(name asc)`;
+        const result = await client.fetch(query);
+        setMakes(result);
       } catch (err) {
-        console.error("Failed to fetch categories:", err);
+        console.error("Failed to fetch vehicle makes:", err);
       }
     };
-    fetchCategories();
+    fetchMakes();
   }, []);
+
+  // Hämta modeller baserat på valt märke
+  useEffect(() => {
+    if (!selectedMake) {
+      setModels([]);
+      setSelectedModel("");
+      return;
+    }
+    const fetchModels = async () => {
+      try {
+        const query = `*[_type == "vehicleModel" && make._ref == $makeId] | order(name asc)`;
+        const result = await client.fetch(query, { makeId: selectedMake });
+        setModels(result);
+      } catch (err) {
+        console.error("Failed to fetch vehicle models:", err);
+      }
+    };
+    fetchModels();
+  }, [selectedMake]);
+
 
   const fetchProducts = useCallback(async () => {
     setLoading(true);
@@ -50,12 +75,18 @@ function ProductList() {
         conditions.push(`(title match $searchTerm + "*" || sku match $searchTerm + "*")`);
         params.searchTerm = searchTerm;
       }
-      if (selectedCategory) {
-        conditions.push(`category == $category`);
-        params.category = selectedCategory;
+      // NYTT FILTERVILLKOR FÖR FORDON
+      if (selectedModel) {
+        // Detta är en avancerad query som letar efter produkter som är kopplade
+        // till en vehicleVersion vars modell matchar den valda modellen.
+        conditions.push(`_id in *[_type == "product" && references(*[_type=="vehicleVersion" && references($modelId)]._id)]._id`);
+        params.modelId = selectedModel;
+      } else if (selectedMake) {
+        // Om bara ett märke är valt, visa alla produkter för det märket
+        conditions.push(`_id in *[_type == "product" && references(*[_type=="vehicleModel" && references($makeId)]._id)]._id`);
+        params.makeId = selectedMake;
       }
-
-      // NY: Sorterings-parametern läggs till i queryn
+      
       const query = `
         *[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {
           _id, title, sku, price, "imageUrl": mainImage.asset->url
@@ -63,39 +94,31 @@ function ProductList() {
         
       const data = await client.fetch(query, params);
       setProducts(data);
-      
       setHasMore(data.length === PRODUCTS_PER_PAGE);
 
     } catch (err) {
       setError(t("productList.loadError"));
+      console.error(err);
     } finally {
       setLoading(false);
     }
-    // NY: sortBy läggs till i dependency array
-  }, [page, searchTerm, selectedCategory, sortBy, t]);
+  }, [page, searchTerm, sortBy, selectedMake, selectedModel, t]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
       fetchProducts();
     }, 300);
-
-    return () => {
-      clearTimeout(handler);
-    };
+    return () => clearTimeout(handler);
   }, [fetchProducts]);
 
-  // NY: sortBy läggs till så att sidan nollställs vid ny sortering
   useEffect(() => {
     setPage(0);
-  }, [searchTerm, selectedCategory, sortBy]);
+  }, [searchTerm, sortBy, selectedMake, selectedModel]);
 
   const getDisplayPrice = (productPrice) => {
     if (user && user.discountPercentage > 0) {
       const discountedPrice = productPrice * (1 - user.discountPercentage / 100);
-      return {
-        original: Math.round(productPrice),
-        discounted: Math.round(discountedPrice),
-      };
+      return { original: Math.round(productPrice), discounted: Math.round(discountedPrice) };
     }
     return { original: Math.round(productPrice) };
   };
@@ -103,40 +126,32 @@ function ProductList() {
   return (
     <div className="p-4">
       <div className="mb-8 p-4 bg-gray-100 rounded-lg">
-        {/* NY: Gridden har nu 3 kolumner för att få plats med sortering */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+          {/* Sökfält */}
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700">Sök på namn eller artikelnummer</label>
-            <input
-              id="search"
-              type="text"
-              placeholder="t.ex. Cat-back eller SSXVW..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md"
-            />
+            <label htmlFor="search" className="block text-sm font-medium text-gray-700">Fritextsök</label>
+            <input id="search" type="text" placeholder="Namn eller art.nr..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md" />
           </div>
+          {/* Bilmärke */}
           <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700">Filtrera på kategori</label>
-            <select
-              id="category"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md bg-white"
-            >
-              <option value="">Alla kategorier</option>
-              {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+            <label htmlFor="make" className="block text-sm font-medium text-gray-700">Välj märke</label>
+            <select id="make" value={selectedMake} onChange={(e) => setSelectedMake(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
+              <option value="">Alla märken</option>
+              {makes.map(make => <option key={make._id} value={make._id}>{make.name}</option>)}
             </select>
           </div>
-          {/* NY: Dropdown för sortering */}
+          {/* Bilmodell */}
+          <div>
+            <label htmlFor="model" className="block text-sm font-medium text-gray-700">Välj modell</label>
+            <select id="model" value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} disabled={!selectedMake} className="mt-1 w-full px-4 py-2 border rounded-md bg-white disabled:bg-gray-200">
+              <option value="">Alla modeller</option>
+              {models.map(model => <option key={model._id} value={model._id}>{model.name}</option>)}
+            </select>
+          </div>
+          {/* Sortering */}
           <div>
             <label htmlFor="sort" className="block text-sm font-medium text-gray-700">Sortera efter</label>
-            <select
-              id="sort"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="mt-1 w-full px-4 py-2 border border-gray-300 rounded-md bg-white"
-            >
+            <select id="sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
               <option value="title asc">Namn (A-Ö)</option>
               <option value="title desc">Namn (Ö-A)</option>
               <option value="price asc">Pris (Lågt till Högt)</option>
