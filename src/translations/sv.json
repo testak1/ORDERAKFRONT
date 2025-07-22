@@ -88,7 +88,8 @@
     "dashboard": "Admin Dashboard",
     "productManagement": "Produkthantering",
     "userManagement": "Användarhantering",
-    "orderManagement": "Orderhantering"
+    "orderManagement": "Orderhantering",
+    "supplierManagement": "SUPPLIER"
   },
   "adminOrderManagement": {
     "title": "Orderhantering",
