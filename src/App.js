@@ -11,6 +11,8 @@ import UserProfile from "./pages/UserProfile";
 import Unauthorized from "./pages/Unauthorized";
 import ProtectedRoute from "./components/ProtectedRoute";
 import { useTranslation } from "react-i18next";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   return (
@@ -18,6 +20,18 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <NavBar />
+          <ToastContainer 
+            position="top-right"
+            autoClose={3000}
+            hideProgressBar={false}
+            newestOnTop={false}
+            closeOnClick
+            rtl={false}
+            pauseOnFocusLoss
+            draggable
+            pauseOnHover
+            theme="colored"
+          />
           <div className="container mx-auto p-4 md:p-6 lg:p-8 min-h-screen bg-gray-50">
             <Routes>
               {/* Dina routes är korrekta som de är */}

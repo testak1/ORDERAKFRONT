@@ -4,6 +4,7 @@ import { useAuth } from "../context/AuthContext";
 import { client } from "../sanityClient";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { toast } from 'react-toastify';
 
 function CartPage() {
   const {
@@ -68,50 +69,59 @@ function CartPage() {
   };
 
   const handlePlaceOrder = async () => {
-    if (!user) {
-      alert(t("cart.alerts.loginRequired"));
-      navigate("/login");
-      return;
-    }
-    if (cartItems.length === 0) {
-      alert(t("cart.alerts.emptyCart"));
-      return;
-    }
-    if (Object.values(shippingAddress).some((val) => val === "")) {
-      alert(t("cart.alerts.fillAddress"));
-      return;
-    }
+  if (!user) {
+    toast.error(t("cart.alerts.loginRequired"));
+    navigate("/login");
+    return;
+  }
+  if (cartItems.length === 0) {
+    toast.error(t("cart.alerts.emptyCart"));
+    return;
+  }
+  if (Object.values(shippingAddress).some((val) => val === "")) {
+    toast.error(t("cart.alerts.fillAddress"));
+    return;
+  }
 
     setOrderLoading(true);
-    const orderDoc = {
-      _type: "order",
-      user: { _ref: user._id, _type: "reference" },
-      items: cartItems.map((item) => ({
-        _key: item._id,
-        product: { _ref: item._id, _type: "reference" },
-        title: item.title,
-        sku: item.sku,
-        quantity: item.quantity,
-        priceAtPurchase: item.priceAtPurchase,
-      })),
-      shippingAddress: shippingAddress,
-      totalAmount: getTotalPrice(),
-      orderStatus: "pending",
-      createdAt: new Date().toISOString(),
-    };
-
-    try {
-      await client.create(orderDoc);
-      clearCart();
-      alert(t("cart.alerts.orderSuccess"));
-      navigate("/profile");
-    } catch (error) {
-      console.error("Order placement error:", error);
-      alert(t("cart.alerts.orderFailure"));
-    } finally {
-      setOrderLoading(false);
-    }
+  const orderDoc = {
+    _type: "order",
+    user: { _ref: user._id, _type: "reference" },
+    items: cartItems.map((item) => ({
+      _key: item._id,
+      product: { _ref: item._id, _type: "reference" },
+      title: item.title,
+      sku: item.sku,
+      quantity: item.quantity,
+      priceAtPurchase: item.priceAtPurchase,
+    })),
+    shippingAddress: shippingAddress,
+    totalAmount: getTotalPrice(),
+    orderStatus: "pending",
+    createdAt: new Date().toISOString(),
   };
+
+  try {
+    await client.create(orderDoc);
+    clearCart();
+    toast.success(
+      <div>
+        <h3 className="font-bold">{t("cart.alerts.orderSuccessTitle")}</h3>
+        <p>{t("cart.alerts.orderSuccessMessage")}</p>
+      </div>,
+      {
+        icon: '🚀',
+        autoClose: 5000,
+      }
+    );
+    navigate("/profile");
+  } catch (error) {
+    console.error("Order placement error:", error);
+    toast.error(t("cart.alerts.orderFailure"));
+  } finally {
+    setOrderLoading(false);
+  }
+};
   
   const total = getTotalPrice();
 

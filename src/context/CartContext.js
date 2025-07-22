@@ -1,6 +1,7 @@
 // src/context/CartContext.js
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { useAuth } from "./AuthContext";
+import { toast } from 'react-toastify';
 
 const CartContext = createContext();
 
@@ -29,23 +30,29 @@ export const CartProvider = ({ children }) => {
   };
 
   const addToCart = (product, quantity = 1) => {
-    if (!product || !product._id || typeof product.price !== "number") {
-      console.error("Invalid product data:", product);
-      alert("Could not add item to cart. Invalid product data.");
-      return;
-    }
+  if (!product || !product._id || typeof product.price !== "number") {
+    console.error("Invalid product data:", product);
+    toast.error("Could not add item to cart. Invalid product data.");
+    return;
+  }
 
     const discountedPrice = applyDiscount(product.price);
 
     setCartItems((prevItems) => {
       const existingItem = prevItems.find((item) => item._id === product._id);
-      if (existingItem) {
+       if (existingItem) {
+      toast.success(`${product.title} quantity updated in cart!`, {
+        icon: '🛒',
+      });
         return prevItems.map((item) =>
           item._id === product._id
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       } else {
+      toast.success(`${product.title} added to cart!`, {
+        icon: '🛒',
+      });
         return [
           ...prevItems,
           {
@@ -86,6 +93,9 @@ export const CartProvider = ({ children }) => {
 
   const clearCart = () => {
     setCartItems([]);
+    toast.success('Order placed successfully!', {
+      icon: '🎉',
+    });
   };
 
   return (
