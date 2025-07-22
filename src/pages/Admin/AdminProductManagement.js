@@ -172,18 +172,22 @@ function AdminProductManagement() {
   };
 
   const handleConfirmBulkUpload = async () => {
-    if (!fieldMapping.sku || !fieldMapping.title || !fieldMapping.price) {
-      setCsvUploadError(
-        t("adminProductManagement.bulkUpload.errorMappingRequired")
-      );
-      return;
-    }
+  if (!fieldMapping.sku || !fieldMapping.title || !fieldMapping.price) {
+    setCsvUploadError(
+      t("adminProductManagement.bulkUpload.errorMappingRequired")
+    );
+    return;
+  }
 
-    setCsvUploadError("");
+  setCsvUploadError("");
+
+  try {
+    const existingProducts = await client.fetch(`*[_type == "product"]{_id, sku}`);
     const transaction = client.transaction();
 
     csvData.forEach((row) => {
       const product = { _type: "product", isArchived: false };
+
       for (const field in fieldMapping) {
         const header = fieldMapping[field];
         if (header) {
@@ -195,23 +199,30 @@ function AdminProductManagement() {
           }
         }
       }
-      // Skip rows without essential data
-      if (product.sku && product.title && !isNaN(product.price)) {
-        transaction.createOrReplace(product); // Use createOrReplace to update existing SKUs
-      }
+
+      // Validering
+      if (!product.sku || !product.title || isNaN(product.price)) return;
+
+      // Kolla om produkten finns redan (via SKU)
+      const existing = existingProducts.find((p) => p.sku === product.sku);
+
+      // GENERERA _id – antingen bevara eller skapa nytt
+      product._id = existing ? existing._id : `product-${product.sku}`;
+
+      // Skapa eller ersätt
+      transaction.createOrReplace(product);
     });
 
-    try {
-      await transaction.commit();
-      alert(t("adminProductManagement.bulkUpload.uploadSuccess"));
-      setShowCsvMapping(false);
-      setCsvFile(null);
-      fetchProducts();
-    } catch (error) {
-      console.error("Bulk upload failed:", error);
-      setCsvUploadError(t("adminProductManagement.bulkUpload.uploadError"));
-    }
-  };
+    await transaction.commit();
+    alert(t("adminProductManagement.bulkUpload.uploadSuccess"));
+    setShowCsvMapping(false);
+    setCsvFile(null);
+    fetchProducts();
+  } catch (error) {
+    console.error("Bulk upload failed:", error);
+    setCsvUploadError(t("adminProductManagement.bulkUpload.uploadError"));
+  }
+};
 
   const handleBulkPriceAdjustment = async () => {
     if (!priceAdjustmentValue) {
