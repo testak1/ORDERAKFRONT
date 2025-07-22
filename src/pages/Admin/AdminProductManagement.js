@@ -186,32 +186,30 @@ function AdminProductManagement() {
     const transaction = client.transaction();
 
     csvData.forEach((row) => {
-      const product = { _type: "product", isArchived: false };
+  const product = { _type: "product", isArchived: false };
 
-      for (const field in fieldMapping) {
-        const header = fieldMapping[field];
-        if (header) {
-          const index = csvHeaders.indexOf(header);
-          if (index !== -1) {
-            let value = row[index];
-            if (field === "price") value = parseFloat(value);
-            product[field] = value;
-          }
-        }
+  for (const field in fieldMapping) {
+    const header = fieldMapping[field];
+    if (header) {
+      const index = csvHeaders.indexOf(header);
+      if (index !== -1) {
+        let value = row[index];
+        if (field === "price") value = parseFloat(value);
+        product[field] = value;
       }
+    }
+  }
 
-      // Validering
-      if (!product.sku || !product.title || isNaN(product.price)) return;
+  // ❌ Om SKU eller pris eller titel saknas – hoppa över raden
+  if (!product.sku || !product.title || isNaN(product.price)) return;
 
-      // Kolla om produkten finns redan (via SKU)
-      const existing = existingProducts.find((p) => p.sku === product.sku);
+  // ✅ Skapa ID från SKU
+  const safeSku = String(product.sku).trim().replace(/\s+/g, "-"); // tar bort mellanslag
+  product._id = `product-${safeSku}`;
 
-      // GENERERA _id – antingen bevara eller skapa nytt
-      product._id = existing ? existing._id : `product-${product.sku}`;
-
-      // Skapa eller ersätt
-      transaction.createOrReplace(product);
-    });
+  // Skapa eller ersätt
+  transaction.createOrReplace(product);
+});
 
     await transaction.commit();
     alert(t("adminProductManagement.bulkUpload.uploadSuccess"));
