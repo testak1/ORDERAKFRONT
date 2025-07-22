@@ -229,10 +229,15 @@
       "product": "Produkt",
       "sku": "Art.nr",
       "quantity": "Antal",
-      "price": "Pris",
-      "total": "Totalt"
+      "price": "Pris", 
+      "total": "Totalt",
+      "priceExclVat": "Pris (exkl. moms)", 
+      "priceInclVat": "Pris (inkl. moms)"  
     },
-    "totalAmount": "Totalbelopp:",
+    
+    "totalAmount": "Totalbelopp:", 
+    "totalAmountExclVat": "Totalbelopp (exkl. moms):", 
+    "totalAmountInclVat": "Totalbelopp (inkl. moms):"  
     "footerThanks": "Tack för din beställning!",
     "footerCompany": "AK-TUNING"
   }

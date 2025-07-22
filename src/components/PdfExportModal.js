@@ -36,26 +36,20 @@ function PdfExportModal({ order, onClose }) {
     
     const displayId = order._id.slice(-8).toUpperCase();
 
-    // --- HEADER ---
+    // --- HEADER och Adressinfo (Oförändrat) ---
     const logoWidth = 50;
     const logoOriginalWidth = 600; 
     const logoOriginalHeight = 564;
     const logoHeight = (logoOriginalHeight * logoWidth) / logoOriginalWidth;
     doc.addImage(logoBase64, "PNG", 14, 15, logoWidth, logoHeight);
-
     doc.setFontSize(22);
     doc.setFont(undefined, "bold");
     doc.text(t("pdfExport.invoiceTitle"), 200, 25, { align: "right" });
-
     doc.setFontSize(10);
     doc.setFont(undefined, "normal");
     doc.text(t("pdfExport.orderId", { id: displayId }), 200, 32, { align: "right" });
-
-    // --- BILLING AND ORDER INFO ---
-    doc.setLineWidth(0.5);
     const lineY = 15 + logoHeight + 5;
     doc.line(14, lineY, 200, lineY);
-    
     const textY = lineY + 8;
     doc.setFontSize(10);
     doc.text(t("pdfExport.billedTo"), 14, textY);
@@ -63,77 +57,65 @@ function PdfExportModal({ order, onClose }) {
     doc.text(order.shippingAddress?.fullName || order.user?.username, 14, textY + 6);
     doc.setFont(undefined, "normal");
     doc.text(order.shippingAddress?.addressLine1 || "", 14, textY + 11);
-    doc.text(
-      `${order.shippingAddress?.postalCode || ""} ${
-        order.shippingAddress?.city || ""
-      }`,
-      14,
-      textY + 16
-    );
+    doc.text(`${order.shippingAddress?.postalCode || ""} ${order.shippingAddress?.city || ""}`, 14, textY + 16);
     doc.text(order.shippingAddress?.country || "", 14, textY + 21);
-
-    doc.text(
-      t("pdfExport.orderDate", { date: new Date(order.createdAt).toLocaleString('sv-SE') }),
-      200,
-      textY,
-      { align: "right" }
-    );
-    
+    doc.text(t("pdfExport.orderDate", { date: new Date(order.createdAt).toLocaleString('sv-SE') }), 200, textY, { align: "right" });
     const translatedStatus = t(`orderStatus.${order.orderStatus}`);
     doc.text(t("pdfExport.status", { status: translatedStatus }), 200, textY + 6, { align: "right" });
 
-    // --- ITEMS TABLE ---
+    // --- UPPDATERAD PRODUKTTABELL ---
     const tableColumn = [
         t("pdfExport.tableHeader.product"), 
         t("pdfExport.tableHeader.sku"), 
         t("pdfExport.tableHeader.quantity"), 
-        t("pdfExport.tableHeader.price"), 
+        t("pdfExport.tableHeader.priceExclVat"), // NY ÖVERSÄTTNING BEHÖVS
+        t("pdfExport.tableHeader.priceInclVat"), // NY ÖVERSÄTTNING BEHÖVS
         t("pdfExport.tableHeader.total")
     ];
     const tableRows = [];
 
     order.items.forEach((item) => {
+      const priceInclVat = Math.round(item.priceAtPurchase);
+      const priceExclVat = Math.round(priceInclVat / 1.25);
+      const totalForRow = Math.round(item.quantity * priceInclVat);
+
       const itemData = [
-        doc.splitTextToSize(item.product?.title || item.title, 80),
+        doc.splitTextToSize(item.product?.title || item.title, 60),
         item.product?.sku || item.sku,
         item.quantity,
-        `${Math.round(item.priceAtPurchase)} kr`,
-        `${Math.round(item.quantity * item.priceAtPurchase)} kr`,
+        `${priceExclVat} kr`,
+        `${priceInclVat} kr`,
+        `${totalForRow} kr`,
       ];
       tableRows.push(itemData);
     });
 
-    // NY LAYOUT FÖR TABELLEN
     doc.autoTable({
       head: [tableColumn],
       body: tableRows,
       startY: textY + 30,
-      theme: 'grid', // Använder 'grid'-temat för tydliga linjer
-      headStyles: {
-        fillColor: [220, 220, 220], // Något mörkare grå för rubrikraden
-        textColor: 20,
-        fontStyle: 'bold',
-      },
-      styles: {
-        fontSize: 9,
-        cellPadding: 3, // Ökad padding för mer luft och högre rader
-        valign: 'middle', // Centrerar texten vertikalt i cellerna
-      },
-      alternateRowStyles: {
-        fillColor: [250, 250, 250], // Mycket ljusgrå färg för varannan rad
-      },
+      theme: 'grid',
+      headStyles: { fillColor: [220, 220, 220], textColor: 20, fontStyle: 'bold' },
+      styles: { fontSize: 8, cellPadding: 3, valign: 'middle' },
+      alternateRowStyles: { fillColor: [250, 250, 250] },
     });
 
-    // --- TOTALS ---
+    // --- UPPDATERADE TOTALBELOPP ---
     const finalY = doc.lastAutoTable.finalY || 120;
+    const totalAmountInclVat = Math.round(order.totalAmount || 0);
+    const totalAmountExclVat = Math.round(totalAmountInclVat / 1.25);
+
+    doc.setFontSize(10);
+    doc.setFont(undefined, "normal");
+    doc.text(t("pdfExport.totalAmountExclVat"), 140, finalY + 15, { align: "right" }); // NY ÖVERSÄTTNING BEHÖVS
+    doc.text(`${totalAmountExclVat} kr`, 200, finalY + 15, { align: "right" });
+
     doc.setFontSize(12);
     doc.setFont(undefined, "bold");
-    doc.text(t("pdfExport.totalAmount"), 140, finalY + 15, { align: "left" });
-    doc.text(`${Math.round(order.totalAmount)} kr`, 200, finalY + 15, {
-      align: "right",
-    });
+    doc.text(t("pdfExport.totalAmountInclVat"), 140, finalY + 22, { align: "right" }); // NY ÖVERSÄTTNING BEHÖVS
+    doc.text(`${totalAmountInclVat} kr`, 200, finalY + 22, { align: "right" });
 
-    // --- FOOTER ---
+    // --- FOOTER (Oförändrad) ---
     doc.setFontSize(9);
     doc.setTextColor(150);
     doc.text(t("pdfExport.footerThanks"), 105, 280, { align: "center" });
@@ -149,6 +131,7 @@ function PdfExportModal({ order, onClose }) {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
+      {/* ... (Modalens innehåll är oförändrat) ... */}
       <div className="bg-white rounded-lg shadow-xl max-w-lg w-full p-6 text-center">
         <h2 className="text-2xl font-bold text-gray-800 mb-4">{t("pdfExport.modalTitle")}</h2>
         <p className="text-gray-600 mb-6">
