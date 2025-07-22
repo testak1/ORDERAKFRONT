@@ -22,14 +22,11 @@ function App() {
           <NavBar />
           <ToastContainer 
             position="top-right"
-            autoClose={3000}
-            hideProgressBar={false}
-            newestOnTop={false}
+            autoClose={2000}
+            newestOnTop
             closeOnClick
             rtl={false}
-            pauseOnFocusLoss
-            draggable
-            pauseOnHover
+            pauseOnFocusLoss={false}
             theme="colored"
           />
           <div className="container mx-auto p-4 md:p-6 lg:p-8 min-h-screen bg-gray-50">

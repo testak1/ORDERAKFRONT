@@ -2,6 +2,7 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { useAuth } from "./AuthContext";
 import { toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 const CartContext = createContext();
 
@@ -32,28 +33,33 @@ export const CartProvider = ({ children }) => {
   const addToCart = (product, quantity = 1) => {
   if (!product || !product._id || typeof product.price !== "number") {
     console.error("Invalid product data:", product);
-    toast.error("Could not add item to cart. Invalid product data.");
+    toast.error("Kunde inte lägga till produkten. Ogiltig produktdata.", {
+      position: "top-center",
+    });
     return;
   }
 
-    const discountedPrice = applyDiscount(product.price);
+  const discountedPrice = applyDiscount(product.price);
 
-    setCartItems((prevItems) => {
-      const existingItem = prevItems.find((item) => item._id === product._id);
-       if (existingItem) {
-      toast.success(`${product.title} quantity updated in cart!`, {
-        icon: '🛒',
+  setCartItems((prevItems) => {
+    const existingItem = prevItems.find((item) => item._id === product._id);
+    
+    if (existingItem) {
+      toast(`Ökade antal för ${product.title}`, {
+        position: "top-right",
+        autoClose: 2000,
       });
-        return prevItems.map((item) =>
-          item._id === product._id
-            ? { ...item, quantity: item.quantity + quantity }
-            : item
-        );
-      } else {
-      toast.success(`${product.title} added to cart!`, {
-        icon: '🛒',
+      return prevItems.map((item) =>
+        item._id === product._id
+          ? { ...item, quantity: item.quantity + quantity }
+          : item
+      );
+    } else {
+      toast.success(`${product.title} lades till i varukorgen!`, {
+        position: "top-right",
+        autoClose: 2000,
       });
-        return [
+      return [
           ...prevItems,
           {
             ...product,
