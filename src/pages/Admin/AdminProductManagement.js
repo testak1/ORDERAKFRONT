@@ -467,6 +467,44 @@ function AdminProductManagement() {
                 </div>
               ))}
             </div>
+
+            {csvData.length > 0 && (
+  <div className="overflow-x-auto mt-6 border rounded-lg">
+    <h5 className="text-lg font-semibold text-gray-800 mb-2 px-4 pt-4">
+      {t("adminProductManagement.bulkUpload.previewTitle", "Förhandsgranskning")}
+    </h5>
+    <table className="min-w-full table-auto text-sm text-left text-gray-700 border-t border-gray-200">
+      <thead className="bg-gray-100 border-b">
+        <tr>
+          {Object.keys(fieldMapping).map((field) => (
+            <th key={field} className="px-4 py-2 font-medium">
+              {t(`adminProductManagement.form.${field}`)}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {csvData.slice(0, 5).map((row, rowIndex) => (
+          <tr key={rowIndex} className="border-b">
+            {Object.keys(fieldMapping).map((field) => {
+              const header = fieldMapping[field];
+              const index = csvHeaders.indexOf(header);
+              return (
+                <td key={field} className="px-4 py-2">
+                  {row[index] ?? ""}
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+    <p className="text-xs text-gray-500 italic px-4 pb-4">
+      {t("adminProductManagement.bulkUpload.previewNote", "Visar max 5 rader")}
+    </p>
+  </div>
+)}
+
             <div className="flex justify-end space-x-4">
               <button
                 onClick={() => setShowCsvMapping(false)}
