@@ -1,22 +1,70 @@
 import React, { useState, useEffect } from "react";
 import { client } from "../../sanityClient";
+import { XMLParser } from "fast-xml-parser"; // Importeras för preview-funktionen
 
 const initialSupplierState = {
   name: "",
   sourceType: "xml",
   sourceUrl: "",
   exchangeRate: 1,
-  // Starta med ett exempelintervall
   pricingTiers: [{ priceFrom: 0, priceTo: 1000, margin: 1.5 }], 
   fieldMapping: { sku: "", title: "", description: "", price: "", brand: "" },
   categoryKeywords: [],
 };
+
+// Denna funktion körs bara lokalt i din adminpanel för förhandsgranskning.
+function transformProductForPreview(sourceProduct, mapping, config) {
+  const langData = sourceProduct.language?.lang || {};
+  const supplierPrice = sourceProduct.price?.price ? parseFloat(String(sourceProduct.price.price).replace(',', '.')) : 0;
+  let margin = 1.0;
+  if (config.pricingTiers && config.pricingTiers.length > 0) {
+    const sortedTiers = [...config.pricingTiers].sort((a, b) => b.priceThreshold - a.priceThreshold);
+    const applicableTier = sortedTiers.find(tier => supplierPrice >= tier.priceThreshold);
+    if (applicableTier) margin = applicableTier.margin;
+  }
+  const exchangeRate = config.exchangeRate || 1;
+  const priceExcludingVAT = supplierPrice * exchangeRate * margin;
+  const finalPriceSEK = priceExcludingVAT * 1.25;
+
+  let finalDescription = mapping.description || '';
+  finalDescription = finalDescription.replace(/{([^{}]+)}/g, (match, placeholder) => {
+    const key = placeholder.trim();
+    switch (key) {
+      case 'description': return langData.description?.p || langData.description || '';
+      case 'description_short': return langData.description_short?.p || langData.description_short || '';
+      case 'weight':
+        if (!sourceProduct.weight) return '';
+        return `${sourceProduct.weight['#text']} ${sourceProduct.weight['@_unit']}`;
+      case 'features':
+        if (!sourceProduct.features?.f) return '';
+        let featuresHtml = '<ul>';
+        const featuresArray = Array.isArray(sourceProduct.features.f) ? sourceProduct.features.f : [sourceProduct.features.f];
+        for (const feature of featuresArray) {
+          const featureName = feature.name['#text'] || feature.name;
+          featuresHtml += `<li><strong>${featureName}:</strong> ${feature.value}</li>`;
+        }
+        featuresHtml += '</ul>';
+        return featuresHtml;
+      default: return sourceProduct[key] || '';
+    }
+  });
+
+  return {
+    title: langData.name || '',
+    description: finalDescription,
+    sku: String(sourceProduct[mapping.sku] || ''),
+    price: Math.round(finalPriceSEK),
+    brand: mapping.brand.includes('{') ? sourceProduct[mapping.brand.slice(1, -1)] : mapping.brand,
+  };
+}
 
 function AdminSupplierManagement() {
   const [suppliers, setSuppliers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [currentSupplier, setCurrentSupplier] = useState(initialSupplierState);
+  const [sampleData, setSampleData] = useState('');
+  const [previewResult, setPreviewResult] = useState(null);
 
   const fetchSuppliers = async () => {
     setLoading(true);
@@ -32,11 +80,12 @@ function AdminSupplierManagement() {
 
   const handleAddNew = () => {
     setCurrentSupplier(initialSupplierState);
+    setSampleData('');
+    setPreviewResult(null);
     setIsEditing(true);
   };
 
   const handleEdit = (supplier) => {
-    // Säkerställ att fälten är i rätt format när vi börjar redigera
     const supplierToEdit = {
       ...initialSupplierState,
       ...supplier,
@@ -44,6 +93,8 @@ function AdminSupplierManagement() {
       pricingTiers: supplier.pricingTiers && supplier.pricingTiers.length > 0 ? supplier.pricingTiers : [{ priceFrom: 0, priceTo: 1000, margin: 1.5 }],
     };
     setCurrentSupplier(supplierToEdit);
+    setSampleData('');
+    setPreviewResult(null);
     setIsEditing(true);
   };
   
@@ -113,6 +164,27 @@ function AdminSupplierManagement() {
     const newTiers = currentSupplier.pricingTiers.filter((_, i) => i !== index);
     setCurrentSupplier(prev => ({ ...prev, pricingTiers: newTiers }));
   };
+  
+  const handleGeneratePreview = () => {
+    if (!sampleData) {
+      alert("Klistra in exempeldata först.");
+      return;
+    }
+    try {
+      let sourceProduct;
+      if (currentSupplier.sourceType === 'xml') {
+        const parser = new XMLParser({ ignoreAttributes: false, htmlEntities: true });
+        sourceProduct = parser.parse(`<root>${sampleData}</root>`).root.p;
+      } else {
+        sourceProduct = JSON.parse(sampleData);
+      }
+      const result = transformProductForPreview(sourceProduct, currentSupplier.fieldMapping, currentSupplier);
+      setPreviewResult(result);
+    } catch(error) {
+      alert("Kunde inte tolka exempeldatan. Kontrollera att den är korrekt formaterad (giltig XML eller JSON).");
+      console.error("Preview failed:", error);
+    }
+  };
 
   if (loading) return <p>Laddar leverantörer...</p>;
   
@@ -151,8 +223,8 @@ function AdminSupplierManagement() {
             <legend className="text-lg font-semibold px-2">Mappning & Transformation</legend>
             <div className="space-y-2">
               <input type="text" name="sku" placeholder="SKU / Artikelnummer" value={currentSupplier.fieldMapping.sku} onChange={handleMappingChange} className="w-full px-3 py-2 border rounded-md"/>
-              <input type="text" name="title" placeholder="Titel-mall, t.ex. {make} {model}" value={currentSupplier.fieldMapping.title} onChange={handleMappingChange} className="w-full px-3 py-2 border rounded-md"/>
-              <textarea name="description" placeholder="Beskrivnings-mall..." value={currentSupplier.fieldMapping.description} onChange={handleMappingChange} className="w-full px-3 py-2 border rounded-md"/>
+              <input type="text" name="title" placeholder="Titel-mall, t.ex. {name}" value={currentSupplier.fieldMapping.title} onChange={handleMappingChange} className="w-full px-3 py-2 border rounded-md"/>
+              <textarea name="description" placeholder="Beskrivnings-mall..." value={currentSupplier.fieldMapping.description} onChange={handleMappingChange} className="w-full px-3 py-2 border rounded-md h-24"/>
               <input type="text" name="price" placeholder="Pris-kolumn" value={currentSupplier.fieldMapping.price} onChange={handleMappingChange} className="w-full px-3 py-2 border rounded-md"/>
               <input type="text" name="brand" placeholder="Märke (fast värde eller {kolumn})" value={currentSupplier.fieldMapping.brand} onChange={handleMappingChange} className="w-full px-3 py-2 border rounded-md"/>
             </div>
@@ -167,6 +239,41 @@ function AdminSupplierManagement() {
               onChange={handleKeywordsChange}
               className="w-full px-3 py-2 border rounded-md"
             />
+          </fieldset>
+          
+          <fieldset className="border p-4 rounded-md border-blue-300">
+            <legend className="text-lg font-semibold px-2 text-blue-800">Testa din mappning</legend>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Klistra in exempeldata för en produkt här
+              </label>
+              <textarea
+                value={sampleData}
+                onChange={e => setSampleData(e.target.value)}
+                placeholder="För XML, klistra in hela <p>...</p> blocket. För XLSX, en JSON-rad."
+                className="w-full h-32 p-2 border rounded-md font-mono text-xs"
+              />
+              <button
+                type="button"
+                onClick={handleGeneratePreview}
+                className="mt-2 px-4 py-2 bg-blue-600 text-white font-semibold rounded-md"
+              >
+                Generera förhandsgranskning
+              </button>
+            </div>
+            {previewResult && (
+              <div className="mt-4 p-4 bg-gray-50 rounded-md border">
+                <h4 className="font-bold mb-2">Resultat:</h4>
+                <p><strong>Titel:</strong> {previewResult.title}</p>
+                <p><strong>SKU:</strong> {previewResult.sku}</p>
+                <p><strong>Märke:</strong> {previewResult.brand}</p>
+                <p><strong>Slutpris (SEK):</strong> {previewResult.price}</p>
+                <div className="mt-2">
+                  <strong className="block">Beskrivning (HTML):</strong>
+                  <div className="p-2 border rounded-md bg-white max-h-48 overflow-y-auto" dangerouslySetInnerHTML={{ __html: previewResult.description }} />
+                </div>
+              </div>
+            )}
           </fieldset>
 
           <div className="flex justify-end gap-4">
