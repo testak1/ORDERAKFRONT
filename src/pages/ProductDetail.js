@@ -76,7 +76,7 @@ function ProductDetail() {
         <div className="md:w-1/2 p-4">
           <div className="mb-4 bg-gray-200 rounded-lg overflow-hidden">
             <img
-              src={activeImageUrl || "https://placehold.co/600x450?text=BILD%20SAKNAS"}
+              src={activeImageUrl || "https://placehold.co/400x300?text=BILD%20SAKNAS"}
               alt={product.title}
               className="w-full h-96 object-cover"
             />
