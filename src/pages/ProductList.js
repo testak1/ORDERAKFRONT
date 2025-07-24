@@ -115,28 +115,36 @@ function ProductList() {
       params.brand = selectedBrand;
     }
     
-    // MODIFIERAD FILTRERING - VISAR PRODUKTER REDAN VID VAL AV BILMÄRKE
+    // FILTRERING FÖR BILMÄRKE
     if (selectedMake) {
-      // Alternativ 1: Direkt sökning på make-namn i produktens titel/beskrivning (snabbare)
-      conditions.push(`(title match $makeName + "*" || description match $makeName + "*")`);
-      params.makeName = makes.find(m => m._id === selectedMake)?.name || "";
+      const makeName = makes.find(m => m._id === selectedMake)?.name || "";
       
-      // ELLER Alternativ 2: Fortsätt med din befintliga vehicleFitment-approach
-      // const versionIds = await client.fetch(
-      //   `*[_type == "vehicleVersion" && model->make._ref == $makeId]._id`,
-      //   { makeId: selectedMake }
-      // );
-      // if (versionIds.length > 0) {
-      //   conditions.push(`vehicleFitment[]._ref in $versionIds`);
-      //   params.versionIds = versionIds;
-      // }
+      // Snabb sökning på make-namn i titel/beskrivning
+      conditions.push(`(title match $makeName + "*" || description match $makeName + "*")`);
+      params.makeName = makeName;
+      
+      // Exakt matchning via vehicleFitment om ingen modell/version är vald
+      if (!selectedModel && !selectedVersion) {
+        const versionIds = await client.fetch(
+          `*[_type == "vehicleVersion" && model->make._ref == $makeId]._id`,
+          { makeId: selectedMake }
+        );
+        if (versionIds.length > 0) {
+          conditions.push(`vehicleFitment[]._ref in $versionIds`);
+          params.versionIds = versionIds;
+        }
+      }
     }
     
-    // Ytterligare filtrering om modell/version är vald
-    if (selectedVersion) {
-      conditions.push(`$versionId in vehicleFitment[]._ref`);
-      params.versionId = selectedVersion;
-    } else if (selectedModel) {
+    // FILTRERING FÖR BIMMODELL
+    if (selectedModel && !selectedVersion) {
+      const modelName = models.find(m => m._id === selectedModel)?.name || "";
+      
+      // Snabb sökning på modellnamn i titel/beskrivning
+      conditions.push(`(title match $modelName + "*" || description match $modelName + "*")`);
+      params.modelName = modelName;
+      
+      // Exakt matchning via vehicleFitment
       const versionIds = await client.fetch(
         `*[_type == "vehicleVersion" && model._ref == $modelId]._id`,
         { modelId: selectedModel }
@@ -147,18 +155,43 @@ function ProductList() {
       }
     }
     
+    // EXAKT FILTRERING FÖR VERSION
+    if (selectedVersion) {
+      conditions.push(`$versionId in vehicleFitment[]._ref`);
+      params.versionId = selectedVersion;
+    }
+    
     const query = `*[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {
       _id, 
       title, 
       sku, 
       price, 
-      "imageUrl": mainImage.asset->url
+      "imageUrl": mainImage.asset->url,
+      "vehicleMakes": vehicleFitment[]->model->make->name,
+      "vehicleModels": vehicleFitment[]->model->name
     }`;
       
     const data = await client.fetch(query, params);
     
-    setProducts(prev => isNewSearch ? data : [...prev, ...data]);
-    setHasMore(data.length === PRODUCTS_PER_PAGE);
+    // Ytterligare filtrering på klienten för att säkerställa relevans
+    const filteredData = data.filter(product => {
+      if (selectedVersion) return true; // Redan exakt matchat
+      
+      if (selectedModel) {
+        const modelName = models.find(m => m._id === selectedModel)?.name;
+        return product.vehicleModels?.includes(modelName);
+      }
+      
+      if (selectedMake) {
+        const makeName = makes.find(m => m._id === selectedMake)?.name;
+        return product.vehicleMakes?.includes(makeName);
+      }
+      
+      return true;
+    });
+    
+    setProducts(prev => isNewSearch ? filteredData : [...prev, ...filteredData]);
+    setHasMore(filteredData.length === PRODUCTS_PER_PAGE);
 
   } catch (err) {
     setError(t("productList.loadError"));
@@ -166,7 +199,7 @@ function ProductList() {
   } finally {
     setLoading(false);
   }
-}, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, t, makes]);
+}, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, t, makes, models]);
 
   // Effekt för att hantera nya sökningar/filtreringar
   useEffect(() => {
