@@ -15,24 +15,27 @@ function ProductList() {
   const { addToCart } = useCart();
   const { user } = useAuth();
 
+  // State för filter och paginering
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
-
-  // --- Filter States ---
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("_createdAt desc");
+  
+  // Fordonsfilter
   const [makes, setMakes] = useState([]);
   const [models, setModels] = useState([]);
   const [versions, setVersions] = useState([]);
   const [selectedMake, setSelectedMake] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedVersion, setSelectedVersion] = useState("");
+
+  // Tillverkar-filter
   const [brands, setBrands] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState("");
 
   const isInitialMount = useRef(true);
 
-  // --- Hämta data för dropdowns (endast en gång) ---
+  // Hämta data för dropdown-menyer (endast en gång)
   useEffect(() => {
     const fetchFilterData = async () => {
       try {
@@ -51,54 +54,51 @@ function ProductList() {
     fetchFilterData();
   }, []);
 
-  // --- Hantera ändringar i dropdowns ---
-  const handleMakeChange = (e) => {
-    setSelectedMake(e.target.value);
-    setSelectedModel('');
-    setSelectedVersion('');
+  // Hämta modeller när ett märke väljs
+  useEffect(() => {
     setModels([]);
     setVersions([]);
-  };
-
-  const handleModelChange = (e) => {
-    setSelectedModel(e.target.value);
-    setSelectedVersion('');
-    setVersions([]);
-  };
-
-  // --- Hämta underkategorier (modeller/versioner) ---
-  useEffect(() => {
+    setSelectedModel("");
+    setSelectedVersion("");
     if (!selectedMake) return;
+    
     const fetchModels = async () => {
       try {
         const query = `*[_type == "vehicleModel" && make._ref == $makeId] | order(name asc)`;
         const result = await client.fetch(query, { makeId: selectedMake });
         setModels(result);
       } catch (err) {
-        console.error("Failed to fetch versions:", err);
+        console.error("Failed to fetch vehicle models:", err);
       }
     };
     fetchModels();
-  }, [selectedVersion]);
+  }, [selectedMake]);
 
+  // Hämta versioner när en modell väljs
   useEffect(() => {
+    setVersions([]);
+    setSelectedVersion("");
     if (!selectedModel) return;
+
     const fetchVersions = async () => {
       try {
         const query = `*[_type == "vehicleVersion" && model._ref == $modelId] | order(name asc)`;
         const result = await client.fetch(query, { modelId: selectedModel });
         setVersions(result);
       } catch (err) {
-        console.error("Failed to fetch versions:", err);
+        console.error("Failed to fetch vehicle versions:", err);
       }
     };
     fetchVersions();
   }, [selectedModel]);
-  
-  // --- HUVUDFUNKTION FÖR ATT HÄMTA PRODUKTER ---
+
   const fetchProducts = useCallback(async (currentPage, isNewSearch) => {
+    if (isNewSearch) {
+      setProducts([]);
+    }
     setLoading(true);
     setError(null);
+    
     try {
       const start = currentPage * PRODUCTS_PER_PAGE;
       const end = start + PRODUCTS_PER_PAGE;
@@ -106,8 +106,14 @@ function ProductList() {
       const conditions = [`!defined(isArchived) || isArchived == false`];
       const params = {};
 
-      if (searchTerm) { conditions.push(`(title match $searchTerm + "*" || sku match $searchTerm + "*")`); params.searchTerm = searchTerm; }
-      if (selectedBrand) { conditions.push(`brand == $brand`); params.brand = selectedBrand; }
+      if (searchTerm) {
+        conditions.push(`(title match $searchTerm + "*" || sku match $searchTerm + "*")`);
+        params.searchTerm = searchTerm;
+      }
+      if (selectedBrand) {
+        conditions.push(`brand == $brand`);
+        params.brand = selectedBrand;
+      }
       
       if (selectedVersion) {
         conditions.push(`$versionId in vehicleFitment[]._ref`);
@@ -121,7 +127,7 @@ function ProductList() {
       }
       
       const query = `*[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {_id, title, sku, price, "imageUrl": mainImage.asset->url}`;
-      
+        
       const data = await client.fetch(query, params);
       
       setProducts(prev => isNewSearch ? data : [...prev, ...data]);
@@ -132,8 +138,8 @@ function ProductList() {
     } finally {
       setLoading(false);
     }
-  }, [t]);
-
+  }, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, t]);
+  
   // Effekt för att hantera nya sökningar/filtreringar
   useEffect(() => {
     if (isInitialMount.current) {
@@ -151,7 +157,7 @@ function ProductList() {
         fetchProducts(page, false);
     }
   }, [page, fetchProducts]);
-  
+
 
   const getDisplayPrice = (productPrice) => {
     if (user && user.discountPercentage > 0) {
@@ -181,7 +187,7 @@ function ProductList() {
           {/* Bilmärke */}
           <div>
             <label htmlFor="make" className="block text-sm font-medium text-gray-700">Välj bilmärke</label>
-            <select id="make" value={selectedMake} onChange={handleMakeChange} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
+            <select id="make" value={selectedMake} onChange={(e) => setSelectedMake(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
               <option value="">Alla bilmärken</option>
               {makes.map(make => <option key={make._id} value={make._id}>{make.name}</option>)}
             </select>
@@ -189,7 +195,7 @@ function ProductList() {
           {/* Bilmodell */}
           <div>
             <label htmlFor="model" className="block text-sm font-medium text-gray-700">Välj modell</label>
-            <select id="model" value={selectedModel} onChange={handleModelChange} disabled={!selectedMake} className="mt-1 w-full px-4 py-2 border rounded-md bg-white disabled:bg-gray-200">
+            <select id="model" value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} disabled={!selectedMake} className="mt-1 w-full px-4 py-2 border rounded-md bg-white disabled:bg-gray-200">
               <option value="">Alla modeller</option>
               {models.map(model => <option key={model._id} value={model._id}>{model.name}</option>)}
             </select>
