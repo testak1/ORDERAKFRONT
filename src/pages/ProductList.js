@@ -35,13 +35,10 @@ function ProductList() {
   useEffect(() => {
     const fetchFilterData = async () => {
       try {
-        // Hämta alla produkters titlar
-        const titlesQuery = `*[_type == "product" && defined(title)].title`;
-        const titles = await client.fetch(titlesQuery);
-        
-        // Extrahera bilmärken (första ordet i titeln)
-        const makes = titles.map(title => title.split(' ')[0]);
-        setMakes([...new Set(makes)].sort());
+        // Hämta bilmärken från vehicleMake
+        const makesQuery = `*[_type == "vehicleMake"] | order(name asc)`;
+        const makesResult = await client.fetch(makesQuery);
+        setMakes(makesResult);
 
         // Hämta alla unika produkttillverkare (brand)
         const brandsQuery = `*[_type == "product" && defined(brand)].brand`;
@@ -65,17 +62,9 @@ function ProductList() {
 
     const fetchModels = async () => {
       try {
-        // Hämta alla produkters titlar för valt bilmärke
-        const titlesQuery = `*[_type == "product" && title match $make + "*"].title`;
-        const titles = await client.fetch(titlesQuery, { make: selectedMake + " " });
-        
-        // Extrahera modeller (första två orden i titeln)
-        const models = titles.map(title => {
-          const parts = title.split(' ');
-          return parts.length > 1 ? `${parts[0]} ${parts[1]}` : parts[0];
-        });
-        
-        setModels([...new Set(models)].sort());
+        const query = `*[_type == "vehicleModel" && make._ref == $makeId] | order(name asc)`;
+        const result = await client.fetch(query, { makeId: selectedMake });
+        setModels(result);
       } catch (err) {
         console.error("Failed to fetch vehicle models:", err);
       }
@@ -98,15 +87,15 @@ function ProductList() {
         params.searchTerm = searchTerm;
       }
       
-      // Filtrera baserat på vald modell (t.ex. "Audi A5")
+      // Filtrera baserat på vald modell
       if (selectedModel) {
-        conditions.push(`title match $model + "*"`);
-        params.model = selectedModel;
+        conditions.push(`_id in *[_type == "product" && references(*[_type=="vehicleVersion" && references($modelId)]._id)]._id`);
+        params.modelId = selectedModel;
       } 
-      // Filtrera baserat på valt bilmärke (t.ex. "Audi")
+      // Filtrera baserat på valt bilmärke
       else if (selectedMake) {
-        conditions.push(`title match $make + "*"`);
-        params.make = selectedMake + " ";
+        conditions.push(`_id in *[_type == "product" && references(*[_type=="vehicleModel" && references($makeId)]._id)]._id`);
+        params.makeId = selectedMake;
       }
 
       // Filter för tillverkare
@@ -117,7 +106,11 @@ function ProductList() {
       
       const query = `
         *[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {
-          _id, title, sku, price, "imageUrl": mainImage.asset->url
+          _id, title, sku, price, "imageUrl": mainImage.asset->url,
+          "vehicleFitments": vehicleFitment[]->{
+            "model": model->{name, "make": make->name},
+            name
+          }
         }`;
         
       const data = await client.fetch(query, params);
@@ -149,6 +142,29 @@ function ProductList() {
       return { original: Math.round(productPrice), discounted: Math.round(discountedPrice) };
     }
     return { original: Math.round(productPrice) };
+  };
+
+  // Hjälpfunktion för att visa fordon som produkten passar
+  const renderVehicleFitments = (fitments) => {
+    if (!fitments || fitments.length === 0) return null;
+    
+    // Gruppera efter modell
+    const byModel = fitments.reduce((acc, fitment) => {
+      const key = `${fitment.model.make} ${fitment.model.name}`;
+      if (!acc[key]) acc[key] = [];
+      acc[key].push(fitment.name);
+      return acc;
+    }, {});
+
+    return (
+      <div className="mt-2 text-xs text-gray-500">
+        {Object.entries(byModel).map(([model, versions]) => (
+          <div key={model}>
+            <strong>{model}:</strong> {versions.join(', ')}
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return (
@@ -192,7 +208,7 @@ function ProductList() {
               className="mt-1 w-full px-4 py-2 border rounded-md bg-white"
             >
               <option value="">Alla bilmärken</option>
-              {makes.map((make, index) => <option key={index} value={make}>{make}</option>)}
+              {makes.map(make => <option key={make._id} value={make._id}>{make.name}</option>)}
             </select>
           </div>
 
@@ -207,9 +223,7 @@ function ProductList() {
               className="mt-1 w-full px-4 py-2 border rounded-md bg-white disabled:bg-gray-200"
             >
               <option value="">Alla modeller</option>
-              {models.map((model, index) => (
-                <option key={index} value={model}>{model.replace(selectedMake + " ", "")}</option>
-              ))}
+              {models.map(model => <option key={model._id} value={model._id}>{model.name}</option>)}
             </select>
           </div>
 
@@ -259,6 +273,7 @@ function ProductList() {
                     <div className="p-4 flex flex-col flex-grow">
                       <h2 className="text-xl font-semibold text-gray-900 flex-grow">{product.title}</h2>
                       <p className="text-xs text-gray-500 mt-2">{t("common.skuLabel", { sku: product.sku })}</p>
+                      {renderVehicleFitments(product.vehicleFitments)}
                       <div className="mt-2">
                         {displayPrice.discounted ? (
                           <div>
