@@ -35,7 +35,7 @@ function ProductList() {
   useEffect(() => {
     const fetchFilterData = async () => {
       try {
-        // Hämta bilmärken från vehicleMake
+        // Hämta bilmärken
         const makesQuery = `*[_type == "vehicleMake"] | order(name asc)`;
         const makesResult = await client.fetch(makesQuery);
         setMakes(makesResult);
@@ -72,7 +72,7 @@ function ProductList() {
     fetchModels();
   }, [selectedMake]);
 
-    const fetchProducts = useCallback(async () => {
+  const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -87,18 +87,15 @@ function ProductList() {
         params.searchTerm = searchTerm;
       }
       
-      // Filtrera baserat på vald modell
       if (selectedModel) {
         conditions.push(`_id in *[_type == "product" && references(*[_type=="vehicleVersion" && references($modelId)]._id)]._id`);
         params.modelId = selectedModel;
       } 
-      // Filtrera baserat på valt bilmärke (ändrat från else if till if)
-      if (selectedMake) {
+      else if (selectedMake) {
         conditions.push(`_id in *[_type == "product" && references(*[_type=="vehicleVersion" && references(*[_type=="vehicleModel" && references($makeId)]._id)]._id)]._id`);
         params.makeId = selectedMake;
       }
 
-      // Filter för tillverkare
       if (selectedBrand) {
         conditions.push(`brand == $brand`);
         params.brand = selectedBrand;
@@ -106,11 +103,7 @@ function ProductList() {
       
       const query = `
         *[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {
-          _id, title, sku, price, "imageUrl": mainImage.asset->url,
-          "vehicleFitments": vehicleFitment[]->{
-            "model": model->{name, "make": make->name},
-            name
-          }
+          _id, title, sku, price, "imageUrl": mainImage.asset->url
         }`;
         
       const data = await client.fetch(query, params);
@@ -143,31 +136,6 @@ function ProductList() {
     }
     return { original: Math.round(productPrice) };
   };
-
-/*
-  // Hjälpfunktion för att visa fordon som produkten passar
-  const renderVehicleFitments = (fitments) => {
-    if (!fitments || fitments.length === 0) return null;
-    
-    // Gruppera efter modell
-    const byModel = fitments.reduce((acc, fitment) => {
-      const key = `${fitment.model.make} ${fitment.model.name}`;
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(fitment.name);
-      return acc;
-    }, {});
-
-    return (
-      <div className="mt-2 text-xs text-gray-500">
-        {Object.entries(byModel).map(([model, versions]) => (
-          <div key={model}>
-            <strong>{model}:</strong> {versions.join(', ')}
-          </div>
-        ))}
-      </div>
-    );
-  };
-  */
 
   return (
     <div className="p-4">
@@ -275,7 +243,6 @@ function ProductList() {
                     <div className="p-4 flex flex-col flex-grow">
                       <h2 className="text-xl font-semibold text-gray-900 flex-grow">{product.title}</h2>
                       <p className="text-xs text-gray-500 mt-2">{t("common.skuLabel", { sku: product.sku })}</p>
-                      {renderVehicleFitments(product.vehicleFitments)}
                       <div className="mt-2">
                         {displayPrice.discounted ? (
                           <div>
