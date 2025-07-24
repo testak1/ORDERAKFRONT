@@ -93,54 +93,84 @@ function ProductList() {
   }, [selectedModel]);
 
   const fetchProducts = useCallback(async (currentPage, isNewSearch) => {
-    if (isNewSearch) {
-      setProducts([]); // Rensa produkter direkt vid ny sökning
-    }
-    setLoading(true);
-    setError(null);
+  if (isNewSearch) {
+    setProducts([]);
+  }
+  setLoading(true);
+  setError(null);
+  
+  try {
+    const start = currentPage * PRODUCTS_PER_PAGE;
+    const end = start + PRODUCTS_PER_PAGE;
     
-    try {
-      const start = currentPage * PRODUCTS_PER_PAGE;
-      const end = start + PRODUCTS_PER_PAGE;
-      
-      const conditions = [`!defined(isArchived) || isArchived == false`];
-      const params = {};
+    const conditions = [`!defined(isArchived) || isArchived == false`];
+    const params = {};
 
-      if (searchTerm) {
-        conditions.push(`(title match $searchTerm + "*" || sku match $searchTerm + "*")`);
-        params.searchTerm = searchTerm;
-      }
-      if (selectedBrand) {
-        conditions.push(`brand == $brand`);
-        params.brand = selectedBrand;
-      }
-      
-      // OPTIMERAD HIERARKISK FILTRERING
-      if (selectedVersion) {
-        conditions.push(`$versionId in vehicleFitment[]._ref`);
-        params.versionId = selectedVersion;
-      } else if (selectedModel) {
-        conditions.push(`vehicleFitment[]._ref in *[_type=="vehicleVersion" && model._ref == $modelId]._id`);
-        params.modelId = selectedModel;
-      } else if (selectedMake) {
-        conditions.push(`vehicleFitment[]._ref in *[_type=="vehicleVersion" && model->make._ref == $makeId]._id`);
-        params.makeId = selectedMake;
-      }
-      
-      const query = `*[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {_id, title, sku, price, "imageUrl": mainImage.asset->url}`;
-        
-      const data = await client.fetch(query, params);
-      
-      setProducts(prev => isNewSearch ? data : [...prev, ...data]);
-      setHasMore(data.length === PRODUCTS_PER_PAGE);
-
-    } catch (err) {
-      setError(t("productList.loadError"));
-      console.error(err);
-    } finally {
-      setLoading(false);
+    if (searchTerm) {
+      conditions.push(`(title match $searchTerm + "*" || sku match $searchTerm + "*")`);
+      params.searchTerm = searchTerm;
     }
-  }, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, t]);
+    if (selectedBrand) {
+      conditions.push(`brand == $brand`);
+      params.brand = selectedBrand;
+    }
+    
+    // OPTIMERAD HIERARKISK FILTRERING
+    if (selectedVersion) {
+      conditions.push(`$versionId in vehicleFitment[]._ref`);
+      params.versionId = selectedVersion;
+    } else if (selectedModel) {
+      // Först hämta alla versioner för denna modell
+      const versionIds = await client.fetch(
+        `*[_type == "vehicleVersion" && model._ref == $modelId]._id`,
+        { modelId: selectedModel }
+      );
+      if (versionIds.length > 0) {
+        conditions.push(`vehicleFitment[]._ref in $versionIds`);
+        params.versionIds = versionIds;
+      } else {
+        // Om inga versioner finns, returnera inga produkter
+        setProducts([]);
+        setHasMore(false);
+        return;
+      }
+    } else if (selectedMake) {
+      // Först hämta alla versioner för detta märke
+      const versionIds = await client.fetch(
+        `*[_type == "vehicleVersion" && model->make._ref == $makeId]._id`,
+        { makeId: selectedMake }
+      );
+      if (versionIds.length > 0) {
+        conditions.push(`vehicleFitment[]._ref in $versionIds`);
+        params.versionIds = versionIds;
+      } else {
+        // Om inga versioner finns, returnera inga produkter
+        setProducts([]);
+        setHasMore(false);
+        return;
+      }
+    }
+    
+    const query = `*[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {
+      _id, 
+      title, 
+      sku, 
+      price, 
+      "imageUrl": mainImage.asset->url
+    }`;
+      
+    const data = await client.fetch(query, params);
+    
+    setProducts(prev => isNewSearch ? data : [...prev, ...data]);
+    setHasMore(data.length === PRODUCTS_PER_PAGE);
+
+  } catch (err) {
+    setError(t("productList.loadError"));
+    console.error("Fetch error:", err);
+  } finally {
+    setLoading(false);
+  }
+}, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, t]);
 
   // Effekt för att hantera nya sökningar/filtreringar
   useEffect(() => {
