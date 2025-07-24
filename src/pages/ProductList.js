@@ -1,8 +1,9 @@
+// ORDERAKFRONT/src/pages/ProductList.js
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { client } from "../sanityClient";
-import { useCart } from "../context/CartContext";
-import { useAuth } from "../context/AuthContext";
+import { useCart } from "../context/CartContext"; // Används för applyDiscount
+import { useAuth } from "../context/AuthContext"; // Används för att få användaren till applyDiscount
 import { useTranslation } from "react-i18next";
 
 const PRODUCTS_PER_PAGE = 20;
@@ -13,72 +14,67 @@ function ProductList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const { addToCart } = useCart();
-  const { user } = useAuth();
+  const { user } = useAuth(); // Hämta användaren
+  const { applyDiscount } = useCart(); // Hämta applyDiscount från CartContext
 
   // --- STATE ---
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("_createdAt desc");
-  
-  // Fordonsfilter
-  const [makes, setMakes] = useState([]);
-  const [models, setModels] = useState([]);
-  const [selectedMake, setSelectedMake] = useState("");
-  const [selectedModel, setSelectedModel] = useState("");
 
-  // NYTT: State för tillverkar-filter
+  // Fordonsfilter
+  const [allMakes, setAllMakes] = useState([]); // Alla märken från Sanity
+  const [allModels, setAllModels] = useState([]); // Alla modeller från Sanity
+  const [allVersions, setAllVersions] = useState([]); // Alla versioner från Sanity
+
+  const [selectedMakeId, setSelectedMakeId] = useState(""); // Vald Märke-ID
+  const [selectedModelId, setSelectedModelId] = useState(""); // Vald Modell-ID
+  const [selectedVersionId, setSelectedVersionId] = useState(""); // Vald Version-ID
+
+  const [availableModelsForSelect, setAvailableModelsForSelect] = useState([]); // Modeller att visa i dropdown för vald märke
+  const [availableVersionsForSelect, setAvailableVersionsForSelect] = useState([]); // Versioner att visa i dropdown för vald modell
+
+  // Tillverkare-filter (produktens 'brand' fält)
   const [brands, setBrands] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState("");
 
-  // Hämta listor för filter-menyerna
+  // Hämta alla filterdata (märken, modeller, versioner, tillverkare) vid laddning
   useEffect(() => {
     const fetchFilterData = async () => {
       try {
-        // Hämta bilmärken
-        const makesQuery = `*[_type == "vehicleMake"] | order(name asc)`;
-        const makesResult = await client.fetch(makesQuery);
-        setMakes(makesResult);
+        const makesResult = await client.fetch(`*[_type == "vehicleMake"] | order(name asc) {_id, name}`);
+        const modelsResult = await client.fetch(`*[_type == "vehicleModel"] | order(name asc) {_id, name, "makeRef": make._ref}`);
+        const versionsResult = await client.fetch(`*[_type == "vehicleVersion"] | order(name asc) {_id, name, "modelRef": model._ref}`);
 
-        // NYTT: Hämta alla unika produkttillverkare (brand)
+        setAllMakes(makesResult);
+        setAllModels(modelsResult);
+        setAllVersions(versionsResult);
+
+        // Sätt initiala tillgängliga modeller/versioner till alla
+        setAvailableModelsForSelect(modelsResult);
+        setAvailableVersionsForSelect(versionsResult);
+
+        // Hämta alla unika produkttillverkare (brand)
         const brandsQuery = `*[_type == "product" && defined(brand)].brand`;
         const brandsResult = await client.fetch(brandsQuery);
-        setBrands([...new Set(brandsResult)].sort());
-
+        setBrands([...new Set(brandsResult)].filter(Boolean).sort()); // Unika, icke-tomma, sorterade
       } catch (err) {
         console.error("Failed to fetch filter data:", err);
+        setError(t("productList.loadError"));
       }
     };
     fetchFilterData();
-  }, []);
+  }, [t]);
 
-  // Hämta modeller baserat på valt bilmärke
-  useEffect(() => {
-    if (!selectedMake) {
-      setModels([]);
-      setSelectedModel("");
-      return;
-    }
-    const fetchModels = async () => {
-      try {
-        const query = `*[_type == "vehicleModel" && make._ref == $makeId] | order(name asc)`;
-        const result = await client.fetch(query, { makeId: selectedMake });
-        setModels(result);
-      } catch (err) {
-        console.error("Failed to fetch vehicle models:", err);
-      }
-    };
-    fetchModels();
-  }, [selectedMake]);
-
-
+  // Funktion för att hämta produkter baserat på filter
   const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const start = page * PRODUCTS_PER_PAGE;
       const end = start + PRODUCTS_PER_PAGE;
-      
+
       const conditions = [`!defined(isArchived) || isArchived == false`];
       const params = {};
 
@@ -86,26 +82,40 @@ function ProductList() {
         conditions.push(`(title match $searchTerm + "*" || sku match $searchTerm + "*")`);
         params.searchTerm = searchTerm;
       }
-      
-      if (selectedModel) {
-        conditions.push(`_id in *[_type == "product" && references(*[_type=="vehicleVersion" && references($modelId)]._id)]._id`);
-        params.modelId = selectedModel;
-      } else if (selectedMake) {
-        conditions.push(`_id in *[_type == "product" && references(*[_type=="vehicleModel" && references($makeId)]._id)]._id`);
-        params.makeId = selectedMake;
+
+      if (selectedBrand) {
+        conditions.push(`brand == $selectedBrand`);
+        params.selectedBrand = selectedBrand;
       }
 
-      // NYTT: Lägg till filtervillkor för tillverkare
-      if (selectedBrand) {
-        conditions.push(`brand == $brand`);
-        params.brand = selectedBrand;
+      // Filter baserat på vehicleFitment (ID-baserade referenser)
+      let currentFitmentFilter = '';
+      if (selectedMakeId || selectedModelId || selectedVersionId) {
+        currentFitmentFilter = `&& defined(vehicleFitment)`; // Se till att fältet finns
+
+        if (selectedMakeId) {
+          currentFitmentFilter += ` && $selectedMakeId in vehicleFitment[]->model->make._ref`;
+          params.selectedMakeId = selectedMakeId;
+        }
+        if (selectedModelId) {
+          currentFitmentFilter += ` && $selectedModelId in vehicleFitment[]->model._ref`;
+          params.selectedModelId = selectedModelId;
+        }
+        if (selectedVersionId) {
+          currentFitmentFilter += ` && $selectedVersionId in vehicleFitment[]._ref`;
+          params.selectedVersionId = selectedVersionId;
+        }
+        conditions.push(currentFitmentFilter.substring(3)); // Lägg till utan första ' && '
       }
-      
+
+
       const query = `
         *[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {
-          _id, title, sku, price, "imageUrl": mainImage.asset->url
+          _id, title, sku, price, brand, // Hämta även brand här för rabattberäkning
+          "imageUrl": galleryImages[0].asset->url, // Första bilden från galleryImages
+          vehicleFitment[]->{_id, name, model->{_id, name, make->{_id, name}}} // Hämta passningsdetaljer för visning
         }`;
-        
+
       const data = await client.fetch(query, params);
       setProducts(data);
       setHasMore(data.length === PRODUCTS_PER_PAGE);
@@ -116,76 +126,152 @@ function ProductList() {
     } finally {
       setLoading(false);
     }
-  }, [page, searchTerm, sortBy, selectedMake, selectedModel, selectedBrand, t]);
+  }, [page, searchTerm, sortBy, selectedMakeId, selectedModelId, selectedVersionId, selectedBrand, t]);
 
+  // Hämta produkter när filter eller sökterm ändras
   useEffect(() => {
     const handler = setTimeout(() => {
       fetchProducts();
-    }, 300);
+    }, 300); // Debounce för sökfält
     return () => clearTimeout(handler);
-  }, [fetchProducts]);
+  }, [fetchProducts, searchTerm]); // Kör även när searchTerm ändras direkt
 
   useEffect(() => {
+    // Återställ sidnummer vid filterändringar
     setPage(0);
-  }, [searchTerm, sortBy, selectedMake, selectedModel, selectedBrand]);
+  }, [searchTerm, sortBy, selectedMakeId, selectedModelId, selectedVersionId, selectedBrand]);
 
-  const getDisplayPrice = (productPrice) => {
-    if (user && user.discountPercentage > 0) {
-      const discountedPrice = productPrice * (1 - user.discountPercentage / 100);
-      return { original: Math.round(productPrice), discounted: Math.round(discountedPrice) };
+
+  // --- Handlers för Fordonsfilter ---
+  const handleMakeChange = (e) => {
+    const makeId = e.target.value;
+    setSelectedMakeId(makeId);
+    setSelectedModelId(""); // Återställ modell och version vid märkesbyte
+    setSelectedVersionId("");
+
+    if (makeId) {
+      const modelsForSelectedMake = allModels.filter(model => model.makeRef === makeId);
+      setAvailableModelsForSelect(modelsForSelectedMake);
+      setAvailableVersionsForSelect([]); // Töm versioner tills modell väljs
+    } else {
+      // Om "Alla bilmärken" väljs, visa alla modeller och versioner igen
+      setAvailableModelsForSelect(allModels);
+      setAvailableVersionsForSelect(allVersions);
+    }
+  };
+
+  const handleModelChange = (e) => {
+    const modelId = e.target.value;
+    setSelectedModelId(modelId);
+    setSelectedVersionId(""); // Återställ version vid modellbyte
+
+    if (modelId) {
+      const versionsForSelectedModel = allVersions.filter(version => version.modelRef === modelId);
+      setAvailableVersionsForSelect(versionsForSelectedModel);
+    } else {
+      // Om "Alla modeller" väljs (inom ett märke), visa alla versioner för det märket
+      // Eller alla versioner om inget märke är valt
+      if (selectedMakeId) {
+        const modelsOfMake = allModels.filter(model => model.makeRef === selectedMakeId);
+        const versionIdsForMake = allVersions.filter(version => modelsOfMake.some(m => m._id === version.modelRef));
+        setAvailableVersionsForSelect(versionIdsForMake);
+      } else {
+        setAvailableVersionsForSelect(allVersions);
+      }
+    }
+  };
+
+  const handleVersionChange = (e) => {
+    setSelectedVersionId(e.target.value);
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setSelectedBrand("");
+    setSelectedMakeId("");
+    setSelectedModelId("");
+    setSelectedVersionId("");
+    setAvailableModelsForSelect(allModels); // Återställ till alla modeller
+    setAvailableVersionsForSelect(allVersions); // Återställ till alla versioner
+  };
+
+
+  // Funktion för att visa pris med eventuell rabatt
+  const getDisplayPrice = useCallback((productPrice, productBrand) => {
+    // applyDiscount funktionen från CartContext hanterar redan användarens rabatter (generella & märkesspecifika)
+    const finalPrice = applyDiscount(productPrice, productBrand);
+
+    if (finalPrice < productPrice) {
+      return { original: Math.round(productPrice), discounted: Math.round(finalPrice) };
     }
     return { original: Math.round(productPrice) };
-  };
+  }, [applyDiscount]); // Beroende av applyDiscount
+
+  const filteredProducts = products; // Produkter är redan filtrerade via Sanity-frågan
+
+  if (loading)
+    return <div className="text-center py-8">{t("common.loading")}</div>;
+  if (error)
+    return <div className="text-center text-red-500 py-8">{error}</div>;
 
   return (
     <div className="p-4">
+      <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">{t("productList.title")}</h1>
+
       <div className="mb-8 p-4 bg-gray-100 rounded-lg">
-        {/* NYTT: Gridden har nu 5 kolumner */}
+        {/* Nya filter layouten */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
           {/* Sökfält */}
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700">Fritextsök</label>
-            <input id="search" type="text" placeholder="Namn eller art.nr..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md" />
+            <label htmlFor="search" className="block text-sm font-medium text-gray-700">{t("productList.searchLabel")}</label>
+            <input id="search" type="text" placeholder={t("productList.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md" />
           </div>
-          {/* NYTT: Tillverkare-filter */}
+          {/* Tillverkare-filter */}
           <div>
-            <label htmlFor="brand" className="block text-sm font-medium text-gray-700">Tillverkare</label>
+            <label htmlFor="brand" className="block text-sm font-medium text-gray-700">{t("productList.filterBrand")}</label>
             <select id="brand" value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
-              <option value="">Alla tillverkare</option>
+              <option value="">{t("productList.allBrands")}</option>
               {brands.map(brand => <option key={brand} value={brand}>{brand}</option>)}
             </select>
           </div>
-          {/* Bilmärke */}
+          {/* Bilmärke filter */}
           <div>
-            <label htmlFor="make" className="block text-sm font-medium text-gray-700">Välj bilmärke</label>
-            <select id="make" value={selectedMake} onChange={(e) => setSelectedMake(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
-              <option value="">Alla bilmärken</option>
-              {makes.map(make => <option key={make._id} value={make._id}>{make.name}</option>)}
+            <label htmlFor="make" className="block text-sm font-medium text-gray-700">{t("productList.filterMake")}</label>
+            <select id="make" value={selectedMakeId} onChange={handleMakeChange} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
+              <option value="">{t("productList.allMakes")}</option>
+              {allMakes.map(make => <option key={make._id} value={make._id}>{make.name}</option>)}
             </select>
           </div>
-          {/* Bilmodell */}
+          {/* Bilmodell filter */}
           <div>
-            <label htmlFor="model" className="block text-sm font-medium text-gray-700">Välj modell</label>
-            <select id="model" value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} disabled={!selectedMake} className="mt-1 w-full px-4 py-2 border rounded-md bg-white disabled:bg-gray-200">
-              <option value="">Alla modeller</option>
-              {models.map(model => <option key={model._id} value={model._id}>{model.name}</option>)}
+            <label htmlFor="model" className="block text-sm font-medium text-gray-700">{t("productList.filterModel")}</label>
+            <select id="model" value={selectedModelId} onChange={handleModelChange} disabled={!selectedMakeId} className="mt-1 w-full px-4 py-2 border rounded-md bg-white disabled:bg-gray-200">
+              <option value="">{t("productList.allModels")}</option>
+              {availableModelsForSelect.map(model => (
+                <option key={model._id} value={model._id}>{model.name}</option>
+              ))}
             </select>
           </div>
-          {/* Sortering */}
+          {/* Bilversion filter */}
           <div>
-            <label htmlFor="sort" className="block text-sm font-medium text-gray-700">Sortera efter</label>
-            <select id="sort" value={sortBy} onChange={(e) => setSortBy(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
-              <option value="_createdAt desc">Nyast</option>
-              <option value="title asc">Namn (A-Ö)</option>
-              <option value="title desc">Namn (Ö-A)</option>
-              <option value="price asc">Pris (Lågt till Högt)</option>
-              <option value="price desc">Pris (Högt till Lågt)</option>
+            <label htmlFor="version" className="block text-sm font-medium text-gray-700">{t("productList.filterVersion")}</label>
+            <select id="version" value={selectedVersionId} onChange={handleVersionChange} disabled={!selectedModelId} className="mt-1 w-full px-4 py-2 border rounded-md bg-white disabled:bg-gray-200">
+              <option value="">{t("productList.allVersions")}</option>
+              {availableVersionsForSelect.map(version => (
+                <option key={version._id} value={version._id}>{version.name}</option>
+              ))}
             </select>
           </div>
         </div>
+        <div className="mt-4 text-center">
+          <button
+            onClick={handleResetFilters}
+            className="px-6 py-2 bg-gray-200 text-gray-800 rounded-md shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            {t("productList.resetFilters")}
+          </button>
+        </div>
       </div>
-      
-      <h1 className="text-4xl font-bold text-gray-800 mb-8">{t("productList.title")}</h1>
 
       {loading ? (
         <div className="text-center py-10">{t("common.loading")}</div>
@@ -193,19 +279,19 @@ function ProductList() {
         <div className="text-red-500 text-center py-10">{error}</div>
       ) : products.length === 0 ? (
         <div className="text-center py-10 text-gray-500">
-            <h3 className="text-xl font-semibold">Inga produkter hittades</h3>
-            <p>Försök att justera dina filter eller söktermer.</p>
+          <h3 className="text-xl font-semibold">{t("productList.noProductsFound")}</h3>
+          <p>{t("productList.adjustFilters")}</p>
         </div>
       ) : (
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {products.map((product) => {
-              const displayPrice = getDisplayPrice(product.price);
+              const displayPrice = getDisplayPrice(product.price, product.brand); // Pass product.brand for discount calculation
               return (
                 <div key={product._id} className="bg-white rounded-lg shadow-lg flex flex-col">
                   <Link to={`/products/${product._id}`} className="flex flex-col flex-grow">
                     <img
-                      src={product.imageUrl || "https://placehold.co/400x300?text=BILD%20KOMMER%20INKOM%20KORT"}
+                      src={product.imageUrl || "https://placehold.co/400x300?text=BILD+SAKNAS"}
                       alt={product.title}
                       className="w-full h-56 object-cover bg-gray-200"
                     />
@@ -243,15 +329,15 @@ function ProductList() {
               disabled={page === 0}
               className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Föregående
+              {t("common.previous")}
             </button>
-            <span className="text-gray-700">Sida {page + 1}</span>
+            <span className="text-gray-700">{t("common.page", { page: page + 1 })}</span>
             <button
               onClick={() => setPage(p => p + 1)}
               disabled={!hasMore}
               className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Nästa
+              {t("common.next")}
             </button>
           </div>
         </>
