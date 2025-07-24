@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Link } from "react-router-dom";
 import { client } from "../sanityClient";
 import { useCart } from "../context/CartContext";
@@ -32,6 +32,9 @@ function ProductList() {
   // Tillverkar-filter
   const [brands, setBrands] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState("");
+
+  // Ref för att undvika onödig första anrop
+  const isInitialMount = useRef(true);
 
   // Hämta listor för alla filter-menyer
   useEffect(() => {
@@ -90,6 +93,7 @@ function ProductList() {
     fetchVersions();
   }, [selectedModel]);
 
+  // Funktion för att hämta produkter
   const fetchProducts = useCallback(async (currentPage, isNewSearch) => {
     setLoading(true);
     setError(null);
@@ -104,12 +108,10 @@ function ProductList() {
         conditions.push(`(title match $searchTerm + "*" || sku match $searchTerm + "*")`);
         params.searchTerm = searchTerm;
       }
-      
       if (selectedBrand) {
         conditions.push(`brand == $brand`);
         params.brand = selectedBrand;
       }
-      
       if (selectedVersion) {
         conditions.push(`$versionId in vehicleFitment[]._ref`);
         params.versionId = selectedVersion;
@@ -121,16 +123,12 @@ function ProductList() {
         params.makeId = selectedMake;
       }
       
-      const query = `
-        *[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {
-          _id, title, sku, price, "imageUrl": mainImage.asset->url
-        }`;
+      const query = `*[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {_id, title, sku, price, "imageUrl": mainImage.asset->url}`;
         
       const data = await client.fetch(query, params);
       
       setProducts(prev => isNewSearch ? data : [...prev, ...data]);
       setHasMore(data.length === PRODUCTS_PER_PAGE);
-
     } catch (err) {
       setError(t("productList.loadError"));
       console.error(err);
@@ -138,22 +136,23 @@ function ProductList() {
       setLoading(false);
     }
   }, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, t]);
-
+  
   // Effekt för att hantera nya sökningar/filtreringar
   useEffect(() => {
-    setPage(0); // Återställ sidan
-    setProducts([]); // Rensa gamla produkter
-    fetchProducts(0, true); // Hämta data för sida 0, och markera som ny sökning
+    if (isInitialMount.current) {
+        isInitialMount.current = false;
+        fetchProducts(0, true);
+    } else {
+        setPage(0); 
+        setProducts([]); 
+        fetchProducts(0, true);
+    }
   }, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand]);
 
-
-  const handleLoadMore = () => {
-      setPage(prevPage => prevPage + 1);
-  };
-
+  // Effekt för att ladda mer
   useEffect(() => {
     if (page > 0) {
-        fetchProducts(page, false); // Hämta mer data, men rensa inte listan
+        fetchProducts(page, false);
     }
   }, [page]);
 
@@ -223,7 +222,7 @@ function ProductList() {
       
       <h1 className="text-4xl font-bold text-gray-800 mb-8">{t("productList.title")}</h1>
 
-      {loading && products.length === 0 ? (
+       {loading && products.length === 0 ? (
         <div className="text-center py-10">{t("common.loading")}</div>
       ) : error ? (
         <div className="text-red-500 text-center py-10">{error}</div>
@@ -276,7 +275,7 @@ function ProductList() {
           <div className="text-center mt-12">
             {hasMore && (
               <button
-                onClick={handleLoadMore}
+                onClick={() => setPage(prev => prev + 1)}
                 disabled={loading}
                 className="px-6 py-3 bg-gray-800 text-white font-semibold rounded-md disabled:opacity-50"
               >
