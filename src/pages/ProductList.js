@@ -72,7 +72,7 @@ function ProductList() {
     fetchModels();
   }, [selectedMake]);
 
-  const fetchProducts = useCallback(async () => {
+    const fetchProducts = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -92,9 +92,9 @@ function ProductList() {
         conditions.push(`_id in *[_type == "product" && references(*[_type=="vehicleVersion" && references($modelId)]._id)]._id`);
         params.modelId = selectedModel;
       } 
-      // Filtrera baserat på valt bilmärke
-      else if (selectedMake) {
-        conditions.push(`_id in *[_type == "product" && references(*[_type=="vehicleModel" && references($makeId)]._id)]._id`);
+      // Filtrera baserat på valt bilmärke (ändrat från else if till if)
+      if (selectedMake) {
+        conditions.push(`_id in *[_type == "product" && references(*[_type=="vehicleVersion" && references(*[_type=="vehicleModel" && references($makeId)]._id)]._id)]._id`);
         params.makeId = selectedMake;
       }
 
