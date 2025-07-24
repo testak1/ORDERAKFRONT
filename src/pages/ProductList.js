@@ -95,47 +95,55 @@ function ProductList() {
 
   // Funktion för att hämta produkter
   const fetchProducts = useCallback(async (currentPage, isNewSearch) => {
-    setLoading(true);
-    setError(null);
-    try {
-      const start = currentPage * PRODUCTS_PER_PAGE;
-      const end = start + PRODUCTS_PER_PAGE;
-      
-      const conditions = [`!defined(isArchived) || isArchived == false`];
-      const params = {};
+  setLoading(true);
+  setError(null);
+  try {
+    const start = currentPage * PRODUCTS_PER_PAGE;
+    const end = start + PRODUCTS_PER_PAGE;
+    
+    const conditions = [`!defined(isArchived) || isArchived == false`];
+    const params = {};
 
-      if (searchTerm) {
-        conditions.push(`(title match $searchTerm + "*" || sku match $searchTerm + "*")`);
-        params.searchTerm = searchTerm;
-      }
-      if (selectedBrand) {
-        conditions.push(`brand == $brand`);
-        params.brand = selectedBrand;
-      }
-      if (selectedVersion) {
-        conditions.push(`$versionId in vehicleFitment[]._ref`);
-        params.versionId = selectedVersion;
-      } else if (selectedModel) {
-        conditions.push(`vehicleFitment[]._ref in *[_type=="vehicleVersion" && model._ref == $modelId]._id`);
-        params.modelId = selectedModel;
-      } else if (selectedMake) {
-        conditions.push(`vehicleFitment[]._ref in *[_type=="vehicleVersion" && model->make._ref == $makeId]._id`);
-        params.makeId = selectedMake;
-      }
-      
-      const query = `*[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {_id, title, sku, price, "imageUrl": mainImage.asset->url}`;
-        
-      const data = await client.fetch(query, params);
-      
-      setProducts(prev => isNewSearch ? data : [...prev, ...data]);
-      setHasMore(data.length === PRODUCTS_PER_PAGE);
-    } catch (err) {
-      setError(t("productList.loadError"));
-      console.error(err);
-    } finally {
-      setLoading(false);
+    if (searchTerm) {
+      conditions.push(`(title match $searchTerm + "*" || sku match $searchTerm + "*")`);
+      params.searchTerm = searchTerm;
     }
-  }, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, t]);
+    if (selectedBrand) {
+      conditions.push(`brand == $brand`);
+      params.brand = selectedBrand;
+    }
+
+    // Ny och förbättrad fordonsfiltrering
+    if (selectedVersion) {
+      conditions.push(`references($versionId)`);
+      params.versionId = selectedVersion;
+    } else if (selectedModel) {
+      // Hämta alla versioner för denna modell och kolla om produkten refererar någon av dem
+      conditions.push(`vehicleFitment[]._ref in *[_type=="vehicleVersion" && model._ref == $modelId]._id`);
+      params.modelId = selectedModel;
+    } else if (selectedMake) {
+      // Hämta alla versioner för detta märke och kolla om produkten refererar någon av dem
+      conditions.push(`vehicleFitment[]._ref in *[_type=="vehicleVersion" && model->make._ref == $makeId]._id`);
+      params.makeId = selectedMake;
+    }
+    
+    const query = `*[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {
+      _id, title, sku, price, 
+      "imageUrl": mainImage.asset->url,
+      vehicleFitment[]->{model->{make->{_id, name}, _id, name}, _id, name}
+    }`;
+      
+    const data = await client.fetch(query, params);
+    
+    setProducts(prev => isNewSearch ? data : [...prev, ...data]);
+    setHasMore(data.length === PRODUCTS_PER_PAGE);
+  } catch (err) {
+    setError(t("productList.loadError"));
+    console.error("Query error:", err);
+  } finally {
+    setLoading(false);
+  }
+}, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, t]);
   
   // Effekt för att hantera nya sökningar/filtreringar
   useEffect(() => {
