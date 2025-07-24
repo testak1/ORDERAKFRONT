@@ -35,12 +35,13 @@ function ProductList() {
   useEffect(() => {
     const fetchFilterData = async () => {
       try {
-        // Hämta unika bilmärken från produkters titlar
-        const makesQuery = `*[_type == "product" && defined(title)]{
-          "make": title.split(" ")[0]
-        }.make`;
-        const makesResult = await client.fetch(makesQuery);
-        setMakes([...new Set(makesResult)].sort());
+        // Hämta alla produkters titlar
+        const titlesQuery = `*[_type == "product" && defined(title)].title`;
+        const titles = await client.fetch(titlesQuery);
+        
+        // Extrahera bilmärken (första ordet i titeln)
+        const makes = titles.map(title => title.split(' ')[0]);
+        setMakes([...new Set(makes)].sort());
 
         // Hämta alla unika produkttillverkare (brand)
         const brandsQuery = `*[_type == "product" && defined(brand)].brand`;
@@ -64,18 +65,17 @@ function ProductList() {
 
     const fetchModels = async () => {
       try {
-        // Hämta modeller som förekommer i produkters titlar för valt bilmärke
-        const query = `*[_type == "product" && title match $make + "*"]{
-          "model": title.split(" ").slice(0, 2).join(" ")
-        }.model`;
-        const result = await client.fetch(query, { make: selectedMake + " " });
+        // Hämta alla produkters titlar för valt bilmärke
+        const titlesQuery = `*[_type == "product" && title match $make + "*"].title`;
+        const titles = await client.fetch(titlesQuery, { make: selectedMake + " " });
         
-        // Filtrera bort dubbletter och sortera
-        const uniqueModels = [...new Set(result)]
-          .filter(model => model.startsWith(selectedMake + " "))
-          .sort();
+        // Extrahera modeller (första två orden i titeln)
+        const models = titles.map(title => {
+          const parts = title.split(' ');
+          return parts.length > 1 ? `${parts[0]} ${parts[1]}` : parts[0];
+        });
         
-        setModels(uniqueModels);
+        setModels([...new Set(models)].sort());
       } catch (err) {
         console.error("Failed to fetch vehicle models:", err);
       }
