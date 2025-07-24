@@ -21,7 +21,7 @@ function ProductList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("_createdAt desc");
   
-  // Vehicle Filters State
+  // Fordonsfilter
   const [makes, setMakes] = useState([]);
   const [models, setModels] = useState([]);
   const [versions, setVersions] = useState([]); // NYTT: State för versioner
@@ -29,11 +29,11 @@ function ProductList() {
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedVersion, setSelectedVersion] = useState(""); // NYTT: State för vald version
 
-  // Brand Filter State
+  // Tillverkar-filter
   const [brands, setBrands] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState("");
 
-  // Fetch initial data for filter dropdowns (Makes and Brands)
+  // Hämta listor för alla filter-menyer
   useEffect(() => {
     const fetchFilterData = async () => {
       try {
@@ -55,7 +55,7 @@ function ProductList() {
     fetchFilterData();
   }, []);
 
-  // Fetch models when a make is selected
+  // Hämta modeller baserat på valt bilmärke
   useEffect(() => {
     if (!selectedMake) {
       setModels([]);
@@ -69,8 +69,6 @@ function ProductList() {
         const query = `*[_type == "vehicleModel" && make._ref == $makeId] | order(name asc)`;
         const result = await client.fetch(query, { makeId: selectedMake });
         setModels(result);
-        setVersions([]); // Rensa versioner när modellen ändras
-        setSelectedVersion("");
       } catch (err) {
         console.error("Failed to fetch vehicle models:", err);
       }
@@ -78,7 +76,7 @@ function ProductList() {
     fetchModels();
   }, [selectedMake]);
 
-  // NYTT: Hämta versioner när en modell är vald
+  // NYTT: Hämta versioner baserat på vald modell
   useEffect(() => {
     if (!selectedModel) {
       setVersions([]);
@@ -118,7 +116,8 @@ function ProductList() {
         params.brand = selectedBrand;
       }
       
-      // UPPDATERAD: Hierarkisk filtrering för fordon
+      // --- KORRIGERAD: Hierarkisk filtrering för fordon ---
+      // Denna logik säkerställer att produkter visas på varje nivå (make, model, version)
       if (selectedVersion) {
         conditions.push(`references($versionId)`);
         params.versionId = selectedVersion;
@@ -136,7 +135,9 @@ function ProductList() {
         }`;
         
       const data = await client.fetch(query, params);
-      setProducts(prev => page === 0 ? data : [...prev, ...data]);
+      
+      // Ersätt produkterna vid ny sökning/filtrering
+      setProducts(data);
       setHasMore(data.length === PRODUCTS_PER_PAGE);
 
     } catch (err) {
@@ -147,11 +148,12 @@ function ProductList() {
     }
   }, [page, searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, t]);
 
+  // Anropa fetchProducts när något filter ändras
   useEffect(() => {
     fetchProducts();
   }, [fetchProducts]);
 
-  // Reset page to 0 whenever a filter changes
+  // Återställ till första sidan när ett filter ändras
   useEffect(() => {
     setPage(0);
   }, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand]);
@@ -167,7 +169,7 @@ function ProductList() {
   return (
     <div className="p-4">
       <div className="mb-8 p-4 bg-gray-100 rounded-lg">
-        {/* Gridden har nu 6 kolumner */}
+        {/* Gridden har nu 6 kolumner för att få plats med det nya filtret */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
           {/* Sökfält */}
           <div>
@@ -222,6 +224,7 @@ function ProductList() {
       
       <h1 className="text-4xl font-bold text-gray-800 mb-8">{t("productList.title")}</h1>
 
+      {/* Din befintliga kod för att rendera produkter, laddningsstatus och paginering */}
       {loading ? (
         <div className="text-center py-10">{t("common.loading")}</div>
       ) : error ? (
