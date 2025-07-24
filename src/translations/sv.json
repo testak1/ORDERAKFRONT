@@ -11,7 +11,15 @@
     "sku": "Artikelnummer",
     "skuLabel": "Art.nr: {{sku}}",
     "priceFormatted": "{{price}} kr",
-    "optional": "(Valfritt)"
+    "optional": "(Valfritt)",
+    "remove": "Ta bort",
+    "yes": "Ja",
+    "no": "Nej",
+    "notAvailable": "Ej tillgänglig",
+    "log": "Logg",
+    "previous": "Föregående",
+    "next": "Nästa",
+    "page": "Sida {{page}}"
   },
   "navbar": {
     "products": "Produkter",
@@ -33,11 +41,25 @@
     "invalidCredentials": "Felaktigt användarnamn eller lösenord."
   },
   "productList": {
-    "title": "Produkter",
-    "searchPlaceholder": "Sök på namn eller artikelnummer...",
+    "title": "Våra Produkter",
+    "searchLabel": "Sök",
+    "searchPlaceholder": "Sök namn eller art.nr...",
+    "filterBrand": "Tillverkare",
+    "allBrands": "Alla tillverkare",
+    "filterMake": "Bilmärke",
+    "allMakes": "Alla bilmärken",
+    "filterModel": "Bilmodell",
+    "allModels": "Alla modeller",
+    "filterVersion": "Version",
+    "allVersions": "Alla versioner",
+    "resetFilters": "Återställ filter",
+    "noProductsFound": "Inga produkter hittades.",
+    "adjustFilters": "Försök att justera dina filter eller söktermer.",
     "addToCart": "Lägg i varukorg",
-    "noProductsFound": "Inga produkter matchade din sökning.",
-    "loadError": "Kunde inte ladda produkter."
+    "loadError": "Kunde inte ladda produkter.",
+    "brand": "Märke",
+    "fitsVehicles": "Passar fordon",
+    "totalProducts": "Totalt antal produkter: {{count}}"
   },
   "productDetail": {
     "backToProducts": "Tillbaka till produkter",
@@ -71,7 +93,9 @@
       "fillAddress": "Vänligen fyll i alla fält för leveransadress.",
       "orderSuccessTitle": "Beställning mottagen!",
       "orderSuccessMessage": "Tack för din beställning!",
-      "orderFailure": "Kunde inte slutföra beställningen. Vänligen försök igen."
+      "orderFailure": "Kunde inte slutföra beställningen. Vänligen försök igen.",
+      "itemAdded": "Produkten har lagts till i varukorgen!",
+      "quantityUpdated": "Kvantiteten har uppdaterats i varukorgen!"
     }
   },
   "profile": {
@@ -115,7 +139,8 @@
       "costPrice": "Inköpspris",
       "category": "Kategori",
       "images": "Bilder",
-      "required": "Vänligen fyll i alla obligatoriska fält (Titel, SKU, Pris, Minst en bild).",
+      "fitment": "Fordonspassning",
+      "required": "Vänligen fyll i alla obligatoriska fält (Titel, SKU, minst ett pris (försäljning eller inköpspris), Minst en bild vid enskild uppladdning).",
       "addSuccess": "Produkten har lagts till!",
       "addError": "Misslyckades med att lägga till produkten."
     },
@@ -126,11 +151,11 @@
       "errorMappingRequired": "Obligatoriska fält (Titel, SKU, minst ett pris (försäljning eller inköpspris)) måste mappas till kolumner i CSV-filen.",
       "mapTitle": "Mappa CSV-kolumner till produktfält",
       "selectColumn": "Välj kolumn...",
-      "templatePlaceholder": "Ange kolumnnamn (t.ex. {Kolumn1}) eller fast text",
+      "templatePlaceholder": "Ange kolumnnamn (t.ex. {Kolumn1}) eller fast text. Kombinera med {Kolumn1} {Kolumn2}",
       "previewTitle": "Förhandsgranskning av data (max 5 rader)",
       "previewNote": "Visar de första 5 raderna från din CSV-fil.",
       "confirmButton": "Bekräfta uppladdning",
-      "uploadSuccess": "Massa-uppladdning lyckades!",
+      "uploadSuccess": "Massa-uppladdning slutförd!",
       "uploadError": "Massa-uppladdning misslyckades.",
       "customFieldsTitle": "Anpassade fält från CSV",
       "addCustomFieldButton": "Lägg till anpassat fält för mappning",
@@ -143,10 +168,11 @@
       "priceToPlaceholder": "(och uppåt)",
       "margin": "Marginal (faktor, t.ex. 1.25 för 25% påslag)",
       "addTier": "Lägg till nivå",
-      "remove": "Ta bort",
-      "tierNotes": "Om Inköpspris mappas, kommer försäljningspriset att beräknas baserat på den relevanta marginalfaktorn från dessa nivåer. Annars används det mappade Försäljningspriset direkt.",
+      "tierNotes": "Om inköpspris mappas, kommer försäljningspriset att beräknas baserat på den relevanta marginalfaktorn från dessa nivåer. Annars används det mappade Försäljningspriset direkt.",
       "costPriceNotes": "Om inköpspris mappas här kommer försäljningspris att beräknas med angivna marginaler. Annars måste Försäljningspris mappas.",
-      "priceNotes": "Detta fält är Försäljningspriset. Om inköpspris mappas OCH marginaler anges, kommer detta pris att beräknas. Annars måste det mappas direkt från CSV."
+      "priceNotes": "Detta fält är Försäljningspriset. Om inköpspris mappas OCH marginaler anges, kommer detta pris att beräknas. Annars måste det mappas direkt från CSV.",
+      "batchProgress": "Laddar upp batch {{current}} av {{total}}...",
+      "batchEmpty": "Batch {{current}} av {{total}} hoppades över (inga giltiga produkter att ladda upp)."
     },
     "bulkPriceAdjustTitle": "Massa-prisjustering",
     "bulkPrice": {
@@ -160,6 +186,23 @@
       "alertNoMatch": "Inga produkter matchade dina filterkriterier.",
       "alertSuccess": "Priser justerades framgångsrikt för {{count}} produkter.",
       "alertError": "Misslyckades med att justera priser."
+    },
+    "fitmentUpdate": {
+      "title": "Uppdatera fordonspassning",
+      "description": "Detta verktyg går igenom alla befintliga produkttitlar, extraherar märkes- och modellnamn, skapar/hittar motsvarande fordonsdokument i Sanity, och länkar dem till produkterna. Detta är en massuppdatering. Se till att KNOWN_VEHICLE_MAKES, KNOWN_VEHICLE_MODELS och KNOWN_VEHICLE_VERSION_NAMES i koden är uppdaterade.",
+      "startButton": "Starta uppdatering av fordonspassning",
+      "confirmStart": "Är du säker på att du vill starta denna massuppdatering? Detta kan ta en stund beroende på antalet produkter. Se till att du har rensat eventuell gammal passningsdata om du vill börja om.",
+      "statusFetching": "Hämtar produkter...",
+      "statusProcessing": "Bearbetar produkter...",
+      "statusBatchComplete": "Batch {{current}} av {{total}} slutförd.",
+      "statusBatchSkipped": "Batch {{current}} av {{total}} hoppades över (inga uppdateringar/produkter att bearbeta).",
+      "statusComplete": "Uppdatering av fordonspassning slutförd!",
+      "logNoMakeModel": "Hittade inget märke eller modell i titel: \"{{title}}\".",
+      "logUpdated": "Uppdaterade passning för: \"{{title}}\" med {{make}} {{model}} (Version: {{version}})",
+      "logAlreadyLinked": "Passning redan länkad för: \"{{title}}\" med {{make}} {{model}} (Version: {{version}})",
+      "logError": "Fel vid bearbetning av \"{{title}}\": {{error}}",
+      "updateFailed": "Uppdatering av fordonspassning misslyckades: {{error}}",
+      "noProductsToProcess": "Inga produkter hittades som behöver passningsuppdatering (kontrollera om alla redan har passning eller saknar titlar)."
     },
     "dangerZoneTitle": "Fara zon",
     "dangerZone": {
@@ -176,7 +219,6 @@
       "archive": "Arkivera produkt"
     }
   },
-
   "adminUserManagement": {
     "title": "Användarhantering",
     "addUserTitle": "Ny användare",
@@ -212,6 +254,30 @@
       "city": "Stad",
       "postalCode": "Postnummer",
       "country": "Land"
+    },
+    "loadError": "Kunde inte ladda användare.",
+    "filterPlaceholder": "Filtrera användare efter namn eller e-post...",
+    "editUser": "Redigera användare",
+    "saveError": "Kunde inte spara användarkonfigurationen.",
+    "createErrorNotSupported": "Att skapa nya användare stöds inte i denna modul.",
+    "archiveConfirm": "Är du säker på att du vill arkivera denna användare?",
+    "archiveSuccess": "Användaren har arkiverats.",
+    "archiveError": "Kunde inte arkivera användaren.",
+    "userInfo": "Användarinformation",
+    "fullName": "Fullständigt namn",
+    "email": "E-post",
+    "phoneNumber": "Telefonnummer",
+    "isAdminLabel": "Är administratör",
+    "generalDiscount": "Generell rabatt (%)",
+    "generalDiscountLabel": "Generell rabatt",
+    "addressInfo": "Adressinformation",
+    "brandDiscount": {
+      "title": "Märkesspecifika rabatter",
+      "shortTitle": "Märkesrabatter",
+      "brandName": "Märkesnamn",
+      "newBrandName": "Nytt märkesnamn...",
+      "add": "Lägg till rabatt",
+      "addError": "Vänligen ange ett märkesnamn och en rabattprocent (0-100)."
     }
   },
   "orderCard": {
@@ -255,7 +321,6 @@
       "priceExclVat": "Pris (exkl. moms)",
       "priceInclVat": "Pris (inkl. moms)"
     },
-
     "totalAmount": "Totalbelopp:",
     "totalAmountExclVat": "Totalbelopp (exkl. moms):",
     "totalAmountInclVat": "Totalbelopp (inkl. moms):",
