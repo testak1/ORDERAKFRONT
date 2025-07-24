@@ -71,7 +71,7 @@ function OrderCard({
               {order.items.map((item, index) => (
                 <li key={index}>
                   {/* NY: Uppdatera itemLine-översättningen för att inkludera exkl. moms */}
-                  {item.title} (Art.nr: {item.sku}) - Antal: {item.quantity} @ {Math.round(item.priceAtPurchase)} kr st
+                  {item.product?.title} (Art.nr: {item.product?.sku}) - Antal: {item.quantity} @ {Math.round(item.priceAtPurchase)} kr st
                   <span className="text-gray-500"> (exkl. moms: {Math.round(item.priceAtPurchase / 1.25)} kr)</span>
                 </li>
               ))}
