@@ -129,7 +129,7 @@ const getDisplayPrice = () => {
                   {t("productDetail.yourPrice", { price: displayPrice.discounted })}
                 </p>
                 <p className="text-md text-gray-600 mt-1">
-                  (Exkl. moms: {Math.round(displayPrice.discounted / 1.25)} kr)
+                  (Exkl. moms: {displayPrice.discountedExclVat} kr)
                 </p>
               </>
             ) : (
@@ -138,7 +138,7 @@ const getDisplayPrice = () => {
                   {t("common.priceFormatted", { price: displayPrice.original })}
                 </p>
                 <p className="text-md text-gray-600 mt-1">
-                  (Exkl. moms: {Math.round(displayPrice.original / 1.25)} kr)
+                  (Exkl. moms: {displayPrice.originalExclVat} kr)
                 </p>
               </>
             )}
