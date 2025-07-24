@@ -144,6 +144,7 @@ function ProductList() {
     return { original: Math.round(productPrice) };
   };
 
+/*
   // Hjälpfunktion för att visa fordon som produkten passar
   const renderVehicleFitments = (fitments) => {
     if (!fitments || fitments.length === 0) return null;
@@ -166,6 +167,7 @@ function ProductList() {
       </div>
     );
   };
+  */
 
   return (
     <div className="p-4">
