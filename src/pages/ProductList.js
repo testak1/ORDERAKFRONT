@@ -115,7 +115,7 @@ function ProductList() {
       params.brand = selectedBrand;
     }
     
-    // FILTRERING FÖR BILMÄRKE
+    // FILTRERING FÖR BILMÄRKE OCH MODELL
     if (selectedMake) {
       const makeName = makes.find(m => m._id === selectedMake)?.name || "";
       
@@ -123,32 +123,16 @@ function ProductList() {
       conditions.push(`(title match $makeName + "*" || description match $makeName + "*")`);
       params.makeName = makeName;
       
-      // Exakt matchning via vehicleFitment om ingen modell/version är vald
-      if (!selectedModel && !selectedVersion) {
-        const versionIds = await client.fetch(
-          `*[_type == "vehicleVersion" && model->make._ref == $makeId]._id`,
-          { makeId: selectedMake }
-        );
-        if (versionIds.length > 0) {
-          conditions.push(`vehicleFitment[]._ref in $versionIds`);
-          params.versionIds = versionIds;
-        }
-      }
-    }
-    
-    // FILTRERING FÖR BIMMODELL
-    if (selectedModel && !selectedVersion) {
-      const modelName = models.find(m => m._id === selectedModel)?.name || "";
-      
-      // Snabb sökning på modellnamn i titel/beskrivning
-      conditions.push(`(title match $modelName + "*" || description match $modelName + "*")`);
-      params.modelName = modelName;
-      
       // Exakt matchning via vehicleFitment
       const versionIds = await client.fetch(
-        `*[_type == "vehicleVersion" && model._ref == $modelId]._id`,
-        { modelId: selectedModel }
+        selectedModel 
+          ? `*[_type == "vehicleVersion" && model._ref == $modelId]._id`
+          : `*[_type == "vehicleVersion" && model->make._ref == $makeId]._id`,
+        selectedModel 
+          ? { modelId: selectedModel }
+          : { makeId: selectedMake }
       );
+      
       if (versionIds.length > 0) {
         conditions.push(`vehicleFitment[]._ref in $versionIds`);
         params.versionIds = versionIds;
@@ -173,9 +157,9 @@ function ProductList() {
       
     const data = await client.fetch(query, params);
     
-    // Ytterligare filtrering på klienten för att säkerställa relevans
+    // Ytterligare filtrering på klienten
     const filteredData = data.filter(product => {
-      if (selectedVersion) return true; // Redan exakt matchat
+      if (selectedVersion) return true;
       
       if (selectedModel) {
         const modelName = models.find(m => m._id === selectedModel)?.name;
