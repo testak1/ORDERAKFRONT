@@ -24,10 +24,10 @@ function ProductList() {
   // Fordonsfilter
   const [makes, setMakes] = useState([]);
   const [models, setModels] = useState([]);
-  const [versions, setVersions] = useState([]); // NYTT: State för versioner
+  const [versions, setVersions] = useState([]);
   const [selectedMake, setSelectedMake] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
-  const [selectedVersion, setSelectedVersion] = useState(""); // NYTT: State för vald version
+  const [selectedVersion, setSelectedVersion] = useState("");
 
   // Tillverkar-filter
   const [brands, setBrands] = useState([]);
@@ -39,15 +39,12 @@ function ProductList() {
       try {
         const makesQuery = `*[_type == "vehicleMake"] | order(name asc)`;
         const brandsQuery = `*[_type == "product" && defined(brand)].brand`;
-        
         const [makesResult, brandsResult] = await Promise.all([
           client.fetch(makesQuery),
           client.fetch(brandsQuery)
         ]);
-        
         setMakes(makesResult);
         setBrands([...new Set(brandsResult)].sort());
-
       } catch (err) {
         console.error("Failed to fetch filter data:", err);
       }
@@ -57,13 +54,13 @@ function ProductList() {
 
   // Hämta modeller baserat på valt bilmärke
   useEffect(() => {
-    if (!selectedMake) {
-      setModels([]);
-      setVersions([]);
-      setSelectedModel("");
-      setSelectedVersion("");
-      return;
-    }
+    // Rensa undernivåer när märke ändras
+    setModels([]);
+    setVersions([]);
+    setSelectedModel("");
+    setSelectedVersion("");
+    if (!selectedMake) return;
+    
     const fetchModels = async () => {
       try {
         const query = `*[_type == "vehicleModel" && make._ref == $makeId] | order(name asc)`;
@@ -76,13 +73,13 @@ function ProductList() {
     fetchModels();
   }, [selectedMake]);
 
-  // NYTT: Hämta versioner baserat på vald modell
+  // Hämta versioner baserat på vald modell
   useEffect(() => {
-    if (!selectedModel) {
-      setVersions([]);
-      setSelectedVersion("");
-      return;
-    }
+    // Rensa undernivåer när modell ändras
+    setVersions([]);
+    setSelectedVersion("");
+    if (!selectedModel) return;
+
     const fetchVersions = async () => {
       try {
         const query = `*[_type == "vehicleVersion" && model._ref == $modelId] | order(name asc)`;
@@ -96,11 +93,11 @@ function ProductList() {
   }, [selectedModel]);
 
 
-  const fetchProducts = useCallback(async () => {
+  const fetchProducts = useCallback(async (isNewSearch = false) => {
     setLoading(true);
     setError(null);
     try {
-      const start = page * PRODUCTS_PER_PAGE;
+      const start = isNewSearch ? 0 : page * PRODUCTS_PER_PAGE;
       const end = start + PRODUCTS_PER_PAGE;
       
       const conditions = [`!defined(isArchived) || isArchived == false`];
@@ -116,16 +113,18 @@ function ProductList() {
         params.brand = selectedBrand;
       }
       
-      // --- KORRIGERAD: Hierarkisk filtrering för fordon ---
-      // Denna logik säkerställer att produkter visas på varje nivå (make, model, version)
+      // --- KORRIGERAD HIERARKISK FILTRERING ---
       if (selectedVersion) {
-        conditions.push(`references($versionId)`);
+        // Filtrera på exakt version
+        conditions.push(`$versionId in vehicleFitment[]._ref`);
         params.versionId = selectedVersion;
       } else if (selectedModel) {
+        // Filtrera på alla versioner inom en modell
         conditions.push(`vehicleFitment[]._ref in *[_type=="vehicleVersion" && model._ref == $modelId]._id`);
         params.modelId = selectedModel;
       } else if (selectedMake) {
-        conditions.push(`vehicleFitment[]._ref in *[_type=="vehicleVersion" && model.make._ref == $makeId]._id`);
+        // Filtrera på alla versioner inom ett märke
+        conditions.push(`vehicleFitment[]._ref in *[_type=="vehicleVersion" && model->make._ref == $makeId]._id`);
         params.makeId = selectedMake;
       }
       
@@ -136,8 +135,7 @@ function ProductList() {
         
       const data = await client.fetch(query, params);
       
-      // Ersätt produkterna vid ny sökning/filtrering
-      setProducts(data);
+      setProducts(isNewSearch ? data : [...products, ...data]);
       setHasMore(data.length === PRODUCTS_PER_PAGE);
 
     } catch (err) {
@@ -148,15 +146,20 @@ function ProductList() {
     }
   }, [page, searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, t]);
 
-  // Anropa fetchProducts när något filter ändras
+  // Anropa fetchProducts när något filter ändras (och återställ produkterna)
   useEffect(() => {
-    fetchProducts();
-  }, [fetchProducts]);
-
-  // Återställ till första sidan när ett filter ändras
-  useEffect(() => {
+    // När ett filter ändras, börja om från sida 0 och gör en ny sökning
     setPage(0);
+    fetchProducts(true); 
   }, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand]);
+
+  // Hämta fler produkter vid paginering
+  useEffect(() => {
+    // Körs bara när `page` ändras och det inte är första sidan
+    if (page > 0) {
+      fetchProducts(false);
+    }
+  }, [page]);
 
   const getDisplayPrice = (productPrice) => {
     if (user && user.discountPercentage > 0) {
@@ -169,7 +172,7 @@ function ProductList() {
   return (
     <div className="p-4">
       <div className="mb-8 p-4 bg-gray-100 rounded-lg">
-        {/* Gridden har nu 6 kolumner för att få plats med det nya filtret */}
+        {/* Gridden har nu 6 kolumner */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4 items-end">
           {/* Sökfält */}
           <div>
@@ -200,7 +203,7 @@ function ProductList() {
               {models.map(model => <option key={model._id} value={model._id}>{model.name}</option>)}
             </select>
           </div>
-          {/* NYTT: Version-filter */}
+          {/* Version-filter */}
           <div>
             <label htmlFor="version" className="block text-sm font-medium text-gray-700">Välj version</label>
             <select id="version" value={selectedVersion} onChange={(e) => setSelectedVersion(e.target.value)} disabled={!selectedModel} className="mt-1 w-full px-4 py-2 border rounded-md bg-white disabled:bg-gray-200">
@@ -224,8 +227,8 @@ function ProductList() {
       
       <h1 className="text-4xl font-bold text-gray-800 mb-8">{t("productList.title")}</h1>
 
-      {/* Din befintliga kod för att rendera produkter, laddningsstatus och paginering */}
-      {loading ? (
+       {/* ... resten av din JSX är oförändrad ... */}
+       {loading && page === 0 ? ( // Visa laddnings-ikonen bara vid den första hämtningen
         <div className="text-center py-10">{t("common.loading")}</div>
       ) : error ? (
         <div className="text-red-500 text-center py-10">{error}</div>
@@ -277,8 +280,8 @@ function ProductList() {
 
           <div className="flex justify-between items-center mt-12">
             <button
-              onClick={() => setPage(p => p - 1)}
-              disabled={page === 0}
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0 || loading}
               className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Föregående
@@ -286,10 +289,10 @@ function ProductList() {
             <span className="text-gray-700">Sida {page + 1}</span>
             <button
               onClick={() => setPage(p => p + 1)}
-              disabled={!hasMore}
+              disabled={!hasMore || loading}
               className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Nästa
+              {loading ? 'Laddar...' : 'Nästa'}
             </button>
           </div>
         </>
