@@ -15,7 +15,7 @@ function ProductList() {
   const { addToCart } = useCart();
   const { user } = useAuth();
 
-  // --- STATE ---
+  // State för filter och paginering
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
@@ -33,10 +33,10 @@ function ProductList() {
   const [brands, setBrands] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState("");
 
-  // Ref för att undvika onödig första anrop
+  // Ref för att hantera den första renderingen
   const isInitialMount = useRef(true);
 
-  // Hämta listor för alla filter-menyer
+  // Hämta data för dropdown-menyer när komponenten laddas
   useEffect(() => {
     const fetchFilterData = async () => {
       try {
@@ -55,7 +55,7 @@ function ProductList() {
     fetchFilterData();
   }, []);
 
-  // Hämta modeller baserat på valt bilmärke
+  // Hämta modeller när ett märke väljs
   useEffect(() => {
     setModels([]);
     setVersions([]);
@@ -75,7 +75,7 @@ function ProductList() {
     fetchModels();
   }, [selectedMake]);
 
-  // Hämta versioner baserat på vald modell
+  // Hämta versioner när en modell väljs
   useEffect(() => {
     setVersions([]);
     setSelectedVersion("");
@@ -94,75 +94,61 @@ function ProductList() {
   }, [selectedModel]);
 
   // Funktion för att hämta produkter
-  const fetchProducts = useCallback(async (currentPage, isNewSearch) => {
-  setLoading(true);
-  setError(null);
-  try {
-    const start = currentPage * PRODUCTS_PER_PAGE;
-    const end = start + PRODUCTS_PER_PAGE;
-    
-    const conditions = [`!defined(isArchived) || isArchived == false`];
-    const params = {};
-
-    if (searchTerm) {
-      conditions.push(`(title match $searchTerm + "*" || sku match $searchTerm + "*")`);
-      params.searchTerm = searchTerm;
-    }
-    if (selectedBrand) {
-      conditions.push(`brand == $brand`);
-      params.brand = selectedBrand;
-    }
-
-    // Ny och förbättrad fordonsfiltrering
-    if (selectedVersion) {
-      conditions.push(`references($versionId)`);
-      params.versionId = selectedVersion;
-    } else if (selectedModel) {
-      // Hämta alla versioner för denna modell och kolla om produkten refererar någon av dem
-      conditions.push(`vehicleFitment[]._ref in *[_type=="vehicleVersion" && model._ref == $modelId]._id`);
-      params.modelId = selectedModel;
-    } else if (selectedMake) {
-      // Hämta alla versioner för detta märke och kolla om produkten refererar någon av dem
-      conditions.push(`vehicleFitment[]._ref in *[_type=="vehicleVersion" && model->make._ref == $makeId]._id`);
-      params.makeId = selectedMake;
-    }
-    
-    const query = `*[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {
-      _id, title, sku, price, 
-      "imageUrl": mainImage.asset->url,
-      vehicleFitment[]->{model->{make->{_id, name}, _id, name}, _id, name}
-    }`;
+  const fetchProducts = useCallback(async (currentPage) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const start = currentPage * PRODUCTS_PER_PAGE;
+      const end = start + PRODUCTS_PER_PAGE;
       
-    const data = await client.fetch(query, params);
-    
-    setProducts(prev => isNewSearch ? data : [...prev, ...data]);
-    setHasMore(data.length === PRODUCTS_PER_PAGE);
-  } catch (err) {
-    setError(t("productList.loadError"));
-    console.error("Query error:", err);
-  } finally {
-    setLoading(false);
-  }
-}, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, t]);
+      const conditions = [`!defined(isArchived) || isArchived == false`];
+      const params = {};
+
+      if (searchTerm) conditions.push(`(title match $searchTerm + "*" || sku match $searchTerm + "*")`), params.searchTerm = searchTerm;
+      if (selectedBrand) conditions.push(`brand == $brand`), params.brand = selectedBrand;
+      
+      // Korrekt hierarkisk filtrering
+      if (selectedVersion) {
+        conditions.push(`$versionId in vehicleFitment[]._ref`);
+        params.versionId = selectedVersion;
+      } else if (selectedModel) {
+        conditions.push(`vehicleFitment[]._ref in *[_type=="vehicleVersion" && model._ref == $modelId]._id`);
+        params.modelId = selectedModel;
+      } else if (selectedMake) {
+        conditions.push(`vehicleFitment[]._ref in *[_type=="vehicleVersion" && model->make._ref == $makeId]._id`);
+        params.makeId = selectedMake;
+      }
+      
+      const query = `*[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {_id, title, sku, price, "imageUrl": mainImage.asset->url}`;
+        
+      const data = await client.fetch(query, params);
+      
+      setProducts(data);
+      setHasMore(data.length === PRODUCTS_PER_PAGE);
+    } catch (err) {
+      setError(t("productList.loadError"));
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  }, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, t]);
   
-  // Effekt för att hantera nya sökningar/filtreringar
+  // Effekt som körs när filter eller sidnummer ändras
   useEffect(() => {
     if (isInitialMount.current) {
         isInitialMount.current = false;
-        fetchProducts(0, true);
+        fetchProducts(0);
     } else {
-        setPage(0); 
-        setProducts([]); 
-        fetchProducts(0, true);
+        fetchProducts(page);
+    }
+  }, [page, fetchProducts]);
+
+  // Effekt för att återställa sidan när ett filter ändras
+  useEffect(() => {
+    if (!isInitialMount.current) {
+        setPage(0);
     }
   }, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand]);
-
-  // Effekt för att ladda mer
-  useEffect(() => {
-    if (page > 0) {
-        fetchProducts(page, false);
-    }
-  }, [page]);
 
 
   const getDisplayPrice = (productPrice) => {
@@ -230,7 +216,7 @@ function ProductList() {
       
       <h1 className="text-4xl font-bold text-gray-800 mb-8">{t("productList.title")}</h1>
 
-       {loading && products.length === 0 ? (
+       {loading ? (
         <div className="text-center py-10">{t("common.loading")}</div>
       ) : error ? (
         <div className="text-red-500 text-center py-10">{error}</div>
@@ -280,16 +266,22 @@ function ProductList() {
             })}
           </div>
 
-          <div className="text-center mt-12">
-            {hasMore && (
-              <button
-                onClick={() => setPage(prev => prev + 1)}
-                disabled={loading}
-                className="px-6 py-3 bg-gray-800 text-white font-semibold rounded-md disabled:opacity-50"
-              >
-                {loading ? 'Laddar...' : 'Ladda fler'}
-              </button>
-            )}
+          <div className="flex justify-between items-center mt-12">
+            <button
+              onClick={() => setPage(p => Math.max(0, p - 1))}
+              disabled={page === 0 || loading}
+              className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Föregående
+            </button>
+            <span className="text-gray-700">Sida {page + 1}</span>
+            <button
+              onClick={() => setPage(p => p + 1)}
+              disabled={!hasMore || loading}
+              className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? 'Laddar...' : 'Nästa'}
+            </button>
           </div>
         </>
       )}
