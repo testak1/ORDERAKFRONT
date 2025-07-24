@@ -74,10 +74,12 @@ function ProductList() {
         const query = `*[_type == "vehicleModel" && make._ref == $makeId] | order(name asc)`;
         const result = await client.fetch(query, { makeId: selectedMake });
         setModels(result);
-      } catch (err) console.error("Failed to fetch models:", err);
+      } catch (err) {
+        console.error("Failed to fetch versions:", err);
+      }
     };
     fetchModels();
-  }, [selectedMake]);
+  }, [selectedVersion]);
 
   useEffect(() => {
     if (!selectedModel) return;
@@ -86,7 +88,9 @@ function ProductList() {
         const query = `*[_type == "vehicleVersion" && model._ref == $modelId] | order(name asc)`;
         const result = await client.fetch(query, { modelId: selectedModel });
         setVersions(result);
-      } catch (err) console.error("Failed to fetch versions:", err);
+      } catch (err) {
+        console.error("Failed to fetch versions:", err);
+      }
     };
     fetchVersions();
   }, [selectedModel]);
