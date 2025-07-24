@@ -1,9 +1,8 @@
-// ORDERAKFRONT/src/pages/ProductList.js
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { client } from "../sanityClient";
-import { useCart } from "../context/CartContext"; // Används för applyDiscount
-import { useAuth } from "../context/AuthContext"; // Används för att få användaren till applyDiscount
+import { useCart } from "../context/CartContext"; 
+import { useAuth } from "../context/AuthContext"; 
 import { useTranslation } from "react-i18next";
 
 const PRODUCTS_PER_PAGE = 20;
@@ -199,7 +198,7 @@ function ProductList() {
   // Funktion för att visa pris med eventuell rabatt
   const getDisplayPrice = useCallback((productPrice, productBrand) => {
     // applyDiscount funktionen från CartContext hanterar redan användarens rabatter (generella & märkesspecifika)
-    const finalPrice = applyDiscount(productPrice, productBrand);
+    const finalPrice = applyDiscount(Number(productPrice), productBrand || null); // Se till att pris är nummer och märke är sträng/null
 
     if (finalPrice < productPrice) {
       return { original: Math.round(productPrice), discounted: Math.round(finalPrice) };
@@ -212,21 +211,19 @@ function ProductList() {
   if (loading)
     return <div className="text-center py-8">{t("common.loading")}</div>;
   if (error)
-    return <div className="text-center text-red-500 py-8">{error}</div>;
+    return <div className="text-red-500 text-center py-8">{error}</div>;
 
   return (
     <div className="p-4">
       <h1 className="text-3xl font-bold text-gray-800 mb-6 text-center">{t("productList.title")}</h1>
 
       <div className="mb-8 p-4 bg-gray-100 rounded-lg">
-        {/* Nya filter layouten */}
+       
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
-          {/* Sökfält */}
           <div>
             <label htmlFor="search" className="block text-sm font-medium text-gray-700">{t("productList.searchLabel")}</label>
             <input id="search" type="text" placeholder={t("productList.searchPlaceholder")} value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md" />
           </div>
-          {/* Tillverkare-filter */}
           <div>
             <label htmlFor="brand" className="block text-sm font-medium text-gray-700">{t("productList.filterBrand")}</label>
             <select id="brand" value={selectedBrand} onChange={(e) => setSelectedBrand(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
@@ -234,7 +231,6 @@ function ProductList() {
               {brands.map(brand => <option key={brand} value={brand}>{brand}</option>)}
             </select>
           </div>
-          {/* Bilmärke filter */}
           <div>
             <label htmlFor="make" className="block text-sm font-medium text-gray-700">{t("productList.filterMake")}</label>
             <select id="make" value={selectedMakeId} onChange={handleMakeChange} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
@@ -242,7 +238,6 @@ function ProductList() {
               {allMakes.map(make => <option key={make._id} value={make._id}>{make.name}</option>)}
             </select>
           </div>
-          {/* Bilmodell filter */}
           <div>
             <label htmlFor="model" className="block text-sm font-medium text-gray-700">{t("productList.filterModel")}</label>
             <select id="model" value={selectedModelId} onChange={handleModelChange} disabled={!selectedMakeId} className="mt-1 w-full px-4 py-2 border rounded-md bg-white disabled:bg-gray-200">
@@ -252,7 +247,6 @@ function ProductList() {
               ))}
             </select>
           </div>
-          {/* Bilversion filter */}
           <div>
             <label htmlFor="version" className="block text-sm font-medium text-gray-700">{t("productList.filterVersion")}</label>
             <select id="version" value={selectedVersionId} onChange={handleVersionChange} disabled={!selectedModelId} className="mt-1 w-full px-4 py-2 border rounded-md bg-white disabled:bg-gray-200">
