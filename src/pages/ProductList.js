@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { client } from "../sanityClient";
-import { useCart } from "../context/CartContext";
-import { useAuth } from "../context/AuthContext"; 
+import { useCart } from "../context/CartContext"; // Används för applyDiscount
+import { useAuth } from "../context/AuthContext"; // Används för att få användaren till applyDiscount
 import { useTranslation } from "react-i18next";
 
 const PRODUCTS_PER_PAGE = 20;
@@ -286,18 +286,30 @@ function ProductList() {
         <>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {products.map((product) => {
-              const displayPrice = getDisplayPrice(product.price, product.brand); // Pass product.brand for discount calculation
+              // Lägg till defensiva kontroller för produktdata
+              if (!product || typeof product !== 'object' || !product._id) {
+                console.warn("Skipping malformed product entry:", product);
+                return null;
+              }
+
+              const imageUrl = typeof product.imageUrl === 'string' ? product.imageUrl : "https://placehold.co/400x300?text=BILD+SAKNAS";
+              const title = typeof product.title === 'string' ? product.title : 'No Title';
+              const sku = typeof product.sku === 'string' ? product.sku : 'N/A';
+              const brand = typeof product.brand === 'string' ? product.brand : undefined; // Brand kan vara valfritt
+
+              const displayPrice = getDisplayPrice(product.price, brand); // Passera produktens märke
+
               return (
                 <div key={product._id} className="bg-white rounded-lg shadow-lg flex flex-col">
                   <Link to={`/products/${product._id}`} className="flex flex-col flex-grow">
                     <img
-                      src={product.imageUrl || "https://placehold.co/400x300?text=BILD+SAKNAS"}
-                      alt={product.title}
+                      src={imageUrl}
+                      alt={title}
                       className="w-full h-56 object-cover bg-gray-200"
                     />
                     <div className="p-4 flex flex-col flex-grow">
-                      <h2 className="text-xl font-semibold text-gray-900 flex-grow">{product.title}</h2>
-                      <p className="text-xs text-gray-500 mt-2">{t("common.skuLabel", { sku: product.sku })}</p>
+                      <h2 className="text-xl font-semibold text-gray-900 flex-grow">{title}</h2>
+                      <p className="text-xs text-gray-500 mt-2">{t("common.skuLabel", { sku: sku })}</p>
                       <div className="mt-2">
                         {displayPrice.discounted ? (
                           <div>
