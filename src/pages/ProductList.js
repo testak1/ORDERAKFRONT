@@ -115,12 +115,28 @@ function ProductList() {
       params.brand = selectedBrand;
     }
     
-    // OPTIMERAD HIERARKISK FILTRERING
+    // MODIFIERAD FILTRERING - VISAR PRODUKTER REDAN VID VAL AV BILMÄRKE
+    if (selectedMake) {
+      // Alternativ 1: Direkt sökning på make-namn i produktens titel/beskrivning (snabbare)
+      conditions.push(`(title match $makeName + "*" || description match $makeName + "*")`);
+      params.makeName = makes.find(m => m._id === selectedMake)?.name || "";
+      
+      // ELLER Alternativ 2: Fortsätt med din befintliga vehicleFitment-approach
+      // const versionIds = await client.fetch(
+      //   `*[_type == "vehicleVersion" && model->make._ref == $makeId]._id`,
+      //   { makeId: selectedMake }
+      // );
+      // if (versionIds.length > 0) {
+      //   conditions.push(`vehicleFitment[]._ref in $versionIds`);
+      //   params.versionIds = versionIds;
+      // }
+    }
+    
+    // Ytterligare filtrering om modell/version är vald
     if (selectedVersion) {
       conditions.push(`$versionId in vehicleFitment[]._ref`);
       params.versionId = selectedVersion;
     } else if (selectedModel) {
-      // Först hämta alla versioner för denna modell
       const versionIds = await client.fetch(
         `*[_type == "vehicleVersion" && model._ref == $modelId]._id`,
         { modelId: selectedModel }
@@ -128,26 +144,6 @@ function ProductList() {
       if (versionIds.length > 0) {
         conditions.push(`vehicleFitment[]._ref in $versionIds`);
         params.versionIds = versionIds;
-      } else {
-        // Om inga versioner finns, returnera inga produkter
-        setProducts([]);
-        setHasMore(false);
-        return;
-      }
-    } else if (selectedMake) {
-      // Först hämta alla versioner för detta märke
-      const versionIds = await client.fetch(
-        `*[_type == "vehicleVersion" && model->make._ref == $makeId]._id`,
-        { makeId: selectedMake }
-      );
-      if (versionIds.length > 0) {
-        conditions.push(`vehicleFitment[]._ref in $versionIds`);
-        params.versionIds = versionIds;
-      } else {
-        // Om inga versioner finns, returnera inga produkter
-        setProducts([]);
-        setHasMore(false);
-        return;
       }
     }
     
@@ -170,7 +166,7 @@ function ProductList() {
   } finally {
     setLoading(false);
   }
-}, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, t]);
+}, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, t, makes]);
 
   // Effekt för att hantera nya sökningar/filtreringar
   useEffect(() => {
