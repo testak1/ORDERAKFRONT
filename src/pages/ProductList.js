@@ -114,32 +114,37 @@ function ProductList() {
       conditions.push(`brand == $brand`);
       params.brand = selectedBrand;
     }
-    
-    // FILTRERING FÖR BILMÄRKE OCH MODELL
-    if (selectedMake) {
-      const makeName = makes.find(m => m._id === selectedMake)?.name || "";
-      
-      // Snabb sökning på make-namn i titel/beskrivning
-      conditions.push(`(title match $makeName + "*" || description match $makeName + "*")`);
-      params.makeName = makeName;
-      
-      // Exakt matchning via vehicleFitment
-      const versionIds = await client.fetch(
-        selectedModel 
-          ? `*[_type == "vehicleVersion" && model._ref == $modelId]._id`
-          : `*[_type == "vehicleVersion" && model->make._ref == $makeId]._id`,
-        selectedModel 
-          ? { modelId: selectedModel }
-          : { makeId: selectedMake }
-      );
-      
+
+    // HUVUDFILTRERING - Märke OCH/ELLER Modell
+    if (selectedMake || selectedModel) {
+      let versionIds = [];
+
+      if (selectedModel) {
+        // Hämta versioner för vald modell
+        versionIds = await client.fetch(
+          `*[_type == "vehicleVersion" && model._ref == $modelId]._id`,
+          { modelId: selectedModel }
+        );
+      } else if (selectedMake) {
+        // Hämta alla versioner för valt märke
+        versionIds = await client.fetch(
+          `*[_type == "vehicleVersion" && model->make._ref == $makeId]._id`,
+          { makeId: selectedMake }
+        );
+      }
+
       if (versionIds.length > 0) {
         conditions.push(`vehicleFitment[]._ref in $versionIds`);
         params.versionIds = versionIds;
+      } else {
+        // Om inga versioner hittades, visa inga produkter
+        setProducts([]);
+        setHasMore(false);
+        return;
       }
     }
-    
-    // EXAKT FILTRERING FÖR VERSION
+
+    // EXAKT FILTRERING FÖR VERSION (om vald)
     if (selectedVersion) {
       conditions.push(`$versionId in vehicleFitment[]._ref`);
       params.versionId = selectedVersion;
@@ -151,24 +156,24 @@ function ProductList() {
       sku, 
       price, 
       "imageUrl": mainImage.asset->url,
-      "vehicleMakes": vehicleFitment[]->model->make->name,
-      "vehicleModels": vehicleFitment[]->model->name
+      "vehicleMakeNames": vehicleFitment[]->model->make->name,
+      "vehicleModelNames": vehicleFitment[]->model->name
     }`;
       
     const data = await client.fetch(query, params);
     
-    // Ytterligare filtrering på klienten
+    // Ytterligare säkerhetsfiltrering på klienten
     const filteredData = data.filter(product => {
       if (selectedVersion) return true;
       
       if (selectedModel) {
         const modelName = models.find(m => m._id === selectedModel)?.name;
-        return product.vehicleModels?.includes(modelName);
+        return product.vehicleModelNames?.includes(modelName);
       }
       
       if (selectedMake) {
         const makeName = makes.find(m => m._id === selectedMake)?.name;
-        return product.vehicleMakes?.includes(makeName);
+        return product.vehicleMakeNames?.includes(makeName);
       }
       
       return true;
