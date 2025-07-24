@@ -49,16 +49,24 @@ function ProductDetail() {
     fetchProduct();
   }, [productId, t]);
 
-  const getDisplayPrice = () => {
-    if (product && user && user.discountPercentage > 0) {
-      const discountedPrice = product.price * (1 - user.discountPercentage / 100);
-      return {
-        original: Math.round(product.price),
-        discounted: Math.round(discountedPrice),
-      };
-    }
-    return product ? { original: Math.round(product.price) } : {};
-  };
+const getDisplayPrice = () => {
+  if (product && user && user.discountPercentage > 0) {
+    const priceExclVat = product.price / 1.25;  // Beräkna först exkl. moms
+    const discountedPriceExclVat = priceExclVat * (1 - user.discountPercentage / 100);
+    const discountedPriceInclVat = discountedPriceExclVat * 1.25;
+    
+    return {
+      original: Math.round(product.price),
+      originalExclVat: Math.round(priceExclVat),
+      discounted: Math.round(discountedPriceInclVat),
+      discountedExclVat: Math.round(discountedPriceExclVat)
+    };
+  }
+  return product ? { 
+    original: Math.round(product.price),
+    originalExclVat: Math.round(product.price / 1.25)
+  } : {};
+};
 
   if (loading) return <div className="text-center py-10">{t("common.loading")}</div>;
   if (error) return <div className="text-red-500 text-center py-10">{error}</div>;
