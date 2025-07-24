@@ -2,8 +2,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { client } from "../sanityClient";
-import { useCart } from "../context/CartContext"; // Används för applyDiscount
-import { useAuth } from "../context/AuthContext"; // Används för att få användaren till applyDiscount
+import { useCart } from "../context/CartContext";
+import { useAuth } from "../context/AuthContext"; 
 import { useTranslation } from "react-i18next";
 
 const PRODUCTS_PER_PAGE = 20;
