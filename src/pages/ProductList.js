@@ -15,27 +15,24 @@ function ProductList() {
   const { addToCart } = useCart();
   const { user } = useAuth();
 
-  // State för filter och paginering
   const [page, setPage] = useState(0);
   const [hasMore, setHasMore] = useState(true);
+
+  // --- Filter States ---
   const [searchTerm, setSearchTerm] = useState("");
   const [sortBy, setSortBy] = useState("_createdAt desc");
-  
-  // Fordonsfilter
   const [makes, setMakes] = useState([]);
   const [models, setModels] = useState([]);
   const [versions, setVersions] = useState([]);
   const [selectedMake, setSelectedMake] = useState("");
   const [selectedModel, setSelectedModel] = useState("");
   const [selectedVersion, setSelectedVersion] = useState("");
-
-  // Tillverkar-filter
   const [brands, setBrands] = useState([]);
   const [selectedBrand, setSelectedBrand] = useState("");
 
   const isInitialMount = useRef(true);
 
-  // Hämta data för dropdown-menyer när komponenten laddas
+  // --- Hämta data för dropdowns (endast en gång) ---
   useEffect(() => {
     const fetchFilterData = async () => {
       try {
@@ -54,47 +51,48 @@ function ProductList() {
     fetchFilterData();
   }, []);
 
-  // Hämta modeller baserat på valt bilmärke
-  useEffect(() => {
-    // Rensa undernivåer när märke ändras
+  // --- Hantera ändringar i dropdowns ---
+  const handleMakeChange = (e) => {
+    setSelectedMake(e.target.value);
+    setSelectedModel('');
+    setSelectedVersion('');
     setModels([]);
     setVersions([]);
-    setSelectedModel("");
-    setSelectedVersion("");
+  };
+
+  const handleModelChange = (e) => {
+    setSelectedModel(e.target.value);
+    setSelectedVersion('');
+    setVersions([]);
+  };
+
+  // --- Hämta underkategorier (modeller/versioner) ---
+  useEffect(() => {
     if (!selectedMake) return;
-    
     const fetchModels = async () => {
       try {
         const query = `*[_type == "vehicleModel" && make._ref == $makeId] | order(name asc)`;
         const result = await client.fetch(query, { makeId: selectedMake });
         setModels(result);
-      } catch (err) {
-        console.error("Failed to fetch vehicle models:", err);
-      }
+      } catch (err) console.error("Failed to fetch models:", err);
     };
     fetchModels();
   }, [selectedMake]);
 
-  // Hämta versioner baserat på vald modell
   useEffect(() => {
-    setVersions([]);
-    setSelectedVersion("");
     if (!selectedModel) return;
-
     const fetchVersions = async () => {
       try {
         const query = `*[_type == "vehicleVersion" && model._ref == $modelId] | order(name asc)`;
         const result = await client.fetch(query, { modelId: selectedModel });
         setVersions(result);
-      } catch (err) {
-        console.error("Failed to fetch vehicle versions:", err);
-      }
+      } catch (err) console.error("Failed to fetch versions:", err);
     };
     fetchVersions();
   }, [selectedModel]);
-
-  // Funktion för att hämta produkter
-  const fetchProducts = useCallback(async (currentPage) => {
+  
+  // --- HUVUDFUNKTION FÖR ATT HÄMTA PRODUKTER ---
+  const fetchProducts = useCallback(async (currentPage, isNewSearch) => {
     setLoading(true);
     setError(null);
     try {
@@ -104,16 +102,9 @@ function ProductList() {
       const conditions = [`!defined(isArchived) || isArchived == false`];
       const params = {};
 
-      if (searchTerm) {
-        conditions.push(`(title match $searchTerm + "*" || sku match $searchTerm + "*")`);
-        params.searchTerm = searchTerm;
-      }
-      if (selectedBrand) {
-        conditions.push(`brand == $brand`);
-        params.brand = selectedBrand;
-      }
+      if (searchTerm) { conditions.push(`(title match $searchTerm + "*" || sku match $searchTerm + "*")`); params.searchTerm = searchTerm; }
+      if (selectedBrand) { conditions.push(`brand == $brand`); params.brand = selectedBrand; }
       
-      // Korrekt hierarkisk filtrering
       if (selectedVersion) {
         conditions.push(`$versionId in vehicleFitment[]._ref`);
         params.versionId = selectedVersion;
@@ -126,10 +117,10 @@ function ProductList() {
       }
       
       const query = `*[_type == "product" && ${conditions.join(' && ')}] | order(${sortBy}) [${start}...${end}] {_id, title, sku, price, "imageUrl": mainImage.asset->url}`;
-        
+      
       const data = await client.fetch(query, params);
       
-      setProducts(data);
+      setProducts(prev => isNewSearch ? data : [...prev, ...data]);
       setHasMore(data.length === PRODUCTS_PER_PAGE);
     } catch (err) {
       setError(t("productList.loadError"));
@@ -137,25 +128,26 @@ function ProductList() {
     } finally {
       setLoading(false);
     }
-  }, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, t]);
-  
-  // Effekt som körs när filter eller sidnummer ändras
+  }, [t]);
+
+  // Effekt för att hantera nya sökningar/filtreringar
   useEffect(() => {
     if (isInitialMount.current) {
         isInitialMount.current = false;
-        fetchProducts(0);
+        fetchProducts(0, true);
     } else {
-        fetchProducts(page);
+        setPage(0);
+        fetchProducts(0, true);
+    }
+  }, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand, fetchProducts]);
+
+  // Effekt för att ladda mer
+  useEffect(() => {
+    if (page > 0) {
+        fetchProducts(page, false);
     }
   }, [page, fetchProducts]);
-
-  // Effekt för att återställa sidan när ett filter ändras
-  useEffect(() => {
-    if (!isInitialMount.current) {
-        setPage(0);
-    }
-  }, [searchTerm, sortBy, selectedMake, selectedModel, selectedVersion, selectedBrand]);
-
+  
 
   const getDisplayPrice = (productPrice) => {
     if (user && user.discountPercentage > 0) {
@@ -185,7 +177,7 @@ function ProductList() {
           {/* Bilmärke */}
           <div>
             <label htmlFor="make" className="block text-sm font-medium text-gray-700">Välj bilmärke</label>
-            <select id="make" value={selectedMake} onChange={(e) => setSelectedMake(e.target.value)} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
+            <select id="make" value={selectedMake} onChange={handleMakeChange} className="mt-1 w-full px-4 py-2 border rounded-md bg-white">
               <option value="">Alla bilmärken</option>
               {makes.map(make => <option key={make._id} value={make._id}>{make.name}</option>)}
             </select>
@@ -193,7 +185,7 @@ function ProductList() {
           {/* Bilmodell */}
           <div>
             <label htmlFor="model" className="block text-sm font-medium text-gray-700">Välj modell</label>
-            <select id="model" value={selectedModel} onChange={(e) => setSelectedModel(e.target.value)} disabled={!selectedMake} className="mt-1 w-full px-4 py-2 border rounded-md bg-white disabled:bg-gray-200">
+            <select id="model" value={selectedModel} onChange={handleModelChange} disabled={!selectedMake} className="mt-1 w-full px-4 py-2 border rounded-md bg-white disabled:bg-gray-200">
               <option value="">Alla modeller</option>
               {models.map(model => <option key={model._id} value={model._id}>{model.name}</option>)}
             </select>
@@ -222,7 +214,7 @@ function ProductList() {
       
       <h1 className="text-4xl font-bold text-gray-800 mb-8">{t("productList.title")}</h1>
 
-       {loading ? (
+       {loading && products.length === 0 ? (
         <div className="text-center py-10">{t("common.loading")}</div>
       ) : error ? (
         <div className="text-red-500 text-center py-10">{error}</div>
@@ -272,22 +264,16 @@ function ProductList() {
             })}
           </div>
 
-          <div className="flex justify-between items-center mt-12">
-            <button
-              onClick={() => setPage(p => Math.max(0, p - 1))}
-              disabled={page === 0 || loading}
-              className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Föregående
-            </button>
-            <span className="text-gray-700">Sida {page + 1}</span>
-            <button
-              onClick={() => setPage(p => p + 1)}
-              disabled={!hasMore || loading}
-              className="px-4 py-2 bg-gray-300 text-gray-800 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Laddar...' : 'Nästa'}
-            </button>
+          <div className="text-center mt-12">
+            {hasMore && (
+              <button
+                onClick={() => setPage(prev => prev + 1)}
+                disabled={loading}
+                className="px-6 py-3 bg-gray-800 text-white font-semibold rounded-md disabled:opacity-50"
+              >
+                {loading ? 'Laddar...' : 'Ladda fler'}
+              </button>
+            )}
           </div>
         </>
       )}
